@@ -16,12 +16,12 @@ const ImportCalculator: React.FC = () => {
   const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, BRL: 5.80 });
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'BRL'>('USD');
-  const [declaredValue, setDeclaredValue] = useState<string>('');
+  const [productValue, setProductValue] = useState<string>('');
   const [shippingCost, setShippingCost] = useState<string>('');
+  const [declaredValue, setDeclaredValue] = useState<string>('');
 
   const fetchRates = async () => {
     try {
-      // Using exchangerate-api.com free tier
       const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
       const data = await response.json();
       setRates({
@@ -48,31 +48,25 @@ const ImportCalculator: React.FC = () => {
     return value;
   };
 
-  const convertFromUSD = (usdValue: number, toCurrency: string): number => {
-    if (toCurrency === 'USD') return usdValue;
-    if (toCurrency === 'EUR') return usdValue * rates.EUR;
-    if (toCurrency === 'BRL') return usdValue * rates.BRL;
-    return usdValue;
-  };
-
-  const declared = parseFloat(declaredValue) || 0;
+  const product = parseFloat(productValue) || 0;
   const shipping = parseFloat(shippingCost) || 0;
+  const declared = parseFloat(declaredValue) || 0;
   
-  // Convert everything to BRL for tax calculation
-  const declaredInUSD = convertToUSD(declared, currency);
+  // Convert everything to BRL for display
+  const productInUSD = convertToUSD(product, currency);
   const shippingInUSD = convertToUSD(shipping, currency);
+  const declaredInUSD = convertToUSD(declared, currency);
   
-  const declaredInBRL = declaredInUSD * rates.BRL;
+  const productInBRL = productInUSD * rates.BRL;
   const shippingInBRL = shippingInUSD * rates.BRL;
+  const declaredInBRL = declaredInUSD * rates.BRL;
   
-  // Tax is 60% of declared value only
+  // Tax is 60% of DECLARED value only
   const taxBRL = declaredInBRL * 0.60;
-  const totalCostBRL = declaredInBRL + shippingInBRL + taxBRL;
+  const totalCostBRL = productInBRL + shippingInBRL + taxBRL;
 
-  const formatCurrency = (value: number, curr: string) => {
-    const symbols: Record<string, string> = { USD: '$', EUR: '€', BRL: 'R$' };
-    return `${symbols[curr]} ${value.toFixed(2)}`;
-  };
+  // Calculate EUR to BRL rate correctly (how many BRL for 1 EUR)
+  const eurToBrl = rates.BRL / rates.EUR;
 
   const getCurrencySymbol = (curr: string) => {
     const symbols: Record<string, string> = { USD: '$', EUR: '€', BRL: 'R$' };
@@ -97,7 +91,7 @@ const ImportCalculator: React.FC = () => {
             1 USD = R$ {rates.BRL.toFixed(2)}
           </Badge>
           <Badge variant="outline" className="text-xs">
-            1 EUR = R$ {(rates.BRL / rates.EUR).toFixed(2)}
+            1 EUR = R$ {eurToBrl.toFixed(2)}
           </Badge>
           <Badge variant="outline" className="text-xs">
             1 USD = € {rates.EUR.toFixed(2)}
@@ -119,15 +113,15 @@ const ImportCalculator: React.FC = () => {
           </Select>
         </div>
 
-        {/* Declared Value */}
+        {/* Product Value */}
         <div className="space-y-2">
-          <Label>Valor Declarado ({getCurrencySymbol(currency)})</Label>
+          <Label>Valor do Produto ({getCurrencySymbol(currency)})</Label>
           <Input
             type="number"
             step="0.01"
             placeholder="0.00"
-            value={declaredValue}
-            onChange={(e) => setDeclaredValue(e.target.value)}
+            value={productValue}
+            onChange={(e) => setProductValue(e.target.value)}
           />
         </div>
 
@@ -143,18 +137,34 @@ const ImportCalculator: React.FC = () => {
           />
         </div>
 
+        {/* Declared Value */}
+        <div className="space-y-2">
+          <Label>Declaração ({getCurrencySymbol(currency)})</Label>
+          <Input
+            type="number"
+            step="0.01"
+            placeholder="0.00"
+            value={declaredValue}
+            onChange={(e) => setDeclaredValue(e.target.value)}
+          />
+        </div>
+
         {/* Results */}
         <div className="mt-6 p-4 bg-muted rounded-lg space-y-3">
           <h3 className="font-semibold text-lg">Resumo dos Custos</h3>
           
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span>Valor Declarado:</span>
-              <span>R$ {declaredInBRL.toFixed(2)}</span>
+              <span>Valor do Produto:</span>
+              <span>R$ {productInBRL.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span>Frete:</span>
               <span>R$ {shippingInBRL.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Declaração:</span>
+              <span>R$ {declaredInBRL.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-destructive">
               <span>Imposto (60% da declaração):</span>
@@ -171,7 +181,7 @@ const ImportCalculator: React.FC = () => {
             <p>Total em outras moedas:</p>
             <div className="flex gap-3 mt-1">
               <span>$ {(totalCostBRL / rates.BRL).toFixed(2)} USD</span>
-              <span>€ {((totalCostBRL / rates.BRL) * rates.EUR).toFixed(2)} EUR</span>
+              <span>€ {(totalCostBRL / rates.BRL * rates.EUR).toFixed(2)} EUR</span>
             </div>
           </div>
         </div>
