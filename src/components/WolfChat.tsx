@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, ImagePlus, Loader2, MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { Send, ImagePlus, Loader2, MessageSquare, Plus, Trash2, Menu, X } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -29,6 +29,7 @@ const WolfChat: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +81,7 @@ const WolfChat: React.FC = () => {
       setConversations(prev => [data, ...prev]);
       setCurrentConversationId(data.id);
       setMessages([]);
+      setSidebarOpen(false);
       return data.id;
     }
     return null;
@@ -88,6 +90,7 @@ const WolfChat: React.FC = () => {
   const selectConversation = async (conv: Conversation) => {
     setCurrentConversationId(conv.id);
     await loadMessages(conv.id);
+    setSidebarOpen(false);
   };
 
   const deleteConversation = async (convId: string) => {
@@ -220,9 +223,22 @@ const WolfChat: React.FC = () => {
   };
 
   return (
-    <div className="flex h-[600px] gap-4">
-      {/* Sidebar */}
-      <Card className="w-64 p-3 flex flex-col">
+    <div className="flex h-[600px] gap-4 relative">
+      {/* Mobile Menu Button */}
+      <Button
+        variant="outline"
+        size="icon"
+        className="md:hidden absolute top-2 left-2 z-10"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+      </Button>
+
+      {/* Sidebar - Hidden on mobile unless open */}
+      <Card className={`
+        ${sidebarOpen ? 'absolute inset-0 z-20' : 'hidden'} 
+        md:relative md:block md:w-64 p-3 flex flex-col
+      `}>
         <Button onClick={createNewConversation} className="mb-3 gap-2">
           <Plus className="h-4 w-4" /> Nova Conversa
         </Button>
@@ -257,27 +273,30 @@ const WolfChat: React.FC = () => {
       {/* Chat Area */}
       <Card className="flex-1 flex flex-col p-4">
         <div className="text-center mb-4 pb-3 border-b">
-          <h2 className="text-xl font-bold">🐺 Lobo das Importações</h2>
+          <h2 className="text-xl font-bold flex items-center justify-center gap-2">
+            <span className="md:hidden w-8" /> {/* Spacer for mobile menu button */}
+            🐺 Lobo das Importações
+          </h2>
           <p className="text-sm text-muted-foreground">Seu especialista em vendas e importação</p>
         </div>
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 pr-2">
           <div className="space-y-4">
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
-                <p>Olá! Eu sou o Lobo das Importações! 🐺</p>
+                <p className="text-lg">Olá! Eu sou o Lobo das Importações! 🐺</p>
                 <p className="text-sm mt-2">Envie uma foto de um produto ou me pergunte qualquer coisa sobre importação!</p>
               </div>
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-lg p-3 ${
+                <div className={`max-w-[85%] md:max-w-[80%] rounded-lg p-3 ${
                   msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                 }`}>
                   {msg.image_url && (
                     <img src={msg.image_url} alt="Uploaded" className="max-w-full rounded mb-2 max-h-48 object-contain" />
                   )}
-                  <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
                 </div>
               </div>
             ))}
@@ -314,6 +333,7 @@ const WolfChat: React.FC = () => {
             placeholder="Digite sua mensagem..."
             onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
             disabled={isLoading}
+            className="flex-1"
           />
           <Button onClick={sendMessage} disabled={isLoading}>
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
