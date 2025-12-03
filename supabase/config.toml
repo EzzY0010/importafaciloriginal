@@ -2,3 +2,9 @@ project_id = "ujwsbmjnpvzfvcjorlxl"
 
 [functions.wolf-chat]
 verify_jwt = false
+
+[functions.mercadopago-create-preference]
+verify_jwt = false
+
+[functions.mercadopago-webhook]
+verify_jwt = false

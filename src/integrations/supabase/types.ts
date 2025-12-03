@@ -73,11 +73,51 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          external_reference: string
+          id: string
+          mercadopago_id: string | null
+          payment_method: string | null
+          preference_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          external_reference: string
+          id?: string
+          mercadopago_id?: string | null
+          payment_method?: string | null
+          preference_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          external_reference?: string
+          id?: string
+          mercadopago_id?: string | null
+          payment_method?: string | null
+          preference_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           email: string | null
           full_name: string | null
+          has_paid: boolean | null
           id: string
           updated_at: string
         }
@@ -85,6 +125,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           full_name?: string | null
+          has_paid?: boolean | null
           id: string
           updated_at?: string
         }
@@ -92,6 +133,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           full_name?: string | null
+          has_paid?: boolean | null
           id?: string
           updated_at?: string
         }
