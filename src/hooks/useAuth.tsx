@@ -6,10 +6,12 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  hasPaid: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshPaymentStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,6 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasPaid, setHasPaid] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const checkAdminRole = async (userId: string) => {
@@ -31,6 +34,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAdmin(!!data);
   };
 
+  const checkPaymentStatus = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('has_paid')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    setHasPaid(data?.has_paid ?? false);
+  };
+
+  const refreshPaymentStatus = async () => {
+    if (user) {
+      await checkPaymentStatus(user.id);
+    }
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -41,9 +60,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           setTimeout(() => {
             checkAdminRole(session.user.id);
+            checkPaymentStatus(session.user.id);
           }, 0);
         } else {
           setIsAdmin(false);
+          setHasPaid(false);
         }
       }
     );
@@ -55,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (session?.user) {
         checkAdminRole(session.user.id);
+        checkPaymentStatus(session.user.id);
       }
     });
 
@@ -85,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, hasPaid, loading, signIn, signUp, signOut, refreshPaymentStatus }}>
       {children}
     </AuthContext.Provider>
   );

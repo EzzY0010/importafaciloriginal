@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShoppingBag, LogOut, Crown, User, MessageSquare, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
 import LanguageSelector from "@/components/LanguageSelector";
 import WolfChat from "@/components/WolfChat";
 import ImportCalculator from "@/components/ImportCalculator";
+import PaymentButton from "@/components/PaymentButton";
 
 const Dashboard = () => {
-  const { user, isAdmin, signOut, loading } = useAuth();
+  const { user, isAdmin, hasPaid, signOut, loading, refreshPaymentStatus } = useAuth();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("chat");
 
   useEffect(() => {
@@ -21,6 +24,23 @@ const Dashboard = () => {
       navigate("/");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'success') {
+      toast({
+        title: 'Pagamento realizado!',
+        description: 'Seu acesso foi liberado. Aproveite o ImportaFácil!',
+      });
+      refreshPaymentStatus();
+    } else if (paymentStatus === 'failure') {
+      toast({
+        title: 'Pagamento não concluído',
+        description: 'Houve um problema com o pagamento. Tente novamente.',
+        variant: 'destructive'
+      });
+    }
+  }, [searchParams]);
 
   const handleLogout = async () => {
     await signOut();
@@ -36,6 +56,9 @@ const Dashboard = () => {
   }
 
   if (!user) return null;
+
+  // Show payment screen if user hasn't paid (unless admin)
+  const hasAccess = hasPaid || isAdmin;
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -69,34 +92,38 @@ const Dashboard = () => {
           </div>
         </header>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="chat" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
-              🐺 Lobo das Importações
-            </TabsTrigger>
-            <TabsTrigger value="calculator" className="gap-2">
-              <Calculator className="w-4 h-4" />
-              📊 Calculadora
-            </TabsTrigger>
-          </TabsList>
+        {hasAccess ? (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="chat" className="gap-2">
+                <MessageSquare className="w-4 h-4" />
+                🐺 Lobo das Importações
+              </TabsTrigger>
+              <TabsTrigger value="calculator" className="gap-2">
+                <Calculator className="w-4 h-4" />
+                📊 Calculadora
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="chat" className="mt-0">
-            <WolfChat />
-          </TabsContent>
+            <TabsContent value="chat" className="mt-0">
+              <WolfChat />
+            </TabsContent>
 
-          <TabsContent value="calculator" className="mt-0">
-            <div className="flex flex-col items-center gap-6">
-              <ImportCalculator />
-              
-              <Card className="p-6 max-w-md w-full">
-                <h3 className="font-semibold text-foreground mb-2">{t('pricing')}</h3>
-                <p className="text-3xl font-bold text-primary">R$ 12,00</p>
-                <p className="text-sm text-muted-foreground">{t('fixedPrice')} - {t('perAccess')}</p>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="calculator" className="mt-0">
+              <div className="flex justify-center">
+                <ImportCalculator />
+              </div>
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12">
+            <h2 className="text-2xl font-bold mb-4 text-center">Libere seu acesso ao ImportaFácil</h2>
+            <p className="text-muted-foreground mb-8 text-center max-w-md">
+              Tenha acesso completo à nossa IA especialista em importações e à calculadora de custos.
+            </p>
+            <PaymentButton onPaymentSuccess={refreshPaymentStatus} />
+          </div>
+        )}
       </div>
     </div>
   );
