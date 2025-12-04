@@ -20,6 +20,41 @@ interface Conversation {
   created_at: string;
 }
 
+// Parse markdown links to clickable elements
+const renderMessageContent = (content: string) => {
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = linkRegex.exec(content)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(content.substring(lastIndex, match.index));
+    }
+    // Add the link
+    parts.push(
+      <a
+        key={match.index}
+        href={match[2]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline hover:text-primary/80 font-medium"
+      >
+        {match[1]}
+      </a>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : content;
+};
+
 const WolfChat: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -296,7 +331,7 @@ const WolfChat: React.FC = () => {
                   {msg.image_url && (
                     <img src={msg.image_url} alt="Uploaded" className="max-w-full rounded mb-2 max-h-48 object-contain" />
                   )}
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{renderMessageContent(msg.content)}</p>
                 </div>
               </div>
             ))}
