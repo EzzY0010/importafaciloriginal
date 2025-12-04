@@ -29,18 +29,18 @@ const Dashboard = () => {
     const paymentStatus = searchParams.get('payment');
     if (paymentStatus === 'success') {
       toast({
-        title: 'Pagamento realizado!',
-        description: 'Seu acesso foi liberado. Aproveite o ImportaFácil!',
+        title: t('paymentSuccess'),
+        description: t('paymentSuccessDesc'),
       });
       refreshPaymentStatus();
     } else if (paymentStatus === 'failure') {
       toast({
-        title: 'Pagamento não concluído',
-        description: 'Houve um problema com o pagamento. Tente novamente.',
+        title: t('paymentFailed'),
+        description: t('paymentFailedDesc'),
         variant: 'destructive'
       });
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const handleLogout = async () => {
     await signOut();
@@ -97,11 +97,11 @@ const Dashboard = () => {
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="chat" className="gap-2">
                 <MessageSquare className="w-4 h-4" />
-                🐺 Lobo das Importações
+                {t('wolfTab')}
               </TabsTrigger>
               <TabsTrigger value="calculator" className="gap-2">
                 <Calculator className="w-4 h-4" />
-                📊 Calculadora
+                {t('calculatorTab')}
               </TabsTrigger>
             </TabsList>
 
@@ -117,9 +117,9 @@ const Dashboard = () => {
           </Tabs>
         ) : (
           <div className="flex flex-col items-center justify-center py-12">
-            <h2 className="text-2xl font-bold mb-4 text-center">Libere seu acesso ao ImportaFácil</h2>
+            <h2 className="text-2xl font-bold mb-4 text-center">{t('unlockAccess')}</h2>
             <p className="text-muted-foreground mb-8 text-center max-w-md">
-              Tenha acesso completo à nossa IA especialista em importações e à calculadora de custos.
+              {t('unlockDescription')}
             </p>
             <PaymentButton onPaymentSuccess={refreshPaymentStatus} />
           </div>
