@@ -15,12 +15,12 @@ const LanguageSelector = () => {
         🇧🇷 PT
       </Button>
       <Button
-        variant={language === 'zh' ? 'default' : 'outline'}
+        variant={language === 'en' ? 'default' : 'outline'}
         size="sm"
-        onClick={() => setLanguage('zh')}
+        onClick={() => setLanguage('en')}
         className="text-xs px-3"
       >
-        🇨🇳 中文
+        🇺🇸 EN
       </Button>
     </div>
   );

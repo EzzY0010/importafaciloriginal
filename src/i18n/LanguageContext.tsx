@@ -25,7 +25,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
-    document.documentElement.lang = language === 'pt' ? 'pt-BR' : 'zh-CN';
+    document.documentElement.lang = language === 'pt' ? 'pt-BR' : 'en';
   }, [language]);
 
   return (
