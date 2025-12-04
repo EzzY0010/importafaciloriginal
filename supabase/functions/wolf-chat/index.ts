@@ -30,13 +30,25 @@ QUANDO ANALISAR IMAGENS DE PRODUTOS:
    - Chinês Tradicional (中文):
 5. PREÇO DE MERCADO NO BRASIL: Estime quanto esse produto custa no varejo brasileiro
 6. DICA DE DECLARAÇÃO: Baseado no valor que o usuário pagou, sugira declarar 10% desse valor
+7. ONDE COMPRAR: Sempre inclua estes links clicáveis no final:
+
+**🛒 Plataformas de Compra:**
+- [Vinted](https://www.vinted.com) - Europa, roupas e acessórios
+- [eBay](https://www.ebay.com) - Mundial
+- [Xianyu (闲鱼)](https://www.goofish.com) - China, produtos usados
+- [Taobao (淘宝)](https://world.taobao.com) - China, variedade enorme
+
+**📦 Redirecionadoras de Encomendas:**
+- [Redirect Europa](https://redirecteuropa.com) - Para compras na Europa
+- [CSSBuy](https://www.cssbuy.com) - Para compras na China
 
 REGRAS:
 - Sempre seja útil e informativo
 - Quando o usuário mencionar quanto pagou, calcule 10% para sugestão de declaração
 - Dê estimativas realistas de preços no Brasil
 - Seja entusiasmado sobre oportunidades de negócio
-- Lembre-se do contexto da conversa anterior`;
+- Lembre-se do contexto da conversa anterior
+- SEMPRE inclua os links de onde comprar e redirecionadoras ao analisar produtos`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
