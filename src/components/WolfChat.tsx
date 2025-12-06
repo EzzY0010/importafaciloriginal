@@ -258,7 +258,7 @@ const WolfChat: React.FC = () => {
   };
 
   return (
-    <div className="flex h-[600px] gap-4 relative">
+    <div className="flex h-[600px] gap-2 relative max-w-4xl mx-auto w-full">
       {/* Mobile Menu Button */}
       <Button
         variant="outline"
@@ -272,32 +272,35 @@ const WolfChat: React.FC = () => {
       {/* Sidebar - Hidden on mobile unless open */}
       <Card className={`
         ${sidebarOpen ? 'absolute inset-0 z-20' : 'hidden'} 
-        md:relative md:block md:w-64 p-3 flex flex-col
+        md:relative md:block md:w-16 p-2 flex flex-col items-center
       `}>
-        <Button onClick={createNewConversation} className="mb-3 gap-2">
-          <Plus className="h-4 w-4" /> Nova Conversa
+        <Button 
+          onClick={createNewConversation} 
+          size="icon" 
+          className="mb-3"
+          title="Nova Conversa"
+        >
+          <Plus className="h-5 w-5" />
         </Button>
         <ScrollArea className="flex-1">
-          <div className="space-y-2">
+          <div className="flex flex-col items-center gap-1">
             {conversations.map(conv => (
               <div
                 key={conv.id}
-                className={`p-2 rounded cursor-pointer flex items-center justify-between group ${
+                className={`p-2 rounded cursor-pointer flex items-center justify-center group relative ${
                   currentConversationId === conv.id ? 'bg-primary/20' : 'hover:bg-muted'
                 }`}
                 onClick={() => selectConversation(conv)}
+                title={conv.title}
               >
-                <div className="flex items-center gap-2 truncate flex-1">
-                  <MessageSquare className="h-4 w-4 shrink-0" />
-                  <span className="truncate text-sm">{conv.title}</span>
-                </div>
+                <MessageSquare className="h-5 w-5" />
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                  className="h-5 w-5 absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 bg-destructive text-destructive-foreground rounded-full p-0"
                   onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <X className="h-3 w-3" />
                 </Button>
               </div>
             ))}
