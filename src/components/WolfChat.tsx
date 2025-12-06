@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, ImagePlus, Loader2, MessageSquare, Plus, Trash2, Menu, X } from 'lucide-react';
+import { Send, ImagePlus, Loader2, MessageSquare, Plus, Menu, X } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -28,18 +28,16 @@ const renderMessageContent = (content: string) => {
   let match;
 
   while ((match = linkRegex.exec(content)) !== null) {
-    // Add text before the link
     if (match.index > lastIndex) {
       parts.push(content.substring(lastIndex, match.index));
     }
-    // Add the link
     parts.push(
       <a
         key={match.index}
         href={match[2]}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-primary underline hover:text-primary/80 font-medium"
+        className="text-secondary underline hover:text-secondary/80 font-medium"
       >
         {match[1]}
       </a>
@@ -47,7 +45,6 @@ const renderMessageContent = (content: string) => {
     lastIndex = match.index + match[0].length;
   }
 
-  // Add remaining text
   if (lastIndex < content.length) {
     parts.push(content.substring(lastIndex));
   }
@@ -79,7 +76,7 @@ const WolfChat: React.FC = () => {
   }, [messages]);
 
   const loadConversations = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('conversations')
       .select('*')
       .order('updated_at', { ascending: false });
@@ -106,7 +103,7 @@ const WolfChat: React.FC = () => {
   const createNewConversation = async () => {
     if (!user) return null;
     
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('conversations')
       .insert({ user_id: user.id, title: 'Nova conversa' })
       .select()
@@ -183,7 +180,6 @@ const WolfChat: React.FC = () => {
 
     await saveMessage(convId, 'user', input, imagePreview || undefined);
 
-    // Update conversation title if it's the first message
     if (messages.length === 0 && input.trim()) {
       const title = input.substring(0, 50) + (input.length > 50 ? '...' : '');
       await supabase.from('conversations').update({ title }).eq('id', convId);
@@ -258,46 +254,48 @@ const WolfChat: React.FC = () => {
   };
 
   return (
-    <div className="flex h-[600px] gap-2 relative max-w-4xl mx-auto w-full">
+    <div className="flex h-[calc(100vh-12rem)] gap-3 relative max-w-4xl mx-auto w-full">
       {/* Mobile Menu Button */}
       <Button
         variant="outline"
         size="icon"
-        className="md:hidden absolute top-2 left-2 z-10"
+        className="md:hidden absolute top-3 left-3 z-10 bg-card"
         onClick={() => setSidebarOpen(!sidebarOpen)}
       >
         {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </Button>
 
-      {/* Sidebar - Hidden on mobile unless open */}
+      {/* Sidebar */}
       <Card className={`
         ${sidebarOpen ? 'absolute inset-0 z-20' : 'hidden'} 
-        md:relative md:block md:w-16 p-2 flex flex-col items-center
+        md:relative md:flex md:w-16 p-2 flex-col items-center border border-border rounded-2xl shadow-card
       `}>
         <Button 
           onClick={createNewConversation} 
           size="icon" 
-          className="mb-3"
+          className="mb-4 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl shadow-soft"
           title="Nova Conversa"
         >
           <Plus className="h-5 w-5" />
         </Button>
-        <ScrollArea className="flex-1">
-          <div className="flex flex-col items-center gap-1">
+        <ScrollArea className="flex-1 w-full">
+          <div className="flex flex-col items-center gap-2">
             {conversations.map(conv => (
               <div
                 key={conv.id}
-                className={`p-2 rounded cursor-pointer flex items-center justify-center group relative ${
-                  currentConversationId === conv.id ? 'bg-primary/20' : 'hover:bg-muted'
+                className={`w-10 h-10 rounded-xl cursor-pointer flex items-center justify-center group relative transition-all ${
+                  currentConversationId === conv.id 
+                    ? 'bg-primary text-primary-foreground shadow-soft' 
+                    : 'bg-muted hover:bg-muted/80 text-muted-foreground'
                 }`}
                 onClick={() => selectConversation(conv)}
                 title={conv.title}
               >
-                <MessageSquare className="h-5 w-5" />
+                <MessageSquare className="h-4 w-4" />
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 bg-destructive text-destructive-foreground rounded-full p-0"
+                  className="h-5 w-5 absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 bg-destructive text-destructive-foreground rounded-full p-0 shadow-soft"
                   onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
                 >
                   <X className="h-3 w-3" />
@@ -309,30 +307,39 @@ const WolfChat: React.FC = () => {
       </Card>
 
       {/* Chat Area */}
-      <Card className="flex-1 flex flex-col p-4">
-        <div className="text-center mb-4 pb-3 border-b">
-          <h2 className="text-xl font-bold flex items-center justify-center gap-2">
-            <span className="md:hidden w-8" /> {/* Spacer for mobile menu button */}
+      <Card className="flex-1 flex flex-col border border-border rounded-2xl shadow-card overflow-hidden">
+        {/* Chat Header */}
+        <div className="text-center p-5 border-b border-border bg-card">
+          <h2 className="text-xl font-bold flex items-center justify-center gap-2 text-foreground">
+            <span className="md:hidden w-8" />
             🐺 Lobo das Importações
           </h2>
-          <p className="text-sm text-muted-foreground">Seu especialista em vendas e importação</p>
+          <p className="text-sm text-muted-foreground mt-1">Seu especialista em vendas e importação</p>
         </div>
 
-        <ScrollArea className="flex-1 pr-2">
+        {/* Messages */}
+        <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
             {messages.length === 0 && (
-              <div className="text-center text-muted-foreground py-8">
-                <p className="text-lg">Olá! Eu sou o Lobo das Importações! 🐺</p>
-                <p className="text-sm mt-2">Envie uma foto de um produto ou me pergunte qualquer coisa sobre importação!</p>
+              <div className="text-center text-muted-foreground py-12 px-4">
+                <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">🐺</span>
+                </div>
+                <p className="text-lg font-medium text-foreground">Olá! Eu sou o Lobo das Importações!</p>
+                <p className="text-sm mt-2 max-w-sm mx-auto">
+                  Envie uma foto de um produto ou me pergunte qualquer coisa sobre importação!
+                </p>
               </div>
             )}
             {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] md:max-w-[80%] rounded-lg p-3 ${
-                  msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+                <div className={`max-w-[85%] md:max-w-[80%] rounded-2xl p-4 ${
+                  msg.role === 'user' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted text-foreground'
                 }`}>
                   {msg.image_url && (
-                    <img src={msg.image_url} alt="Uploaded" className="max-w-full rounded mb-2 max-h-48 object-contain" />
+                    <img src={msg.image_url} alt="Uploaded" className="max-w-full rounded-xl mb-3 max-h-48 object-contain" />
                   )}
                   <p className="whitespace-pre-wrap text-sm leading-relaxed">{renderMessageContent(msg.content)}</p>
                 </div>
@@ -342,40 +349,57 @@ const WolfChat: React.FC = () => {
           </div>
         </ScrollArea>
 
+        {/* Image Preview */}
         {imagePreview && (
-          <div className="relative inline-block mt-2">
-            <img src={imagePreview} alt="Preview" className="h-20 rounded" />
-            <Button
-              variant="destructive"
-              size="icon"
-              className="absolute -top-2 -right-2 h-6 w-6"
-              onClick={() => setImagePreview(null)}
-            >×</Button>
+          <div className="px-4 pb-2">
+            <div className="relative inline-block">
+              <img src={imagePreview} alt="Preview" className="h-20 rounded-xl border border-border" />
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                onClick={() => setImagePreview(null)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
         )}
 
-        <div className="flex gap-2 mt-4">
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleImageUpload}
-            className="hidden"
-          />
-          <Button variant="outline" size="icon" onClick={() => fileInputRef.current?.click()}>
-            <ImagePlus className="h-4 w-4" />
-          </Button>
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Digite sua mensagem..."
-            onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
-            disabled={isLoading}
-            className="flex-1"
-          />
-          <Button onClick={sendMessage} disabled={isLoading}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
+        {/* Input Area */}
+        <div className="p-4 border-t border-border bg-card">
+          <div className="flex gap-3">
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded-xl border-border hover:bg-muted"
+            >
+              <ImagePlus className="h-4 w-4" />
+            </Button>
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Digite sua mensagem..."
+              onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
+              disabled={isLoading}
+              className="flex-1 rounded-xl border-border focus-visible:ring-primary"
+            />
+            <Button 
+              onClick={sendMessage} 
+              disabled={isLoading}
+              className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl px-5 shadow-soft"
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </Card>
     </div>
