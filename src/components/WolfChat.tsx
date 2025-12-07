@@ -318,8 +318,8 @@ const WolfChat: React.FC = () => {
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/40 transition-colors">
+          <div className="p-4 space-y-4 min-h-full">
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground py-12 px-4">
                 <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -328,6 +328,9 @@ const WolfChat: React.FC = () => {
                 <p className="text-lg font-medium text-foreground">Olá! Eu sou o Lobo das Importações!</p>
                 <p className="text-sm mt-2 max-w-sm mx-auto">
                   Envie uma foto de um produto ou me pergunte qualquer coisa sobre importação!
+                </p>
+                <p className="text-xs mt-4 text-muted-foreground/70">
+                  💡 Dica: Digite "modo garimpo" para ativar a busca automática de produtos!
                 </p>
               </div>
             )}
@@ -347,7 +350,7 @@ const WolfChat: React.FC = () => {
             ))}
             <div ref={scrollRef} />
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Image Preview */}
         {imagePreview && (
