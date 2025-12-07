@@ -106,7 +106,7 @@ Quando receber uma imagem, SEMPRE forneça:
 • Sempre calcule: (Valor Declarado + Frete) × 1.60 = Custo Total
 
 ═══════════════════════════════════════════════════════════════
-🟧 MODO GARIMPO (MODO ESPECIAL)
+🟧 MODO GARIMPO (SCRAPER AO VIVO DA VINTED)
 ═══════════════════════════════════════════════════════════════
 Você possui DOIS MODOS de operação: NORMAL e GARIMPO.
 
@@ -117,27 +117,35 @@ Você possui DOIS MODOS de operação: NORMAL e GARIMPO.
 - "buscar na Vinted"
 - "acha igual"
 - "procure esse produto"
+- "garimpo"
 
-🔸 QUANDO O MODO GARIMPO ESTIVER ATIVO:
-1. Analise a imagem fornecida pelo usuário
-2. Gere palavras-chave MUITO ESPECÍFICAS sobre o produto
-3. Informe que você está buscando produtos similares
-4. Forneça LINKS DIRETOS de busca nas plataformas:
-   
-   **LINKS DE BUSCA GERADOS:**
-   • [Buscar na Vinted](https://www.vinted.com/catalog?search_text=PALAVRAS-CHAVE)
-   • [Buscar no eBay](https://www.ebay.com/sch/i.html?_nkw=PALAVRAS-CHAVE)
-   • [Buscar no Taobao](https://world.taobao.com/search/search.htm?q=PALAVRAS-CHAVE)
-   
-   Substitua PALAVRAS-CHAVE pelas keywords em inglês separadas por +
+🔸 QUANDO O MODO GARIMPO ESTIVER ATIVO E VOCÊ RECEBER DADOS DO SCRAPER:
+1. Você receberá dados JSON do scraper da Vinted com produtos reais
+2. Apresente os resultados de forma ORGANIZADA e ATRAENTE
+3. Use este formato para cada produto encontrado:
 
-5. Dê dicas de GARIMPO:
-   - Como filtrar os melhores resultados
-   - Faixa de preço esperada
-   - Sinais de qualidade
-   - O que evitar
+**📦 PRODUTOS ENCONTRADOS NA VINTED:**
 
-6. Seja DIRETO e OBJETIVO — apenas o essencial
+• **Produto 1** - [Ver Anúncio](LINK)
+  💰 Preço: VALOR | 🌍 País: PAIS
+
+• **Produto 2** - [Ver Anúncio](LINK)
+  💰 Preço: VALOR | 🌍 País: PAIS
+
+[Continue para todos os produtos]
+
+4. Após listar, dê DICAS de garimpo:
+   - "Os melhores achados estão nos países X e Y"
+   - "Faixa de preço ideal: X a Y euros"
+   - "Cuidado com vendedores sem avaliações"
+   - "Use a Redirect Europa para trazer da Europa"
+
+5. Seja DIRETO e OBJETIVO — mostre os links primeiro, dicas depois
+
+🔸 SE RECEBER [SCRAPER_RESULTS]:
+   O texto começará com "[SCRAPER_RESULTS]" seguido de JSON.
+   Parse o JSON e apresente os produtos de forma bonita.
+   NUNCA mostre o JSON bruto ao usuário.
 
 🔸 PARA VOLTAR AO MODO NORMAL:
 - "voltar ao normal"
@@ -159,6 +167,82 @@ Quando voltar, confirme: "🐺 Modo garimpo desativado. Voltei ao modo normal!"
 ✅ Os dois modos (Normal e Garimpo) são INDEPENDENTES
 
 Lembre-se: Você é o MELHOR do Brasil nisso. Aja como tal. 🐺`;
+
+// Palavras-chave que ativam o modo garimpo
+const GARIMPO_TRIGGERS = [
+  'ativar modo garimpo',
+  'modo garimpo',
+  'faz o garimpo',
+  'buscar na vinted',
+  'acha igual',
+  'procure esse produto',
+  'garimpo',
+  'faz garimpo',
+  'fazer garimpo'
+];
+
+// Detectar se é mensagem de garimpo
+function isGarimpoRequest(message: string): boolean {
+  const lowerMessage = message.toLowerCase().trim();
+  return GARIMPO_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
+}
+
+// Extrair keywords da mensagem ou da análise de imagem anterior
+function extractKeywordsFromContext(messages: any[]): string[] {
+  // Procurar pela última resposta da IA que contenha análise de produto
+  const assistantMessages = messages.filter(m => m.role === 'assistant');
+  
+  for (let i = assistantMessages.length - 1; i >= 0; i--) {
+    const content = typeof assistantMessages[i].content === 'string' 
+      ? assistantMessages[i].content 
+      : assistantMessages[i].content?.[0]?.text || '';
+    
+    // Procurar por palavras-chave em inglês (padrão mais comum)
+    const englishMatch = content.match(/🇺🇸\s*Inglês:?\s*([^\n]+)/i);
+    if (englishMatch) {
+      return englishMatch[1].split(/[,;]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 2);
+    }
+    
+    // Tentar extrair termos genéricos se não encontrar formato específico
+    const productMatch = content.match(/(?:produto|item|peça|roupa|boné|tênis|jaqueta|camiseta):\s*([^\n]+)/gi);
+    if (productMatch) {
+      const terms = productMatch.flatMap((m: string) => m.split(':')[1]?.split(/[,;]+/) || []);
+      return terms.map((k: string) => k.trim()).filter((k: string) => k.length > 2);
+    }
+  }
+  
+  return [];
+}
+
+// Chamar o scraper da Vinted
+async function callVintedScraper(keywords: string[]): Promise<any> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  
+  try {
+    console.log('Calling Vinted scraper with keywords:', keywords);
+    
+    const response = await fetch(`${supabaseUrl}/functions/v1/vinted-scraper`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        keywords,
+        maxDomains: 8 // Buscar em mais países
+      }),
+    });
+    
+    if (!response.ok) {
+      console.error('Scraper error:', response.status);
+      return null;
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error calling scraper:', error);
+    return null;
+  }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -202,12 +286,83 @@ serve(async (req) => {
       }
     }
 
+    // Verificar se é uma solicitação de garimpo
+    const lastUserMessage = messages[messages.length - 1];
+    const userMessageText = typeof lastUserMessage.content === 'string' 
+      ? lastUserMessage.content 
+      : lastUserMessage.content?.find((c: any) => c.type === 'text')?.text || '';
+    
+    let scraperResults = null;
+    
+    if (isGarimpoRequest(userMessageText)) {
+      console.log('Garimpo mode detected!');
+      
+      // Extrair keywords do contexto
+      let keywords = extractKeywordsFromContext([...conversationHistory, ...messages]);
+      
+      // Se não encontrou keywords no contexto, tentar extrair da mensagem atual
+      if (keywords.length === 0) {
+        // Extrair palavras relevantes da mensagem (excluindo triggers)
+        const cleanedMessage = userMessageText.toLowerCase()
+          .replace(/ativar modo garimpo|modo garimpo|faz o garimpo|buscar na vinted|acha igual|procure esse produto|garimpo/gi, '')
+          .trim();
+        
+        if (cleanedMessage.length > 3) {
+          keywords = cleanedMessage.split(/\s+/).filter((w: string) => w.length > 3);
+        }
+      }
+      
+      // Se ainda não tem keywords, verificar se tem imagem na conversa
+      if (keywords.length === 0) {
+        // Verificar última imagem enviada
+        const hasImageInConversation = conversationHistory.some(m => 
+          m.role === 'user' && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url')
+        ) || messages.some((m: any) => 
+          m.role === 'user' && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url')
+        );
+        
+        if (hasImageInConversation) {
+          // Pedir para a IA analisar primeiro
+          console.log('Image found but no keywords extracted yet - AI will analyze first');
+        }
+      }
+      
+      if (keywords.length > 0) {
+        console.log('Searching Vinted with keywords:', keywords);
+        scraperResults = await callVintedScraper(keywords);
+      }
+    }
+
     // Build messages array
-    const apiMessages = [
+    let apiMessages = [
       { role: 'system', content: SYSTEM_PROMPT },
       ...conversationHistory,
       ...messages
     ];
+    
+    // Adicionar resultados do scraper se existirem
+    if (scraperResults && scraperResults.success && scraperResults.products?.length > 0) {
+      const scraperContext = `
+[SCRAPER_RESULTS]
+${JSON.stringify(scraperResults, null, 2)}
+
+INSTRUÇÕES: Você recebeu resultados reais do scraper da Vinted acima. 
+Apresente esses produtos de forma BONITA e ORGANIZADA ao usuário.
+Foram buscados ${scraperResults.totalSearched} países: ${scraperResults.domainsSearched?.join(', ')}.
+Total de ${scraperResults.products.length} produtos encontrados.
+`;
+      
+      // Adicionar como mensagem do sistema adicional
+      apiMessages.push({
+        role: 'user',
+        content: scraperContext
+      });
+    } else if (scraperResults && !scraperResults.success) {
+      apiMessages.push({
+        role: 'user', 
+        content: `[SCRAPER_ERROR] O scraper da Vinted encontrou um erro: ${scraperResults.error}. Informe ao usuário e sugira alternativas como buscar manualmente nas plataformas.`
+      });
+    }
 
     console.log('Sending request to Lovable AI with', apiMessages.length, 'messages');
 
