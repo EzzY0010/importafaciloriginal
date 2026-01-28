@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, ImagePlus, Loader2, MessageSquare, Plus, Menu, X } from 'lucide-react';
+import { Send, ImagePlus, Loader2, MessageSquare, Plus, Menu, X, Search, ExternalLink, ShoppingBag } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -20,8 +22,114 @@ interface Conversation {
   created_at: string;
 }
 
+interface GarimpoProduct {
+  link: string;
+  titulo: string;
+  preco: string;
+  imagem?: string;
+  pais: string;
+  score?: number;
+}
+
+// Detectar se é resultado de garimpo e extrair produtos
+const parseGarimpoResults = (content: string): GarimpoProduct[] | null => {
+  // Detectar links de Vinted
+  const vintedLinks = content.match(/https?:\/\/[^\s\)]+vinted\.[^\s\)]+\/items\/\d+[^\s\)]*/gi);
+  
+  if (!vintedLinks || vintedLinks.length === 0) return null;
+  
+  const products: GarimpoProduct[] = [];
+  
+  for (const link of vintedLinks) {
+    // Extrair país do domínio
+    const domainMatch = link.match(/vinted\.([a-z.]+)/i);
+    const pais = domainMatch ? domainMatch[1].replace('.', '').toUpperCase() : 'EU';
+    
+    // Tentar extrair preço do contexto
+    const linkIndex = content.indexOf(link);
+    const context = content.substring(Math.max(0, linkIndex - 100), Math.min(content.length, linkIndex + 50));
+    const priceMatch = context.match(/(\d+[.,]?\d*)\s*€|€\s*(\d+[.,]?\d*)/);
+    const preco = priceMatch ? `${priceMatch[1] || priceMatch[2]}€` : 'Ver preço';
+    
+    // Extrair título do markdown link
+    const titleMatch = content.substring(Math.max(0, linkIndex - 100), linkIndex).match(/\[([^\]]+)\]\s*$/);
+    const titulo = titleMatch ? titleMatch[1] : 'Produto Vinted';
+    
+    if (!products.some(p => p.link === link)) {
+      products.push({
+        link: link.replace(/[\)\]"]+$/, ''),
+        titulo,
+        preco,
+        pais
+      });
+    }
+  }
+  
+  return products.length > 0 ? products : null;
+};
+
+// Componente para renderizar card de produto
+const ProductCard: React.FC<{ product: GarimpoProduct }> = ({ product }) => (
+  <a 
+    href={product.link} 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="block bg-card border border-border rounded-xl p-3 hover:shadow-medium transition-all hover:border-accent/50 group"
+  >
+    <div className="flex items-start gap-3">
+      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+        <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate group-hover:text-accent transition-colors">
+          {product.titulo}
+        </p>
+        <div className="flex items-center gap-2 mt-1">
+          <Badge variant="secondary" className="text-xs">
+            {product.preco}
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            🌍 {product.pais}
+          </Badge>
+        </div>
+      </div>
+      <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
+    </div>
+  </a>
+);
+
 // Parse markdown links to clickable elements
 const renderMessageContent = (content: string) => {
+  // Primeiro verificar se há resultados de garimpo
+  const garimpoProducts = parseGarimpoResults(content);
+  
+  if (garimpoProducts && garimpoProducts.length > 0) {
+    // Separar texto das URLs
+    const textWithoutLinks = content
+      .replace(/https?:\/\/[^\s\)]+vinted\.[^\s\)]+\/items\/\d+[^\s\)]*/gi, '')
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+      .trim();
+    
+    return (
+      <div className="space-y-4">
+        {textWithoutLinks && (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{textWithoutLinks}</p>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+          {garimpoProducts.slice(0, 12).map((product, index) => (
+            <ProductCard key={index} product={product} />
+          ))}
+        </div>
+        {garimpoProducts.length > 12 && (
+          <p className="text-xs text-muted-foreground text-center">
+            + {garimpoProducts.length - 12} mais produtos encontrados
+          </p>
+        )}
+      </div>
+    );
+  }
+  
+  // Renderização padrão de markdown links
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -62,6 +170,12 @@ const WolfChat: React.FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [garimpoMode, setGarimpoMode] = useState(false);
+  const [enabledSources, setEnabledSources] = useState({
+    vinted: true,
+    yupoo: false,
+    alibaba1688: false,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -154,6 +268,14 @@ const WolfChat: React.FC = () => {
     });
   };
 
+  const activateGarimpoMode = () => {
+    setGarimpoMode(true);
+    toast({
+      title: '🔍 Modo Garimpo Ativado',
+      description: 'A IA buscará produtos automaticamente na Vinted',
+    });
+  };
+
   const sendMessage = async () => {
     if (!input.trim() && !imagePreview) return;
     if (!user) {
@@ -165,6 +287,14 @@ const WolfChat: React.FC = () => {
     if (!convId) {
       convId = await createNewConversation();
       if (!convId) return;
+    }
+
+    // Preparar mensagem com contexto de garimpo se ativado
+    let messageContent = input;
+    if (garimpoMode && imagePreview) {
+      messageContent = `${input || 'Analise esta imagem'} - MODO GARIMPO ATIVO - busque produtos similares`;
+    } else if (garimpoMode && !imagePreview) {
+      messageContent = `${input} - faz o garimpo`;
     }
 
     const userMessage: Message = {
@@ -187,12 +317,12 @@ const WolfChat: React.FC = () => {
     }
 
     try {
-      const messageContent = imagePreview 
+      const finalContent = imagePreview 
         ? [
-            { type: 'text', text: input || 'Analise esta imagem de produto para importação' },
+            { type: 'text', text: messageContent || 'Analise esta imagem de produto para importação' },
             { type: 'image_url', image_url: { url: imagePreview } }
           ]
-        : input;
+        : messageContent;
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wolf-chat`, {
         method: 'POST',
@@ -201,9 +331,10 @@ const WolfChat: React.FC = () => {
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: messageContent }],
+          messages: [{ role: 'user', content: finalContent }],
           conversationId: convId,
-          userId: user.id
+          userId: user.id,
+          enabledSources
         }),
       });
 
@@ -254,7 +385,7 @@ const WolfChat: React.FC = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] gap-3 relative max-w-4xl mx-auto w-full">
+    <div className="flex h-[calc(100vh-12rem)] gap-3 relative max-w-4xl mx-auto w-full pb-[120px]">
       {/* Mobile Menu Button */}
       <Button
         variant="outline"
@@ -315,6 +446,52 @@ const WolfChat: React.FC = () => {
             🐺 Lobo das Importações
           </h2>
           <p className="text-sm text-muted-foreground mt-1">Seu especialista em vendas e importação</p>
+          
+          {/* Garimpo Mode Indicator */}
+          {garimpoMode && (
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <Badge className="bg-accent text-accent-foreground animate-pulse">
+                <Search className="w-3 h-3 mr-1" />
+                Modo Garimpo Ativo
+              </Badge>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setGarimpoMode(false)}
+                className="text-xs h-6"
+              >
+                Desativar
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Source Toggles */}
+        <div className="px-4 py-2 border-b border-border bg-muted/50 flex items-center justify-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Switch 
+              id="vinted" 
+              checked={enabledSources.vinted}
+              onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, vinted: checked }))}
+            />
+            <label htmlFor="vinted" className="text-xs font-medium cursor-pointer">Vinted</label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch 
+              id="yupoo" 
+              checked={enabledSources.yupoo}
+              onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, yupoo: checked }))}
+            />
+            <label htmlFor="yupoo" className="text-xs font-medium cursor-pointer">Yupoo</label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch 
+              id="alibaba1688" 
+              checked={enabledSources.alibaba1688}
+              onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, alibaba1688: checked }))}
+            />
+            <label htmlFor="alibaba1688" className="text-xs font-medium cursor-pointer">1688</label>
+          </div>
         </div>
 
         {/* Messages */}
@@ -329,14 +506,25 @@ const WolfChat: React.FC = () => {
                 <p className="text-sm mt-2 max-w-sm mx-auto">
                   Envie uma foto de um produto ou me pergunte qualquer coisa sobre importação!
                 </p>
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={activateGarimpoMode}
+                    className="text-xs"
+                  >
+                    <Search className="w-3 h-3 mr-1" />
+                    Ativar Modo Garimpo
+                  </Button>
+                </div>
                 <p className="text-xs mt-4 text-muted-foreground/70">
-                  💡 Dica: Digite "modo garimpo" para ativar a busca automática de produtos!
+                  💡 Dica: Envie uma foto + ative o garimpo para buscar produtos similares!
                 </p>
               </div>
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-                <div className={`max-w-[85%] md:max-w-[80%] rounded-2xl p-4 ${
+                <div className={`max-w-[90%] md:max-w-[85%] rounded-2xl p-4 ${
                   msg.role === 'user' 
                     ? 'bg-primary text-primary-foreground' 
                     : 'bg-muted text-foreground'
@@ -344,7 +532,9 @@ const WolfChat: React.FC = () => {
                   {msg.image_url && (
                     <img src={msg.image_url} alt="Uploaded" className="max-w-full rounded-xl mb-3 max-h-48 object-contain" />
                   )}
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{renderMessageContent(msg.content)}</p>
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {renderMessageContent(msg.content)}
+                  </div>
                 </div>
               </div>
             ))}
@@ -366,11 +556,22 @@ const WolfChat: React.FC = () => {
                 <X className="h-3 w-3" />
               </Button>
             </div>
+            {!garimpoMode && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={activateGarimpoMode}
+                className="ml-2 text-xs"
+              >
+                <Search className="w-3 h-3 mr-1" />
+                Garimpar Similar
+              </Button>
+            )}
           </div>
         )}
 
         {/* Input Area */}
-        <div className="p-4 border-t border-border bg-card">
+        <div className="p-4 border-t border-border bg-card relative z-[1000]">
           <div className="flex gap-3">
             <input
               type="file"
@@ -390,7 +591,7 @@ const WolfChat: React.FC = () => {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Digite sua mensagem..."
+              placeholder={garimpoMode ? "Descreva o produto ou envie foto..." : "Digite sua mensagem..."}
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
               disabled={isLoading}
               className="flex-1 rounded-xl border-border focus-visible:ring-primary"
