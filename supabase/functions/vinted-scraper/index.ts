@@ -44,8 +44,13 @@ function calculateSimilarityScore(title: string, keywords: string[]): number {
   let score = 0;
   
   for (const keyword of keywords) {
-    if (titleLower.includes(keyword.toLowerCase())) {
+    const keywordLower = keyword.toLowerCase();
+    if (titleLower.includes(keywordLower)) {
       score += 10;
+      // Bonus for longer keyword matches
+      if (keywordLower.length > 5) {
+        score += 5;
+      }
     }
   }
   
@@ -58,7 +63,7 @@ function calculateSimilarityScore(title: string, keywords: string[]): number {
   return score;
 }
 
-// Extrair produtos do HTML usando regex (mais resiliente)
+// Extrair produtos do markdown/HTML
 function extractProductsFromMarkdown(markdown: string, domain: string, keywords: string[]): VintedProduct[] {
   const products: VintedProduct[] = [];
   
@@ -69,30 +74,52 @@ function extractProductsFromMarkdown(markdown: string, domain: string, keywords:
   // Remover duplicatas
   const uniqueLinks = [...new Set(links)];
   
-  for (const link of uniqueLinks.slice(0, 20)) {
-    // Extrair informações básicas do contexto
+  // Tentar extrair imagens
+  const imagePattern = /https?:\/\/[^\s"'\)]+\.(jpg|jpeg|png|webp)[^\s"'\)]*/gi;
+  const allImages = markdown.match(imagePattern) || [];
+  
+  for (const link of uniqueLinks.slice(0, 25)) {
+    // Limpar o link
+    const cleanLink = link.replace(/[\)\]"]+$/, '').trim();
+    
+    // Extrair informações do contexto
     const linkIndex = markdown.indexOf(link);
-    const context = markdown.substring(Math.max(0, linkIndex - 200), Math.min(markdown.length, linkIndex + 200));
+    const context = markdown.substring(Math.max(0, linkIndex - 300), Math.min(markdown.length, linkIndex + 300));
     
     // Tentar extrair título
-    const titleMatch = context.match(/\[([^\]]+)\]\([^\)]*vinted/i) || 
-                       context.match(/([A-Z][^.!?\n]{10,60})/);
-    const titulo = titleMatch ? titleMatch[1].trim() : 'Produto Vinted';
+    const titleMatch = context.match(/\[([^\]]{5,80})\]\([^\)]*vinted/i) || 
+                       context.match(/title[=:]["']([^"']{5,80})["']/i) ||
+                       context.match(/>([A-Z][^<]{10,60})</);
+    const titulo = titleMatch ? titleMatch[1].trim().substring(0, 60) : 'Produto Vinted';
     
     // Tentar extrair preço
-    const priceMatch = context.match(/(\d+[.,]\d{2})\s*[€$£]|[€$£]\s*(\d+[.,]\d{2})/);
-    const preco = priceMatch ? (priceMatch[1] || priceMatch[2]) + '€' : 'Ver preço';
+    const priceMatch = context.match(/(\d{1,3}[.,]\d{2})\s*[€$£]|[€$£]\s*(\d{1,3}[.,]\d{2})|(\d{1,3})\s*€/);
+    const preco = priceMatch ? (priceMatch[1] || priceMatch[2] || priceMatch[3]) + '€' : 'Ver preço';
+    
+    // Tentar extrair imagem próxima ao link
+    let imagem = '';
+    const nearbyImages = allImages.filter(img => {
+      const imgIndex = markdown.indexOf(img);
+      return Math.abs(imgIndex - linkIndex) < 500;
+    });
+    if (nearbyImages.length > 0) {
+      imagem = nearbyImages[0];
+    }
     
     // Calcular score
     const score = calculateSimilarityScore(titulo, keywords);
     
+    // Extrair país do domínio
+    const countryMatch = domain.match(/vinted\.([a-z.]+)/i);
+    const pais = countryMatch ? countryMatch[1].replace('.', '').toUpperCase() : 'EU';
+    
     products.push({
-      link: link.replace(/[\)\]"]+$/, ''), // Limpar caracteres no final
+      link: cleanLink,
       titulo,
       preco,
-      imagem: '',
+      imagem,
       vendedor: '',
-      pais: domain.replace('vinted.', '').toUpperCase(),
+      pais,
       score
     });
   }
@@ -131,6 +158,8 @@ serve(async (req) => {
     // Buscar em múltiplos domínios da Vinted
     const domainsToSearch = VINTED_DOMAINS.slice(0, maxDomains);
     
+    console.log(`Starting search for: "${searchQuery}" in ${domainsToSearch.length} domains`);
+    
     const searchPromises = domainsToSearch.map(async ({ domain, country }) => {
       try {
         const searchUrl = `https://www.${domain}/catalog?search_text=${encodeURIComponent(searchQuery)}`;
@@ -158,15 +187,23 @@ serve(async (req) => {
 
         const data = await response.json();
         
-        if (data.success && data.markdown) {
-          const products = extractProductsFromMarkdown(data.markdown, domain, keywords);
+        if (data.success) {
+          let products: VintedProduct[] = [];
+          
+          // Extrair do markdown
+          if (data.data?.markdown || data.markdown) {
+            const markdown = data.data?.markdown || data.markdown;
+            products = extractProductsFromMarkdown(markdown, domain, keywords);
+          }
           
           // Adicionar links extras se disponíveis
-          if (data.links && Array.isArray(data.links)) {
-            for (const link of data.links) {
-              if (link.includes('/items/') && !products.some(p => p.link === link)) {
+          const links = data.data?.links || data.links || [];
+          if (Array.isArray(links)) {
+            for (const link of links) {
+              const linkUrl = typeof link === 'string' ? link : link?.url;
+              if (linkUrl && linkUrl.includes('/items/') && !products.some(p => p.link === linkUrl)) {
                 products.push({
-                  link,
+                  link: linkUrl,
                   titulo: 'Produto Vinted',
                   preco: 'Ver preço',
                   imagem: '',
@@ -178,7 +215,11 @@ serve(async (req) => {
             }
           }
           
-          domainsSearched.push(domain);
+          if (products.length > 0) {
+            domainsSearched.push(domain);
+          }
+          
+          console.log(`Found ${products.length} products in ${domain}`);
           return { domain, products };
         }
         
@@ -204,11 +245,19 @@ serve(async (req) => {
       return acc;
     }, [] as VintedProduct[]);
     
-    // Ordenar por score (maior primeiro) e depois por país
-    uniqueProducts.sort((a, b) => b.score - a.score);
+    // Ordenar por score (maior primeiro) e depois por preço
+    uniqueProducts.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      // Se scores iguais, ordenar por preço (menor primeiro)
+      const priceA = parseFloat(a.preco.replace(/[^0-9.,]/g, '').replace(',', '.')) || 999;
+      const priceB = parseFloat(b.preco.replace(/[^0-9.,]/g, '').replace(',', '.')) || 999;
+      return priceA - priceB;
+    });
     
     // Limitar a 30 resultados
     const finalProducts = uniqueProducts.slice(0, 30);
+
+    console.log(`Total unique products found: ${finalProducts.length}`);
 
     const result: ScrapeResult = {
       success: true,

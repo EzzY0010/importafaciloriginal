@@ -10,6 +10,7 @@ import LanguageSelector from "@/components/LanguageSelector";
 import WolfChat from "@/components/WolfChat";
 import ImportCalculator from "@/components/ImportCalculator";
 import PaymentButton from "@/components/PaymentButton";
+import SpotifyPlayer from "@/components/SpotifyPlayer";
 
 const Dashboard = () => {
   const { user, isAdmin, hasPaid, signOut, loading, refreshPaymentStatus } = useAuth();
@@ -100,7 +101,7 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 pb-32">
         <div className="max-w-5xl mx-auto">
           {hasAccess ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -146,6 +147,9 @@ const Dashboard = () => {
           )}
         </div>
       </main>
+
+      {/* Spotify Player */}
+      {hasAccess && <SpotifyPlayer />}
     </div>
   );
 };

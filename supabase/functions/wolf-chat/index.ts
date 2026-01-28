@@ -60,7 +60,9 @@ Quando não houver novidades:
 Quando receber uma imagem, SEMPRE forneça:
 
 1️⃣ **IDENTIFICAÇÃO COMPLETA**
-   → Tipo de produto, marca (se visível), modelo, estilo
+   → Tipo de produto, marca (se visível), modelo ESPECÍFICO, estilo
+   → Seja PRECISO: "Lacoste 5-panel azul marinho" vs "Lacoste Heritage bege"
+   → Descreva DETALHES únicos: bordados, cores, padrões, materiais
    
 2️⃣ **ESPECIFICAÇÕES TÉCNICAS**
    → Peso estimado, materiais, dimensões aproximadas
@@ -118,8 +120,15 @@ Você possui DOIS MODOS de operação: NORMAL e GARIMPO.
 - "acha igual"
 - "procure esse produto"
 - "garimpo"
+- "garimpar similar"
 
-🔸 QUANDO O MODO GARIMPO ESTIVER ATIVO E VOCÊ RECEBER DADOS DO SCRAPER:
+🔸 QUANDO ANALISAR IMAGEM COM GARIMPO ATIVO:
+1. PRIMEIRO: Identifique o produto com MÁXIMA PRECISÃO
+2. Extraia características ÚNICAS (cor exata, modelo, detalhes)
+3. Diferencie variações: "5-panel azul" vs "Heritage bege"
+4. Gere keywords ESPECÍFICAS para busca precisa
+
+🔸 QUANDO RECEBER DADOS DO SCRAPER:
 1. Você receberá dados JSON do scraper da Vinted com produtos reais
 2. Apresente os resultados de forma ORGANIZADA e ATRAENTE
 3. Use este formato para cada produto encontrado:
@@ -155,6 +164,29 @@ Você possui DOIS MODOS de operação: NORMAL e GARIMPO.
 Quando voltar, confirme: "🐺 Modo garimpo desativado. Voltei ao modo normal!"
 
 ═══════════════════════════════════════════════════════════════
+🏪 CANAIS DE BUSCA DISPONÍVEIS
+═══════════════════════════════════════════════════════════════
+
+**VINTED** — Foco em roupas, bonés, acessórios de moda
+→ Europa inteira, produtos usados de qualidade
+→ Ideal para: marcas de luxo, streetwear, vintage
+
+**YUPOO** — Catálogos de réplicas de alta qualidade
+→ Focado em réplicas premium AAA
+→ Ideal para: roupas de marca, acessórios de luxo, sneakers
+→ Dica: Sempre negocie via WeChat ou WhatsApp dos vendedores
+
+**1688 (Alibaba China)** — Atacado chinês direto da fábrica
+→ Preços imbatíveis para volumes maiores
+→ Ideal para: eletrônicos, utensílios domésticos, ferramentas, itens gerais
+→ Dica: Use agentes como CSSBuy ou Superbuy para comprar
+
+⚠️ IMPORTANTE: 
+- Mencione Yupoo APENAS quando o usuário buscar réplicas ou ativar o toggle
+- Mencione 1688 APENAS para eletrônicos/utensílios ou quando ativado
+- Dê insights sobre cada canal DINAMICAMENTE baseado no que o usuário busca
+
+═══════════════════════════════════════════════════════════════
 🎯 REGRAS FUNDAMENTAIS
 ═══════════════════════════════════════════════════════════════
 ✅ Seja EXTREMAMENTE útil e informativo
@@ -178,7 +210,9 @@ const GARIMPO_TRIGGERS = [
   'procure esse produto',
   'garimpo',
   'faz garimpo',
-  'fazer garimpo'
+  'fazer garimpo',
+  'garimpar similar',
+  'modo garimpo ativo'
 ];
 
 // Detectar se é mensagem de garimpo
@@ -204,9 +238,16 @@ function extractKeywordsFromContext(messages: any[]): string[] {
     }
     
     // Tentar extrair termos genéricos se não encontrar formato específico
-    const productMatch = content.match(/(?:produto|item|peça|roupa|boné|tênis|jaqueta|camiseta):\s*([^\n]+)/gi);
+    const productMatch = content.match(/(?:produto|item|peça|roupa|boné|tênis|jaqueta|camiseta|cap|hat|jacket):\s*([^\n]+)/gi);
     if (productMatch) {
       const terms = productMatch.flatMap((m: string) => m.split(':')[1]?.split(/[,;]+/) || []);
+      return terms.map((k: string) => k.trim()).filter((k: string) => k.length > 2);
+    }
+    
+    // Procurar por identificação de marca/modelo
+    const brandMatch = content.match(/(?:marca|brand|modelo|model):\s*([^\n]+)/gi);
+    if (brandMatch) {
+      const terms = brandMatch.flatMap((m: string) => m.split(':')[1]?.split(/[,;]+/) || []);
       return terms.map((k: string) => k.trim()).filter((k: string) => k.length > 2);
     }
   }
@@ -250,7 +291,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversationId, userId } = await req.json();
+    const { messages, conversationId, userId, enabledSources } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -292,6 +333,10 @@ serve(async (req) => {
       ? lastUserMessage.content 
       : lastUserMessage.content?.find((c: any) => c.type === 'text')?.text || '';
     
+    // Verificar se há imagem na mensagem atual
+    const hasImageInCurrentMessage = Array.isArray(lastUserMessage.content) && 
+      lastUserMessage.content.some((c: any) => c.type === 'image_url');
+    
     let scraperResults = null;
     
     if (isGarimpoRequest(userMessageText)) {
@@ -304,7 +349,7 @@ serve(async (req) => {
       if (keywords.length === 0) {
         // Extrair palavras relevantes da mensagem (excluindo triggers)
         const cleanedMessage = userMessageText.toLowerCase()
-          .replace(/ativar modo garimpo|modo garimpo|faz o garimpo|buscar na vinted|acha igual|procure esse produto|garimpo/gi, '')
+          .replace(/ativar modo garimpo|modo garimpo|faz o garimpo|buscar na vinted|acha igual|procure esse produto|garimpo|garimpar similar/gi, '')
           .trim();
         
         if (cleanedMessage.length > 3) {
@@ -312,30 +357,36 @@ serve(async (req) => {
         }
       }
       
-      // Se ainda não tem keywords, verificar se tem imagem na conversa
-      if (keywords.length === 0) {
-        // Verificar última imagem enviada
-        const hasImageInConversation = conversationHistory.some(m => 
-          m.role === 'user' && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url')
-        ) || messages.some((m: any) => 
-          m.role === 'user' && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url')
-        );
-        
-        if (hasImageInConversation) {
-          // Pedir para a IA analisar primeiro
-          console.log('Image found but no keywords extracted yet - AI will analyze first');
-        }
+      // Se ainda não tem keywords e tem imagem, forçar análise da imagem primeiro
+      if (keywords.length === 0 && (hasImageInCurrentMessage || conversationHistory.some(m => 
+        m.role === 'user' && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url')
+      ))) {
+        console.log('Image found but no keywords - AI will analyze first and extract keywords');
+        // A IA vai analisar a imagem e extrair keywords específicas
       }
       
-      if (keywords.length > 0) {
+      if (keywords.length > 0 && enabledSources?.vinted !== false) {
         console.log('Searching Vinted with keywords:', keywords);
         scraperResults = await callVintedScraper(keywords);
       }
     }
 
+    // Adicionar contexto sobre fontes habilitadas
+    let sourcesContext = '';
+    if (enabledSources) {
+      const activeSources = [];
+      if (enabledSources.vinted) activeSources.push('Vinted');
+      if (enabledSources.yupoo) activeSources.push('Yupoo (réplicas premium)');
+      if (enabledSources.alibaba1688) activeSources.push('1688 (atacado chinês)');
+      
+      if (activeSources.length > 0) {
+        sourcesContext = `\n[FONTES ATIVAS]: ${activeSources.join(', ')}. Priorize sugestões dessas plataformas quando relevante.`;
+      }
+    }
+
     // Build messages array
     let apiMessages = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: SYSTEM_PROMPT + sourcesContext },
       ...conversationHistory,
       ...messages
     ];
@@ -350,6 +401,7 @@ INSTRUÇÕES: Você recebeu resultados reais do scraper da Vinted acima.
 Apresente esses produtos de forma BONITA e ORGANIZADA ao usuário.
 Foram buscados ${scraperResults.totalSearched} países: ${scraperResults.domainsSearched?.join(', ')}.
 Total de ${scraperResults.products.length} produtos encontrados.
+MOSTRE OS LINKS DIRETOS para cada produto!
 `;
       
       // Adicionar como mensagem do sistema adicional
