@@ -35,60 +35,79 @@ Exemplos do seu estilo:
 • Estratégias de consolidação de frete
 
 ═══════════════════════════════════════════════════════════════
-📸 ANÁLISE DE IMAGENS DE PRODUTOS
+📸 ANÁLISE DE IMAGENS - VISÃO COMPUTACIONAL
 ═══════════════════════════════════════════════════════════════
-Quando receber uma imagem, analisa assim:
+Quando receber uma imagem, SEMPRE execute estas etapas:
 
-1️⃣ **IDENTIFICAÇÃO RÁPIDA**
-   → Produto, marca, modelo ESPECÍFICO
-   → Diferencia variações: "Lacoste 5-panel azul" vs "Heritage bege"
+1️⃣ **CLASSIFICAÇÃO AUTOMÁTICA DE CATEGORIA**
+   → Identifique a categoria EXATA do produto:
+   - Tênis/Sneakers
+   - Boné/Cap
+   - Relógio/Watch
+   - Jaqueta/Jacket
+   - Camiseta/T-Shirt
+   - Celular/Phone
+   - Eletrônico/Electronic
+   - Bolsa/Bag
+   - Acessório/Accessory
    
-2️⃣ **SPECS TÉCNICAS**
+2️⃣ **IDENTIFICAÇÃO ESPECÍFICA DO MODELO**
+   → Produto, marca, modelo ESPECÍFICO, COR, VARIANTE
+   → Diferencia variações: "Nike Air Max 90 Triple White" vs "Nike Air Max 90 Infrared"
+   → Diferencia: "Lacoste 5-panel azul marinho" vs "Lacoste Heritage bege"
+   
+3️⃣ **DICIONÁRIO MULTILÍNGUE DE BUSCA**
+   OBRIGATÓRIO retornar termos em TODOS estes idiomas:
+   
+   🇧🇷 **PORTUGUÊS:** [termo1], [termo2], [termo3]
+   🇺🇸 **INGLÊS:** [term1], [term2], [term3]
+   🇪🇸 **ESPANHOL:** [término1], [término2]
+   🇫🇷 **FRANCÊS:** [terme1], [terme2]
+   🇩🇪 **ALEMÃO:** [begriff1], [begriff2]
+   
+   EXEMPLOS DE TRADUÇÃO:
+   - Boné → Cap (EN) → Casquette (FR) → Gorra (ES) → Mütze (DE)
+   - Tênis → Sneakers (EN) → Baskets (FR) → Zapatillas (ES) → Turnschuhe (DE)
+   - Relógio → Watch (EN) → Montre (FR) → Reloj (ES) → Uhr (DE)
+   - Jaqueta → Jacket (EN) → Veste (FR) → Chaqueta (ES) → Jacke (DE)
+   - Bolsa → Bag (EN) → Sac (FR) → Bolso (ES) → Tasche (DE)
+
+4️⃣ **SPECS TÉCNICAS**
    → Peso estimado, material, condição típica
-   
-3️⃣ **KEYWORDS PRA BUSCA** (multi-idioma):
-   🇧🇷 PT | 🇺🇸 EN | 🇪🇸 ES | 🇫🇷 FR | 🇩🇪 DE
 
-4️⃣ **PREÇO BRASIL** → Quanto sai por aqui
+5️⃣ **PREÇO BRASIL** → Quanto sai por aqui
 
-5️⃣ **ESTRATÉGIA DE DECLARAÇÃO**
+6️⃣ **ESTRATÉGIA DE DECLARAÇÃO**
    → Sugere declarar ~10% do valor pago
    → Lembra: imposto 60% incide sobre valor DECLARADO
 
-6️⃣ **ONDE COMPRAR:**
-
-**🛒 PLATAFORMAS DE COMPRA:**
-- [Vinted](https://www.vinted.com) — Europa, roupas usadas
-- [eBay](https://www.ebay.com) — Mundial, de tudo
-- [Wallapop](https://www.wallapop.com) — Espanha, iPhones e eletrônicos com preços matadores
-- [Milanuncios](https://www.milanuncios.com) — A OLX da Espanha, classificados gerais
-- [Vestiaire Collective](https://www.vestiairecollective.com) — Luxo autenticado EUA/Europa
-- [Xianyu](https://www.goofish.com) — China, usados premium
-- [Taobao](https://world.taobao.com) — China, preços insanos
-
-**📦 REDIRECIONADORAS:**
-- [Redirect Europa](https://redirecteuropa.com) — Europa pra BR
-- [CSSBuy](https://www.cssbuy.com) — China pra BR
-- [WeZip4U](https://wezip4u.com) — EUA, suporte WhatsApp em português, ideal pra primeira importação
-- [Zip4Me](https://zip4me.com) — Oregon/EUA, isenção total de Sales Tax, maximiza lucro
-
 ═══════════════════════════════════════════════════════════════
-💰 TRIBUTAÇÃO BR (RESUMÃO)
-═══════════════════════════════════════════════════════════════
-• Imposto: 60% sobre valor DECLARADO + frete
-• Isenção: até US$50 pessoa física pra pessoa física
-• Fórmula: (Declarado + Frete) × 1.60 = Custo Total
-
-═══════════════════════════════════════════════════════════════
-🟧 MODO GARIMPO
+🟧 MODO GARIMPO - BUSCA INTELIGENTE
 ═══════════════════════════════════════════════════════════════
 Ativa quando ouvir: "garimpo", "acha igual", "buscar", "procura isso"
 
-QUANDO RECEBER [SCRAPER_RESULTS]:
-• Apresenta os produtos de forma LIMPA
-• Formato: **Produto** - [Link](URL) | 💰 Preço | 🌍 País
+**QUANDO TEM IMAGEM + GARIMPO:**
+1. PRIMEIRO analise a imagem completamente
+2. Identifique CATEGORIA + MODELO ESPECÍFICO + COR
+3. Gere keywords em MÚLTIPLOS idiomas
+4. Retorne os termos de busca otimizados
+
+**QUANDO RECEBER [SCRAPER_RESULTS]:**
+APRESENTE OS PRODUTOS ASSIM (OBRIGATÓRIO):
+
+Para cada produto, mostre:
+**[Título Original do Anúncio]**
+💰 Preço | 🌍 País
+[Link direto para o produto](URL)
+
+EXEMPLO:
+**Lacoste Cap Blue 5-Panel Vintage**
+💰 25€ | 🌍 FR
+[Ver na Vinted](https://www.vinted.fr/items/12345)
+
+• NUNCA mostre "Produto Vinted" genérico - USE O TÍTULO REAL
+• NUNCA mostre JSON bruto
 • Dicas rápidas no final
-• NUNCA mostra JSON bruto
 
 ═══════════════════════════════════════════════════════════════
 🏪 CANAIS DISPONÍVEIS
@@ -142,6 +161,7 @@ Agente de compras, paga e envia tudo junto
 ✅ Termina com call to action
 ✅ Entende termos técnicos em inglês
 ✅ Dá insights sobre cada canal quando relevante
+✅ USA O TÍTULO REAL dos produtos do scraper, NUNCA genérico
 
 Bora que o jogo é esse 🐺`;
 
@@ -157,8 +177,62 @@ const GARIMPO_TRIGGERS = [
   'faz garimpo',
   'fazer garimpo',
   'garimpar similar',
-  'modo garimpo ativo'
+  'modo garimpo ativo',
+  'busque produtos similares'
 ];
+
+// Categorias de produtos com traduções
+const CATEGORY_TRANSLATIONS: Record<string, Record<string, string[]>> = {
+  bone: {
+    pt: ['boné', 'cap', 'chapéu', 'gorro'],
+    en: ['cap', 'hat', 'snapback', 'fitted', 'beanie'],
+    fr: ['casquette', 'chapeau', 'bonnet'],
+    es: ['gorra', 'sombrero', 'gorro'],
+    de: ['mütze', 'kappe', 'hut']
+  },
+  tenis: {
+    pt: ['tênis', 'sneaker', 'calçado'],
+    en: ['sneakers', 'shoes', 'trainers', 'kicks'],
+    fr: ['baskets', 'chaussures', 'sneakers'],
+    es: ['zapatillas', 'tenis', 'deportivas'],
+    de: ['turnschuhe', 'sneaker', 'schuhe']
+  },
+  relogio: {
+    pt: ['relógio', 'watch'],
+    en: ['watch', 'timepiece', 'wristwatch'],
+    fr: ['montre', 'horloge'],
+    es: ['reloj'],
+    de: ['uhr', 'armbanduhr']
+  },
+  jaqueta: {
+    pt: ['jaqueta', 'casaco', 'jacket'],
+    en: ['jacket', 'coat', 'bomber', 'windbreaker'],
+    fr: ['veste', 'blouson', 'manteau'],
+    es: ['chaqueta', 'cazadora', 'abrigo'],
+    de: ['jacke', 'mantel']
+  },
+  camiseta: {
+    pt: ['camiseta', 'camisa', 'blusa'],
+    en: ['t-shirt', 'tee', 'shirt', 'top'],
+    fr: ['t-shirt', 'maillot', 'haut'],
+    es: ['camiseta', 'remera', 'playera'],
+    de: ['t-shirt', 'hemd', 'oberteil']
+  },
+  celular: {
+    pt: ['celular', 'smartphone', 'iphone', 'telefone'],
+    en: ['phone', 'smartphone', 'iphone', 'mobile', 'cell'],
+    fr: ['téléphone', 'portable', 'smartphone'],
+    es: ['móvil', 'celular', 'teléfono', 'smartphone'],
+    de: ['handy', 'smartphone', 'telefon']
+  },
+  bolsa: {
+    pt: ['bolsa', 'mochila', 'bag'],
+    en: ['bag', 'backpack', 'purse', 'handbag'],
+    fr: ['sac', 'sac à dos', 'pochette'],
+    es: ['bolso', 'mochila', 'cartera'],
+    de: ['tasche', 'rucksack', 'handtasche']
+  }
+};
 
 // Detectar se é mensagem de garimpo
 function isGarimpoRequest(message: string): boolean {
@@ -168,7 +242,6 @@ function isGarimpoRequest(message: string): boolean {
 
 // Extrair keywords da mensagem ou da análise de imagem anterior
 function extractKeywordsFromContext(messages: any[]): string[] {
-  // Procurar pela última resposta da IA que contenha análise de produto
   const assistantMessages = messages.filter(m => m.role === 'assistant');
   
   for (let i = assistantMessages.length - 1; i >= 0; i--) {
@@ -176,21 +249,37 @@ function extractKeywordsFromContext(messages: any[]): string[] {
       ? assistantMessages[i].content 
       : assistantMessages[i].content?.[0]?.text || '';
     
-    // Procurar por palavras-chave em inglês (padrão mais comum)
-    const englishMatch = content.match(/🇺🇸\s*Inglês:?\s*([^\n]+)/i);
-    if (englishMatch) {
-      return englishMatch[1].split(/[,;]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 2);
+    // Procurar por keywords em diferentes idiomas
+    const keywordPatterns = [
+      /🇺🇸\s*\*?\*?(?:INGLÊS|Inglês|EN|English):?\*?\*?\s*([^\n]+)/i,
+      /🇫🇷\s*\*?\*?(?:FRANCÊS|Francês|FR|French):?\*?\*?\s*([^\n]+)/i,
+      /🇪🇸\s*\*?\*?(?:ESPANHOL|Espanhol|ES|Spanish):?\*?\*?\s*([^\n]+)/i,
+      /🇩🇪\s*\*?\*?(?:ALEMÃO|Alemão|DE|German):?\*?\*?\s*([^\n]+)/i,
+      /🇧🇷\s*\*?\*?(?:PORTUGUÊS|Português|PT|Portuguese):?\*?\*?\s*([^\n]+)/i,
+    ];
+    
+    const allKeywords: string[] = [];
+    
+    for (const pattern of keywordPatterns) {
+      const match = content.match(pattern);
+      if (match) {
+        const terms = match[1]
+          .split(/[,;|]+/)
+          .map((k: string) => k.replace(/[\[\]"']/g, '').trim())
+          .filter((k: string) => k.length > 2 && !k.startsWith('*'));
+        allKeywords.push(...terms);
+      }
     }
     
-    // Tentar extrair termos genéricos se não encontrar formato específico
-    const productMatch = content.match(/(?:produto|item|peça|roupa|boné|tênis|jaqueta|camiseta|cap|hat|jacket):\s*([^\n]+)/gi);
-    if (productMatch) {
-      const terms = productMatch.flatMap((m: string) => m.split(':')[1]?.split(/[,;]+/) || []);
-      return terms.map((k: string) => k.trim()).filter((k: string) => k.length > 2);
+    if (allKeywords.length > 0) {
+      // Pegar os termos mais específicos (mais longos geralmente são mais específicos)
+      return [...new Set(allKeywords)]
+        .sort((a, b) => b.length - a.length)
+        .slice(0, 5);
     }
     
-    // Procurar por identificação de marca/modelo
-    const brandMatch = content.match(/(?:marca|brand|modelo|model):\s*([^\n]+)/gi);
+    // Fallback: procurar por identificação de marca/modelo
+    const brandMatch = content.match(/(?:marca|brand|modelo|model|produto|product):\s*([^\n]+)/gi);
     if (brandMatch) {
       const terms = brandMatch.flatMap((m: string) => m.split(':')[1]?.split(/[,;]+/) || []);
       return terms.map((k: string) => k.trim()).filter((k: string) => k.length > 2);
@@ -200,12 +289,12 @@ function extractKeywordsFromContext(messages: any[]): string[] {
   return [];
 }
 
-// Chamar o scraper da Vinted
-async function callVintedScraper(keywords: string[]): Promise<any> {
+// Chamar o scraper da Vinted com keywords otimizadas
+async function callVintedScraper(keywords: string[], category?: string): Promise<any> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   
   try {
-    console.log('Calling Vinted scraper with keywords:', keywords);
+    console.log('Calling Vinted scraper with keywords:', keywords, 'category:', category);
     
     const response = await fetch(`${supabaseUrl}/functions/v1/vinted-scraper`, {
       method: 'POST',
@@ -214,7 +303,8 @@ async function callVintedScraper(keywords: string[]): Promise<any> {
       },
       body: JSON.stringify({ 
         keywords,
-        maxDomains: 8 // Buscar em mais países
+        category,
+        maxDomains: 8
       }),
     });
     

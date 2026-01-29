@@ -8,7 +8,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import LanguageSelector from "@/components/LanguageSelector";
 import WolfChat from "@/components/WolfChat";
-import ImportCalculator from "@/components/ImportCalculator";
+import AdvancedPricingCalculator from "@/components/AdvancedPricingCalculator";
 import PaymentButton from "@/components/PaymentButton";
 import SpotifyPlayer from "@/components/SpotifyPlayer";
 
@@ -129,7 +129,7 @@ const Dashboard = () => {
 
               <TabsContent value="calculator" className="mt-0 animate-fade-in">
                 <div className="flex justify-center">
-                  <ImportCalculator />
+                  <AdvancedPricingCalculator />
                 </div>
               </TabsContent>
             </Tabs>
