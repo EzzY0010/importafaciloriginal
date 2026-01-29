@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, TrendingUp, AlertCircle } from 'lucide-react';
 
 interface ExchangeRates {
   USD: number;
@@ -19,6 +19,7 @@ const ImportCalculator: React.FC = () => {
   const [productValue, setProductValue] = useState<string>('');
   const [shippingCost, setShippingCost] = useState<string>('');
   const [declaredValue, setDeclaredValue] = useState<string>('');
+  const [salePrice, setSalePrice] = useState<string>('');
 
   const fetchRates = async () => {
     try {
@@ -51,6 +52,7 @@ const ImportCalculator: React.FC = () => {
   const product = parseFloat(productValue) || 0;
   const shipping = parseFloat(shippingCost) || 0;
   const declared = parseFloat(declaredValue) || 0;
+  const sale = parseFloat(salePrice) || 0;
   
   // Convert everything to BRL for display
   const productInUSD = convertToUSD(product, currency);
@@ -64,6 +66,10 @@ const ImportCalculator: React.FC = () => {
   // Tax is 60% of DECLARED value only
   const taxBRL = declaredInBRL * 0.60;
   const totalCostBRL = productInBRL + shippingInBRL + taxBRL;
+
+  // Profit calculations
+  const profitBRL = sale > 0 ? sale - totalCostBRL : 0;
+  const roiPercent = totalCostBRL > 0 && sale > 0 ? ((profitBRL / totalCostBRL) * 100) : 0;
 
   // Calculate EUR to BRL rate correctly (how many BRL for 1 EUR)
   const eurToBrl = rates.BRL / rates.EUR;
@@ -149,6 +155,21 @@ const ImportCalculator: React.FC = () => {
           />
         </div>
 
+        {/* Sale Price - NEW */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-accent" />
+            Preço de Venda Final (R$)
+          </Label>
+          <Input
+            type="number"
+            step="0.01"
+            placeholder="0.00"
+            value={salePrice}
+            onChange={(e) => setSalePrice(e.target.value)}
+          />
+        </div>
+
         {/* Results */}
         <div className="mt-6 p-4 bg-muted rounded-lg space-y-3">
           <h3 className="font-semibold text-lg">Resumo dos Custos</h3>
@@ -176,6 +197,32 @@ const ImportCalculator: React.FC = () => {
             </div>
           </div>
 
+          {/* Profit Section - NEW */}
+          {sale > 0 && (
+            <div className="border-t pt-3 mt-3 space-y-2">
+              <h4 className="font-semibold flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-accent" />
+                Análise de Lucro
+              </h4>
+              <div className="flex justify-between text-sm">
+                <span>Preço de Venda:</span>
+                <span>R$ {sale.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-bold">
+                <span>Lucro Líquido:</span>
+                <span className={profitBRL >= 0 ? 'text-green-600' : 'text-destructive'}>
+                  R$ {profitBRL.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between font-bold">
+                <span>ROI:</span>
+                <span className={roiPercent >= 0 ? 'text-green-600' : 'text-destructive'}>
+                  {roiPercent.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Conversions */}
           <div className="text-xs text-muted-foreground pt-2 border-t">
             <p>Total em outras moedas:</p>
@@ -183,6 +230,16 @@ const ImportCalculator: React.FC = () => {
               <span>$ {(totalCostBRL / rates.BRL).toFixed(2)} USD</span>
               <span>€ {(totalCostBRL / rates.BRL * rates.EUR).toFixed(2)} EUR</span>
             </div>
+          </div>
+        </div>
+
+        {/* Tip - NEW */}
+        <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              <strong className="text-foreground">Dica:</strong> Use a estratégia de consolidar várias peças no seu endereço dos EUA para baixar o frete unitário
+            </p>
           </div>
         </div>
       </CardContent>
