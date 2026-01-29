@@ -175,6 +175,9 @@ const WolfChat: React.FC = () => {
     vinted: true,
     yupoo: false,
     alibaba1688: false,
+    wallapop: false,
+    milanuncios: false,
+    vestiaire: false,
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -467,30 +470,57 @@ const WolfChat: React.FC = () => {
         </div>
 
         {/* Source Toggles */}
-        <div className="px-4 py-2 border-b border-border bg-muted/50 flex items-center justify-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Switch 
-              id="vinted" 
-              checked={enabledSources.vinted}
-              onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, vinted: checked }))}
-            />
-            <label htmlFor="vinted" className="text-xs font-medium cursor-pointer">Vinted</label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch 
-              id="yupoo" 
-              checked={enabledSources.yupoo}
-              onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, yupoo: checked }))}
-            />
-            <label htmlFor="yupoo" className="text-xs font-medium cursor-pointer">Yupoo</label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch 
-              id="alibaba1688" 
-              checked={enabledSources.alibaba1688}
-              onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, alibaba1688: checked }))}
-            />
-            <label htmlFor="alibaba1688" className="text-xs font-medium cursor-pointer">1688</label>
+        <div className="px-4 py-2 border-b border-border bg-muted/50">
+          <div className="flex items-center justify-center gap-3 flex-wrap mb-2">
+            <span className="text-xs text-muted-foreground font-medium">🛒 Compra:</span>
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="vinted" 
+                checked={enabledSources.vinted}
+                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, vinted: checked }))}
+              />
+              <label htmlFor="vinted" className="text-xs font-medium cursor-pointer" title="Europa - Roupas e acessórios usados">Vinted</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="wallapop" 
+                checked={enabledSources.wallapop}
+                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, wallapop: checked }))}
+              />
+              <label htmlFor="wallapop" className="text-xs font-medium cursor-pointer" title="Espanha - iPhones e eletrônicos">Wallapop</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="milanuncios" 
+                checked={enabledSources.milanuncios}
+                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, milanuncios: checked }))}
+              />
+              <label htmlFor="milanuncios" className="text-xs font-medium cursor-pointer" title="Espanha - OLX espanhola">Milanuncios</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="vestiaire" 
+                checked={enabledSources.vestiaire}
+                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, vestiaire: checked }))}
+              />
+              <label htmlFor="vestiaire" className="text-xs font-medium cursor-pointer" title="EUA/Europa - Luxo autenticado">Vestiaire</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="yupoo" 
+                checked={enabledSources.yupoo}
+                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, yupoo: checked }))}
+              />
+              <label htmlFor="yupoo" className="text-xs font-medium cursor-pointer" title="China - Réplicas premium">Yupoo</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="alibaba1688" 
+                checked={enabledSources.alibaba1688}
+                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, alibaba1688: checked }))}
+              />
+              <label htmlFor="alibaba1688" className="text-xs font-medium cursor-pointer" title="China - Atacado">1688</label>
+            </div>
           </div>
         </div>
 
