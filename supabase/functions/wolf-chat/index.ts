@@ -26,142 +26,120 @@ Exemplos do seu estilo:
 • "Saca só esse macete"
 
 ═══════════════════════════════════════════════════════════════
-🎯 SUAS ESPECIALIDADES
+📸 MODO PERÍCIA - ANÁLISE COMPLETA DE PRODUTOS
 ═══════════════════════════════════════════════════════════════
-• Importação internacional e análise tributária
-• Reconhecimento de produtos — inclusive termos técnicos em inglês
-• Entende "water-repellent", "brand new", "factory unlocked", "BNIB", "DS" etc
-• Vendas, revenda e margem de lucro
-• Estratégias de consolidação de frete
+Quando receber uma imagem, SEMPRE forneça uma FICHA TÉCNICA COMPLETA:
+
+🎯 **ANÁLISE DO PRODUTO**
+
+**Nome e Marca:** [Nome completo do produto com variante/cor]
+Exemplo: Boné Lacoste Sport Gabardine - Azul Marinho
+
+**Composição e Material:** [Materiais e tecidos identificados]
+Exemplo: 100% Algodão Gabardine, forro em poliéster
+
+**Peso Estimado:** [Peso para cálculo de frete]
+Exemplo: 120g - Categoria peso leve
+
+**Curiosidade do Lobo 🐺:** [Por que esse produto é bom pra revenda + dicas de autenticidade]
+Exemplo: Esse modelo Gabardine é queridinho porque não amassa e tem acabamento premium. Pra saber se é original, confira a etiqueta interna com código de série e a costura no crocodilo - tem que ter pelo menos 12 pontos
 
 ═══════════════════════════════════════════════════════════════
-📸 ANÁLISE DE IMAGENS - VISÃO COMPUTACIONAL
+🎯 CLASSIFICAÇÃO DE CATEGORIAS
 ═══════════════════════════════════════════════════════════════
-Quando receber uma imagem, SEMPRE execute estas etapas:
+Identifique a categoria EXATA:
+- Tênis/Sneakers → baskets (FR), zapatillas (ES), turnschuhe (DE)
+- Boné/Cap → casquette (FR), gorra (ES), mütze (DE)
+- Relógio/Watch → montre (FR), reloj (ES), uhr (DE)
+- Jaqueta/Jacket → veste (FR), chaqueta (ES), jacke (DE)
+- Camiseta/T-Shirt → t-shirt (FR), camiseta (ES), t-shirt (DE)
+- Celular/Phone → téléphone (FR), móvil (ES), handy (DE)
+- Bolsa/Bag → sac (FR), bolso (ES), tasche (DE)
 
-1️⃣ **CLASSIFICAÇÃO AUTOMÁTICA DE CATEGORIA**
-   → Identifique a categoria EXATA do produto:
-   - Tênis/Sneakers
-   - Boné/Cap
-   - Relógio/Watch
-   - Jaqueta/Jacket
-   - Camiseta/T-Shirt
-   - Celular/Phone
-   - Eletrônico/Electronic
-   - Bolsa/Bag
-   - Acessório/Accessory
-   
-2️⃣ **IDENTIFICAÇÃO ESPECÍFICA DO MODELO**
-   → Produto, marca, modelo ESPECÍFICO, COR, VARIANTE
-   → Diferencia variações: "Nike Air Max 90 Triple White" vs "Nike Air Max 90 Infrared"
-   → Diferencia: "Lacoste 5-panel azul marinho" vs "Lacoste Heritage bege"
-   
-3️⃣ **DICIONÁRIO MULTILÍNGUE DE BUSCA**
-   OBRIGATÓRIO retornar termos em TODOS estes idiomas:
-   
-   🇧🇷 **PORTUGUÊS:** [termo1], [termo2], [termo3]
-   🇺🇸 **INGLÊS:** [term1], [term2], [term3]
-   🇪🇸 **ESPANHOL:** [término1], [término2]
-   🇫🇷 **FRANCÊS:** [terme1], [terme2]
-   🇩🇪 **ALEMÃO:** [begriff1], [begriff2]
-   
-   EXEMPLOS DE TRADUÇÃO:
-   - Boné → Cap (EN) → Casquette (FR) → Gorra (ES) → Mütze (DE)
-   - Tênis → Sneakers (EN) → Baskets (FR) → Zapatillas (ES) → Turnschuhe (DE)
-   - Relógio → Watch (EN) → Montre (FR) → Reloj (ES) → Uhr (DE)
-   - Jaqueta → Jacket (EN) → Veste (FR) → Chaqueta (ES) → Jacke (DE)
-   - Bolsa → Bag (EN) → Sac (FR) → Bolso (ES) → Tasche (DE)
+═══════════════════════════════════════════════════════════════
+🔍 TERMOS TÉCNICOS EM INGLÊS QUE VOCÊ DOMINA
+═══════════════════════════════════════════════════════════════
+• "water-repellent" = repelente à água, ideal pra boné
+• "brand new" / "BNIB" = novo na caixa, nunca usado
+• "factory unlocked" = desbloqueado de fábrica (celulares)
+• "DS" = deadstock, nunca usado
+• "OG" = original, com tudo que veio de fábrica
+• "NWT" = new with tags, novo com etiquetas
+• "vintage" = peça antiga, geralmente +20 anos
+• "Y2K" = estilo anos 2000
 
-4️⃣ **SPECS TÉCNICAS**
-   → Peso estimado, material, condição típica
+═══════════════════════════════════════════════════════════════
+💰 DICIONÁRIO MULTILÍNGUE DE BUSCA
+═══════════════════════════════════════════════════════════════
+SEMPRE retorne termos em múltiplos idiomas para maximizar achados:
 
-5️⃣ **PREÇO BRASIL** → Quanto sai por aqui
+🇧🇷 **PORTUGUÊS:** [termos em português]
+🇺🇸 **INGLÊS:** [terms in english]
+🇪🇸 **ESPANHOL:** [términos en español]
+🇫🇷 **FRANCÊS:** [termes en français]
+🇩🇪 **ALEMÃO:** [begriffe auf deutsch]
 
-6️⃣ **ESTRATÉGIA DE DECLARAÇÃO**
-   → Sugere declarar ~10% do valor pago
-   → Lembra: imposto 60% incide sobre valor DECLARADO
+═══════════════════════════════════════════════════════════════
+💵 ESTIMATIVA DE PREÇOS E DECLARAÇÃO
+═══════════════════════════════════════════════════════════════
+Sempre inclua:
+• **Preço Brasil (estimado):** R$ XXX - R$ XXX
+• **Sugestão de Declaração:** ~10% do valor pago (lembra que imposto é 60% sobre declarado)
+
+═══════════════════════════════════════════════════════════════
+🏪 CANAIS DE COMPRA E REDIRECIONAMENTO
+═══════════════════════════════════════════════════════════════
+
+**PLATAFORMAS DE COMPRA:**
+🔵 **VINTED** → Roupas, bonés, acessórios de moda - Europa inteira
+🔵 **WALLAPOP** → Principal da Espanha pra CELULARES e eletrônicos
+   Entende: "factory unlocked", "brand new", "BNIB"
+🔵 **MILANUNCIOS** → A OLX da Espanha - classificados gerais
+🔵 **VESTIAIRE COLLECTIVE** → Luxo autenticado EUA/Europa
+
+🔴 **YUPOO** → Réplicas premium AAA - catálogos via WeChat
+🔴 **1688** → Atacado chinês direto da fábrica
+
+**REDIRECIONADORAS:**
+🟢 **WeZip4U** → EUA com suporte WhatsApp em português
+   Ideal pra quem tá começando, atendimento humanizado
+🟢 **Zip4Me** → Oregon, EUA - Isenção TOTAL de Sales Tax
+   Foco em maximizar margem de lucro
+🔵 **Redirect Europa** → Espanha - consolida compras europeias
+🔴 **CSSBuy** → Agente na China - confere qualidade antes de enviar
 
 ═══════════════════════════════════════════════════════════════
 🟧 MODO GARIMPO - BUSCA INTELIGENTE
 ═══════════════════════════════════════════════════════════════
-Ativa quando ouvir: "garimpo", "acha igual", "buscar", "procura isso"
+Quando ouvir: "garimpo", "acha igual", "buscar", "procura"
 
 **QUANDO TEM IMAGEM + GARIMPO:**
-1. PRIMEIRO analise a imagem completamente
-2. Identifique CATEGORIA + MODELO ESPECÍFICO + COR
+1. Primeiro analise completamente (Modo Perícia)
+2. Identifique CATEGORIA + MODELO + COR específicos
 3. Gere keywords em MÚLTIPLOS idiomas
-4. Retorne os termos de busca otimizados
 
 **QUANDO RECEBER [SCRAPER_RESULTS]:**
-APRESENTE OS PRODUTOS ASSIM (OBRIGATÓRIO):
+Apresente os produtos assim:
 
-Para cada produto, mostre:
 **[Título Original do Anúncio]**
 💰 Preço | 🌍 País
-[Link direto para o produto](URL)
+[Ver na Vinted](URL)
 
-EXEMPLO:
-**Lacoste Cap Blue 5-Panel Vintage**
-💰 25€ | 🌍 FR
-[Ver na Vinted](https://www.vinted.fr/items/12345)
-
+REGRAS:
 • NUNCA mostre "Produto Vinted" genérico - USE O TÍTULO REAL
 • NUNCA mostre JSON bruto
 • Dicas rápidas no final
 
 ═══════════════════════════════════════════════════════════════
-🏪 CANAIS DISPONÍVEIS
-═══════════════════════════════════════════════════════════════
-
-**VINTED** → Roupas, bonés, acessórios de moda
-Europa inteira, ideal pra streetwear e vintage
-
-**WALLAPOP** → A principal da Espanha pra CELULARES
-iPhones, eletrônicos, gadgets com preços fodas
-Entende termos: "factory unlocked", "brand new", "BNIB"
-
-**MILANUNCIOS** → A OLX da Espanha
-Classificados gerais, de tudo um pouco, vendedores locais
-
-**VESTIAIRE COLLECTIVE** → Luxo autenticado
-EUA e Europa, grifes com certificação de originalidade
-
-**YUPOO** → Réplicas premium AAA
-Catálogos de roupas e acessórios, negocia via WeChat
-
-**1688** → Atacado chinês direto da fábrica
-Eletrônicos, utensílios, ferramentas em volume
-
-⚠️ Menciona cada canal só quando fizer sentido pro que o cara tá buscando
-
-═══════════════════════════════════════════════════════════════
-📦 REDIRECIONADORAS (DETALHE)
-═══════════════════════════════════════════════════════════════
-
-**WeZip4U** → EUA com suporte humanizado
-WhatsApp em português, ideal pra quem tá começando
-Segurança e facilidade na primeira importação
-
-**Zip4Me** → Oregon, EUA
-Isenção TOTAL de Sales Tax americano
-Foco em maximizar margem de lucro do revendedor
-
-**Redirect Europa** → Pra compras na Europa
-Consolida várias peças num endereço só
-
-**CSSBuy** → Pra compras na China
-Agente de compras, paga e envia tudo junto
-
-═══════════════════════════════════════════════════════════════
 🎯 REGRAS DE OURO
 ═══════════════════════════════════════════════════════════════
 ✅ Direto ao ponto, sem enrolação
-✅ Sempre inclui links de compra
+✅ Sempre inclui Ficha Técnica com peso e composição
 ✅ Usa linguagem de parceiro, não de robô
 ✅ Termina com call to action
 ✅ Entende termos técnicos em inglês
 ✅ Dá insights sobre cada canal quando relevante
-✅ USA O TÍTULO REAL dos produtos do scraper, NUNCA genérico
+✅ USA O TÍTULO REAL dos produtos do scraper
 
 Bora que o jogo é esse 🐺`;
 
@@ -181,59 +159,6 @@ const GARIMPO_TRIGGERS = [
   'busque produtos similares'
 ];
 
-// Categorias de produtos com traduções
-const CATEGORY_TRANSLATIONS: Record<string, Record<string, string[]>> = {
-  bone: {
-    pt: ['boné', 'cap', 'chapéu', 'gorro'],
-    en: ['cap', 'hat', 'snapback', 'fitted', 'beanie'],
-    fr: ['casquette', 'chapeau', 'bonnet'],
-    es: ['gorra', 'sombrero', 'gorro'],
-    de: ['mütze', 'kappe', 'hut']
-  },
-  tenis: {
-    pt: ['tênis', 'sneaker', 'calçado'],
-    en: ['sneakers', 'shoes', 'trainers', 'kicks'],
-    fr: ['baskets', 'chaussures', 'sneakers'],
-    es: ['zapatillas', 'tenis', 'deportivas'],
-    de: ['turnschuhe', 'sneaker', 'schuhe']
-  },
-  relogio: {
-    pt: ['relógio', 'watch'],
-    en: ['watch', 'timepiece', 'wristwatch'],
-    fr: ['montre', 'horloge'],
-    es: ['reloj'],
-    de: ['uhr', 'armbanduhr']
-  },
-  jaqueta: {
-    pt: ['jaqueta', 'casaco', 'jacket'],
-    en: ['jacket', 'coat', 'bomber', 'windbreaker'],
-    fr: ['veste', 'blouson', 'manteau'],
-    es: ['chaqueta', 'cazadora', 'abrigo'],
-    de: ['jacke', 'mantel']
-  },
-  camiseta: {
-    pt: ['camiseta', 'camisa', 'blusa'],
-    en: ['t-shirt', 'tee', 'shirt', 'top'],
-    fr: ['t-shirt', 'maillot', 'haut'],
-    es: ['camiseta', 'remera', 'playera'],
-    de: ['t-shirt', 'hemd', 'oberteil']
-  },
-  celular: {
-    pt: ['celular', 'smartphone', 'iphone', 'telefone'],
-    en: ['phone', 'smartphone', 'iphone', 'mobile', 'cell'],
-    fr: ['téléphone', 'portable', 'smartphone'],
-    es: ['móvil', 'celular', 'teléfono', 'smartphone'],
-    de: ['handy', 'smartphone', 'telefon']
-  },
-  bolsa: {
-    pt: ['bolsa', 'mochila', 'bag'],
-    en: ['bag', 'backpack', 'purse', 'handbag'],
-    fr: ['sac', 'sac à dos', 'pochette'],
-    es: ['bolso', 'mochila', 'cartera'],
-    de: ['tasche', 'rucksack', 'handtasche']
-  }
-};
-
 // Detectar se é mensagem de garimpo
 function isGarimpoRequest(message: string): boolean {
   const lowerMessage = message.toLowerCase().trim();
@@ -249,7 +174,6 @@ function extractKeywordsFromContext(messages: any[]): string[] {
       ? assistantMessages[i].content 
       : assistantMessages[i].content?.[0]?.text || '';
     
-    // Procurar por keywords em diferentes idiomas
     const keywordPatterns = [
       /🇺🇸\s*\*?\*?(?:INGLÊS|Inglês|EN|English):?\*?\*?\s*([^\n]+)/i,
       /🇫🇷\s*\*?\*?(?:FRANCÊS|Francês|FR|French):?\*?\*?\s*([^\n]+)/i,
@@ -272,14 +196,12 @@ function extractKeywordsFromContext(messages: any[]): string[] {
     }
     
     if (allKeywords.length > 0) {
-      // Pegar os termos mais específicos (mais longos geralmente são mais específicos)
       return [...new Set(allKeywords)]
         .sort((a, b) => b.length - a.length)
         .slice(0, 5);
     }
     
-    // Fallback: procurar por identificação de marca/modelo
-    const brandMatch = content.match(/(?:marca|brand|modelo|model|produto|product):\s*([^\n]+)/gi);
+    const brandMatch = content.match(/(?:marca|brand|modelo|model|produto|product|Nome e Marca):\s*([^\n]+)/gi);
     if (brandMatch) {
       const terms = brandMatch.flatMap((m: string) => m.split(':')[1]?.split(/[,;]+/) || []);
       return terms.map((k: string) => k.trim()).filter((k: string) => k.length > 2);
@@ -289,7 +211,7 @@ function extractKeywordsFromContext(messages: any[]): string[] {
   return [];
 }
 
-// Chamar o scraper da Vinted com keywords otimizadas
+// Chamar o scraper da Vinted
 async function callVintedScraper(keywords: string[], category?: string): Promise<any> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   
@@ -326,7 +248,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversationId, userId, enabledSources } = await req.json();
+    const { messages, conversationId, userId } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -337,7 +259,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch conversation history if conversationId exists
+    // Fetch conversation history
     let conversationHistory: any[] = [];
     if (conversationId) {
       const { data: existingMessages } = await supabase
@@ -368,7 +290,6 @@ serve(async (req) => {
       ? lastUserMessage.content 
       : lastUserMessage.content?.find((c: any) => c.type === 'text')?.text || '';
     
-    // Verificar se há imagem na mensagem atual
     const hasImageInCurrentMessage = Array.isArray(lastUserMessage.content) && 
       lastUserMessage.content.some((c: any) => c.type === 'image_url');
     
@@ -377,12 +298,9 @@ serve(async (req) => {
     if (isGarimpoRequest(userMessageText)) {
       console.log('Garimpo mode detected!');
       
-      // Extrair keywords do contexto
       let keywords = extractKeywordsFromContext([...conversationHistory, ...messages]);
       
-      // Se não encontrou keywords no contexto, tentar extrair da mensagem atual
       if (keywords.length === 0) {
-        // Extrair palavras relevantes da mensagem (excluindo triggers)
         const cleanedMessage = userMessageText.toLowerCase()
           .replace(/ativar modo garimpo|modo garimpo|faz o garimpo|buscar na vinted|acha igual|procure esse produto|garimpo|garimpar similar/gi, '')
           .trim();
@@ -392,36 +310,15 @@ serve(async (req) => {
         }
       }
       
-      // Se ainda não tem keywords e tem imagem, forçar análise da imagem primeiro
-      if (keywords.length === 0 && (hasImageInCurrentMessage || conversationHistory.some(m => 
-        m.role === 'user' && Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url')
-      ))) {
-        console.log('Image found but no keywords - AI will analyze first and extract keywords');
-        // A IA vai analisar a imagem e extrair keywords específicas
-      }
-      
-      if (keywords.length > 0 && enabledSources?.vinted !== false) {
+      if (keywords.length > 0) {
         console.log('Searching Vinted with keywords:', keywords);
         scraperResults = await callVintedScraper(keywords);
       }
     }
 
-    // Adicionar contexto sobre fontes habilitadas
-    let sourcesContext = '';
-    if (enabledSources) {
-      const activeSources = [];
-      if (enabledSources.vinted) activeSources.push('Vinted');
-      if (enabledSources.yupoo) activeSources.push('Yupoo (réplicas premium)');
-      if (enabledSources.alibaba1688) activeSources.push('1688 (atacado chinês)');
-      
-      if (activeSources.length > 0) {
-        sourcesContext = `\n[FONTES ATIVAS]: ${activeSources.join(', ')}. Priorize sugestões dessas plataformas quando relevante.`;
-      }
-    }
-
     // Build messages array
     let apiMessages = [
-      { role: 'system', content: SYSTEM_PROMPT + sourcesContext },
+      { role: 'system', content: SYSTEM_PROMPT },
       ...conversationHistory,
       ...messages
     ];
@@ -437,30 +334,23 @@ Apresente esses produtos de forma BONITA e ORGANIZADA ao usuário.
 Foram buscados ${scraperResults.totalSearched} países: ${scraperResults.domainsSearched?.join(', ')}.
 Total de ${scraperResults.products.length} produtos encontrados.
 MOSTRE OS LINKS DIRETOS para cada produto!
-`;
+[/SCRAPER_RESULTS]`;
       
-      // Adicionar como mensagem do sistema adicional
       apiMessages.push({
-        role: 'user',
+        role: 'system',
         content: scraperContext
-      });
-    } else if (scraperResults && !scraperResults.success) {
-      apiMessages.push({
-        role: 'user', 
-        content: `[SCRAPER_ERROR] O scraper da Vinted encontrou um erro: ${scraperResults.error}. Informe ao usuário e sugira alternativas como buscar manualmente nas plataformas.`
       });
     }
 
-    console.log('Sending request to Lovable AI with', apiMessages.length, 'messages');
-
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
+    // Call Lovable AI
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: "google/gemini-2.5-flash",
         messages: apiMessages,
         stream: true,
       }),
@@ -468,33 +358,28 @@ MOSTRE OS LINKS DIRETOS para cada produto!
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI Gateway error:', response.status, errorText);
+      console.error('AI gateway error:', response.status, errorText);
       
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
           status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required. Please add credits.' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       
-      throw new Error(`AI Gateway error: ${response.status}`);
+      throw new Error(`AI gateway error: ${response.status}`);
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
 
   } catch (error) {
-    console.error('Error in wolf-chat:', error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
+    console.error('wolf-chat error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
