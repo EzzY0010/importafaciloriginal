@@ -4,11 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, TrendingUp, Plus, Trash2, DollarSign, Package, AlertCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle } from 'lucide-react';
+
+type Currency = 'USD' | 'EUR' | 'CNY';
 
 interface ExchangeRates {
   USD: number;
   EUR: number;
+  CNY: number;
   BRL: number;
 }
 
@@ -18,14 +22,22 @@ interface ProductItem {
   costPrice: string;
   declaredValue: string;
   profitMargin: string;
+  currency: Currency;
 }
 
+const CURRENCY_CONFIG = {
+  USD: { symbol: '$', flag: '🇺🇸', label: 'Dólar' },
+  EUR: { symbol: '€', flag: '🇪🇺', label: 'Euro' },
+  CNY: { symbol: '¥', flag: '🇨🇳', label: 'Yuan' },
+};
+
 const AdvancedPricingCalculator: React.FC = () => {
-  const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, BRL: 5.80 });
+  const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80 });
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [totalShipping, setTotalShipping] = useState<string>('');
+  const [shippingCurrency, setShippingCurrency] = useState<Currency>('USD');
   const [items, setItems] = useState<ProductItem[]>([
-    { id: '1', name: '', costPrice: '', declaredValue: '', profitMargin: '30' }
+    { id: '1', name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD' }
   ]);
 
   const fetchRates = useCallback(async () => {
@@ -35,6 +47,7 @@ const AdvancedPricingCalculator: React.FC = () => {
       setRates({
         USD: 1,
         EUR: data.rates.EUR,
+        CNY: data.rates.CNY,
         BRL: data.rates.BRL
       });
       setLastUpdate(new Date());
@@ -49,6 +62,13 @@ const AdvancedPricingCalculator: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchRates]);
 
+  // Convert from any currency to BRL
+  const convertToBRL = (value: number, fromCurrency: Currency): number => {
+    // First convert to USD, then to BRL
+    const inUSD = value / rates[fromCurrency];
+    return inUSD * rates.BRL;
+  };
+
   const addItem = () => {
     if (items.length >= 10) return;
     setItems(prev => [...prev, {
@@ -56,7 +76,8 @@ const AdvancedPricingCalculator: React.FC = () => {
       name: '',
       costPrice: '',
       declaredValue: '',
-      profitMargin: '30'
+      profitMargin: '30',
+      currency: 'USD'
     }]);
   };
 
@@ -71,14 +92,18 @@ const AdvancedPricingCalculator: React.FC = () => {
     ));
   };
 
-  // Calcular frete rateado por item
+  // Calcular frete rateado por item (já convertido para BRL)
   const activeItems = items.filter(item => parseFloat(item.costPrice) > 0);
-  const shippingPerItem = activeItems.length > 0 
-    ? (parseFloat(totalShipping) || 0) / activeItems.length 
+  const totalShippingValue = parseFloat(totalShipping) || 0;
+  const totalShippingBRL = convertToBRL(totalShippingValue, shippingCurrency);
+  const shippingPerItemBRL = activeItems.length > 0 
+    ? totalShippingBRL / activeItems.length 
     : 0;
 
-  // Calcular EUR para BRL
+  // Calcular cotações para display
+  const usdToBrl = rates.BRL;
   const eurToBrl = rates.BRL / rates.EUR;
+  const cnyToBrl = rates.BRL / rates.CNY;
 
   // Cálculos para cada item
   const calculateItemCosts = (item: ProductItem) => {
@@ -86,11 +111,15 @@ const AdvancedPricingCalculator: React.FC = () => {
     const declaredValue = parseFloat(item.declaredValue) || 0;
     const profitMargin = parseFloat(item.profitMargin) || 0;
 
-    // (Preço de Custo + Frete Rateado) * Câmbio
-    const costWithShippingBRL = (costPrice + shippingPerItem) * rates.BRL;
+    // Converter custo para BRL usando a moeda específica do item
+    const costPriceBRL = convertToBRL(costPrice, item.currency);
     
-    // (Valor de Declaração * Câmbio) * 0.60
-    const taxBRL = (declaredValue * rates.BRL) * 0.60;
+    // Somar frete já rateado em BRL
+    const costWithShippingBRL = costPriceBRL + shippingPerItemBRL;
+    
+    // Converter declaração para BRL e aplicar imposto 60%
+    const declaredValueBRL = convertToBRL(declaredValue, item.currency);
+    const taxBRL = declaredValueBRL * 0.60;
     
     // Custo Real Final
     const finalCostBRL = costWithShippingBRL + taxBRL;
@@ -102,7 +131,9 @@ const AdvancedPricingCalculator: React.FC = () => {
     const netProfit = sellingPrice - finalCostBRL;
 
     return {
+      costPriceBRL,
       costWithShippingBRL,
+      declaredValueBRL,
       taxBRL,
       finalCostBRL,
       sellingPrice,
@@ -120,13 +151,15 @@ const AdvancedPricingCalculator: React.FC = () => {
     };
   }, { totalCost: 0, totalSelling: 0, totalProfit: 0 });
 
+  const getCurrencySymbol = (currency: Currency) => CURRENCY_CONFIG[currency].symbol;
+
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-accent" />
-            Precificação Avançada
+            <TrendingUp className="h-5 w-5 text-accent" />
+            Precificação Multimoedas
           </span>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <RefreshCw className="h-3 w-3 animate-spin" />
@@ -135,37 +168,54 @@ const AdvancedPricingCalculator: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Exchange Rates */}
+        {/* Exchange Rates - 3 moedas */}
         <div className="flex gap-2 flex-wrap">
           <Badge variant="outline" className="text-xs font-mono">
-            1 USD = R$ {rates.BRL.toFixed(2)}
+            🇺🇸 1 USD = R$ {usdToBrl.toFixed(2)}
           </Badge>
           <Badge variant="outline" className="text-xs font-mono">
-            1 EUR = R$ {eurToBrl.toFixed(2)}
+            🇪🇺 1 EUR = R$ {eurToBrl.toFixed(2)}
+          </Badge>
+          <Badge variant="outline" className="text-xs font-mono">
+            🇨🇳 1 CNY = R$ {cnyToBrl.toFixed(2)}
           </Badge>
         </div>
 
-        {/* Total Shipping */}
+        {/* Total Shipping with Currency Selector */}
         <div className="p-3 bg-muted/50 rounded-xl space-y-2">
           <Label className="flex items-center gap-2 text-sm font-medium">
             <Package className="h-4 w-4 text-accent" />
-            Frete Total dos EUA ($)
+            Frete Total Internacional
           </Label>
-          <Input
-            type="number"
-            step="0.01"
-            placeholder="0.00"
-            value={totalShipping}
-            onChange={(e) => setTotalShipping(e.target.value)}
-            className="text-lg font-medium"
-          />
+          <div className="flex gap-2">
+            <Select value={shippingCurrency} onValueChange={(v) => setShippingCurrency(v as Currency)}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key}>
+                    {config.flag} {config.symbol}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={totalShipping}
+              onChange={(e) => setTotalShipping(e.target.value)}
+              className="flex-1 text-lg font-medium"
+            />
+          </div>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
             Sugestão: O frete costuma representar entre 10% a 20% do valor dos produtos
           </p>
-          {activeItems.length > 1 && shippingPerItem > 0 && (
+          {activeItems.length > 1 && shippingPerItemBRL > 0 && (
             <Badge variant="secondary" className="text-xs">
-              Rateado: ${shippingPerItem.toFixed(2)} por item ({activeItems.length} itens)
+              Rateado: R$ {shippingPerItemBRL.toFixed(2)} por item ({activeItems.length} itens)
             </Badge>
           )}
         </div>
@@ -189,27 +239,44 @@ const AdvancedPricingCalculator: React.FC = () => {
           {items.map((item, index) => {
             const costs = calculateItemCosts(item);
             const hasData = parseFloat(item.costPrice) > 0;
+            const currencySymbol = getCurrencySymbol(item.currency);
 
             return (
               <div key={item.id} className="p-3 border border-border rounded-xl bg-card space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="h-6 w-6 flex items-center justify-center p-0 text-xs">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Badge variant="outline" className="h-6 w-6 flex items-center justify-center p-0 text-xs flex-shrink-0">
                       {index + 1}
                     </Badge>
                     <Input
                       placeholder="Nome do produto"
                       value={item.name}
                       onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                      className="h-8 text-sm max-w-[200px]"
+                      className="h-8 text-sm flex-1"
                     />
+                    {/* Currency Selector per Item */}
+                    <Select 
+                      value={item.currency} 
+                      onValueChange={(v) => updateItem(item.id, 'currency', v)}
+                    >
+                      <SelectTrigger className="w-20 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+                          <SelectItem key={key} value={key}>
+                            {config.flag} {config.symbol}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   {items.length > 1 && (
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       onClick={() => removeItem(item.id)}
-                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      className="h-7 w-7 text-destructive hover:text-destructive flex-shrink-0"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -218,7 +285,9 @@ const AdvancedPricingCalculator: React.FC = () => {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Preço Custo ($)</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      Preço Custo ({currencySymbol})
+                    </Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -229,7 +298,9 @@ const AdvancedPricingCalculator: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Declaração ($)</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      Declaração ({currencySymbol})
+                    </Label>
                     <Input
                       type="number"
                       step="0.01"

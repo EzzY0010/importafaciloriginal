@@ -4,11 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Send, ImagePlus, Loader2, MessageSquare, Plus, Menu, X, Search, ExternalLink, ShoppingBag } from 'lucide-react';
+import StrategyButtons from './StrategyButtons';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -33,7 +33,6 @@ interface GarimpoProduct {
 
 // Detectar se é resultado de garimpo e extrair produtos
 const parseGarimpoResults = (content: string): GarimpoProduct[] | null => {
-  // Detectar links de Vinted
   const vintedLinks = content.match(/https?:\/\/[^\s\)]+vinted\.[^\s\)]+\/items\/\d+[^\s\)]*/gi);
   
   if (!vintedLinks || vintedLinks.length === 0) return null;
@@ -41,17 +40,14 @@ const parseGarimpoResults = (content: string): GarimpoProduct[] | null => {
   const products: GarimpoProduct[] = [];
   
   for (const link of vintedLinks) {
-    // Extrair país do domínio
     const domainMatch = link.match(/vinted\.([a-z.]+)/i);
     const pais = domainMatch ? domainMatch[1].replace('.', '').toUpperCase() : 'EU';
     
-    // Tentar extrair preço do contexto
     const linkIndex = content.indexOf(link);
     const context = content.substring(Math.max(0, linkIndex - 100), Math.min(content.length, linkIndex + 50));
     const priceMatch = context.match(/(\d+[.,]?\d*)\s*€|€\s*(\d+[.,]?\d*)/);
     const preco = priceMatch ? `${priceMatch[1] || priceMatch[2]}€` : 'Ver preço';
     
-    // Extrair título do markdown link
     const titleMatch = content.substring(Math.max(0, linkIndex - 100), linkIndex).match(/\[([^\]]+)\]\s*$/);
     const titulo = titleMatch ? titleMatch[1] : 'Produto Vinted';
     
@@ -98,13 +94,28 @@ const ProductCard: React.FC<{ product: GarimpoProduct }> = ({ product }) => (
   </a>
 );
 
+// Detectar se a mensagem contém uma análise de produto (Modo Perícia)
+const hasProductAnalysis = (content: string): boolean => {
+  const indicators = [
+    'Nome e Marca:',
+    'Composição',
+    'Peso estimado',
+    'Curiosidade do Lobo',
+    '🎯 ANÁLISE',
+    '📦 PRODUTO',
+    'PORTUGUÊS:',
+    'INGLÊS:',
+    'water-repellent',
+    'Preço Brasil'
+  ];
+  return indicators.some(indicator => content.includes(indicator));
+};
+
 // Parse markdown links to clickable elements
 const renderMessageContent = (content: string) => {
-  // Primeiro verificar se há resultados de garimpo
   const garimpoProducts = parseGarimpoResults(content);
   
   if (garimpoProducts && garimpoProducts.length > 0) {
-    // Separar texto das URLs
     const textWithoutLinks = content
       .replace(/https?:\/\/[^\s\)]+vinted\.[^\s\)]+\/items\/\d+[^\s\)]*/gi, '')
       .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
@@ -171,14 +182,7 @@ const WolfChat: React.FC = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [garimpoMode, setGarimpoMode] = useState(false);
-  const [enabledSources, setEnabledSources] = useState({
-    vinted: true,
-    yupoo: false,
-    alibaba1688: false,
-    wallapop: false,
-    milanuncios: false,
-    vestiaire: false,
-  });
+  const [showStrategies, setShowStrategies] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -190,6 +194,14 @@ const WolfChat: React.FC = () => {
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Mostrar estratégias quando detectar análise de produto
+  useEffect(() => {
+    const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
+    if (lastAssistantMessage && hasProductAnalysis(lastAssistantMessage.content)) {
+      setShowStrategies(true);
+    }
   }, [messages]);
 
   const loadConversations = async () => {
@@ -231,6 +243,7 @@ const WolfChat: React.FC = () => {
       setCurrentConversationId(data.id);
       setMessages([]);
       setSidebarOpen(false);
+      setShowStrategies(false);
       return data.id;
     }
     return null;
@@ -279,6 +292,16 @@ const WolfChat: React.FC = () => {
     });
   };
 
+  const handleStrategySelect = (strategy: 'europe' | 'usa' | 'china') => {
+    const strategyMessages = {
+      europe: 'Quero usar a estratégia Europa - busque produtos na Vinted e Wallapop para eu enviar para a Redirect Europa',
+      usa: 'Quero usar a estratégia EUA - vou buscar em outlets e eBay e enviar para a WeZip4U',
+      china: 'Quero usar a estratégia China - busque no Yupoo e 1688, vou usar a CSSBuy como agente'
+    };
+    
+    setInput(strategyMessages[strategy]);
+  };
+
   const sendMessage = async () => {
     if (!input.trim() && !imagePreview) return;
     if (!user) {
@@ -310,6 +333,7 @@ const WolfChat: React.FC = () => {
     setInput('');
     setImagePreview(null);
     setIsLoading(true);
+    setShowStrategies(false);
 
     await saveMessage(convId, 'user', input, imagePreview || undefined);
 
@@ -322,7 +346,7 @@ const WolfChat: React.FC = () => {
     try {
       const finalContent = imagePreview 
         ? [
-            { type: 'text', text: messageContent || 'Analise esta imagem de produto para importação' },
+            { type: 'text', text: messageContent || 'Analise esta imagem de produto para importação - MODO PERÍCIA' },
             { type: 'image_url', image_url: { url: imagePreview } }
           ]
         : messageContent;
@@ -336,8 +360,7 @@ const WolfChat: React.FC = () => {
         body: JSON.stringify({
           messages: [{ role: 'user', content: finalContent }],
           conversationId: convId,
-          userId: user.id,
-          enabledSources
+          userId: user.id
         }),
       });
 
@@ -388,7 +411,7 @@ const WolfChat: React.FC = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] gap-3 relative max-w-4xl mx-auto w-full pb-[120px]">
+    <div className="flex h-[calc(100vh-10rem)] gap-3 relative max-w-4xl mx-auto w-full">
       {/* Mobile Menu Button */}
       <Button
         variant="outline"
@@ -442,13 +465,13 @@ const WolfChat: React.FC = () => {
 
       {/* Chat Area */}
       <Card className="flex-1 flex flex-col border border-border rounded-2xl shadow-card overflow-hidden">
-        {/* Chat Header */}
-        <div className="text-center p-5 border-b border-border bg-card">
+        {/* Chat Header - Clean */}
+        <div className="text-center p-4 border-b border-border bg-card">
           <h2 className="text-xl font-bold flex items-center justify-center gap-2 text-foreground">
             <span className="md:hidden w-8" />
             🐺 Lobo das Importações
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">Seu especialista em vendas e importação</p>
+          <p className="text-sm text-muted-foreground mt-1">Modo Perícia - Análise de Produtos</p>
           
           {/* Garimpo Mode Indicator */}
           {garimpoMode && (
@@ -469,72 +492,17 @@ const WolfChat: React.FC = () => {
           )}
         </div>
 
-        {/* Source Toggles */}
-        <div className="px-4 py-2 border-b border-border bg-muted/50">
-          <div className="flex items-center justify-center gap-3 flex-wrap mb-2">
-            <span className="text-xs text-muted-foreground font-medium">🛒 Compra:</span>
-            <div className="flex items-center gap-2">
-              <Switch 
-                id="vinted" 
-                checked={enabledSources.vinted}
-                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, vinted: checked }))}
-              />
-              <label htmlFor="vinted" className="text-xs font-medium cursor-pointer" title="Europa - Roupas e acessórios usados">Vinted</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch 
-                id="wallapop" 
-                checked={enabledSources.wallapop}
-                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, wallapop: checked }))}
-              />
-              <label htmlFor="wallapop" className="text-xs font-medium cursor-pointer" title="Espanha - iPhones e eletrônicos">Wallapop</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch 
-                id="milanuncios" 
-                checked={enabledSources.milanuncios}
-                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, milanuncios: checked }))}
-              />
-              <label htmlFor="milanuncios" className="text-xs font-medium cursor-pointer" title="Espanha - OLX espanhola">Milanuncios</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch 
-                id="vestiaire" 
-                checked={enabledSources.vestiaire}
-                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, vestiaire: checked }))}
-              />
-              <label htmlFor="vestiaire" className="text-xs font-medium cursor-pointer" title="EUA/Europa - Luxo autenticado">Vestiaire</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch 
-                id="yupoo" 
-                checked={enabledSources.yupoo}
-                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, yupoo: checked }))}
-              />
-              <label htmlFor="yupoo" className="text-xs font-medium cursor-pointer" title="China - Réplicas premium">Yupoo</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch 
-                id="alibaba1688" 
-                checked={enabledSources.alibaba1688}
-                onCheckedChange={(checked) => setEnabledSources(prev => ({ ...prev, alibaba1688: checked }))}
-              />
-              <label htmlFor="alibaba1688" className="text-xs font-medium cursor-pointer" title="China - Atacado">1688</label>
-            </div>
-          </div>
-        </div>
-
         {/* Messages */}
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/40 transition-colors">
           <div className="p-4 space-y-4 min-h-full">
             {messages.length === 0 && (
-              <div className="text-center text-muted-foreground py-12 px-4">
+              <div className="text-center text-muted-foreground py-8 px-4">
                 <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <span className="text-3xl">🐺</span>
                 </div>
                 <p className="text-lg font-medium text-foreground">Olá! Eu sou o Lobo das Importações!</p>
                 <p className="text-sm mt-2 max-w-sm mx-auto">
-                  Envie uma foto de um produto ou me pergunte qualquer coisa sobre importação!
+                  Envie uma foto de um produto e eu faço a análise completa: marca, peso, composição e dicas de revenda!
                 </p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   <Button 
@@ -548,7 +516,7 @@ const WolfChat: React.FC = () => {
                   </Button>
                 </div>
                 <p className="text-xs mt-4 text-muted-foreground/70">
-                  💡 Dica: Envie uma foto + ative o garimpo para buscar produtos similares!
+                  📸 Dica: Envie uma foto para receber a Ficha Técnica do produto
                 </p>
               </div>
             )}
@@ -568,6 +536,14 @@ const WolfChat: React.FC = () => {
                 </div>
               </div>
             ))}
+            
+            {/* Strategy Buttons - Show after product analysis */}
+            {showStrategies && !isLoading && (
+              <div className="animate-fade-in">
+                <StrategyButtons onSelect={handleStrategySelect} />
+              </div>
+            )}
+            
             <div ref={scrollRef} />
           </div>
         </div>
@@ -621,7 +597,7 @@ const WolfChat: React.FC = () => {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={garimpoMode ? "Descreva o produto ou envie foto..." : "Digite sua mensagem..."}
+              placeholder={garimpoMode ? "Descreva o produto ou envie foto..." : "Envie uma foto para análise ou pergunte..."}
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
               disabled={isLoading}
               className="flex-1 rounded-xl border-border focus-visible:ring-primary"
