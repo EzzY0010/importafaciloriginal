@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, ImagePlus, Loader2, MessageSquare, Plus, Menu, X, Search, ExternalLink, ShoppingBag } from 'lucide-react';
+import { Send, ImagePlus, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag } from 'lucide-react';
 import StrategyButtons from './StrategyButtons';
 
 interface Message {
@@ -181,7 +181,6 @@ const WolfChat: React.FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [garimpoMode, setGarimpoMode] = useState(false);
   const [showStrategies, setShowStrategies] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -284,19 +283,11 @@ const WolfChat: React.FC = () => {
     });
   };
 
-  const activateGarimpoMode = () => {
-    setGarimpoMode(true);
-    toast({
-      title: '🔍 Modo Garimpo Ativado',
-      description: 'A IA buscará produtos automaticamente na Vinted',
-    });
-  };
-
   const handleStrategySelect = (strategy: 'europe' | 'usa' | 'china') => {
     const strategyMessages = {
-      europe: 'Quero usar a estratégia Europa - busque produtos na Vinted e Wallapop para eu enviar para a Redirect Europa',
-      usa: 'Quero usar a estratégia EUA - vou buscar em outlets e eBay e enviar para a WeZip4U',
-      china: 'Quero usar a estratégia China - busque no Yupoo e 1688, vou usar a CSSBuy como agente'
+      europe: 'Quero usar a estratégia Europa - me explica como comprar na Vinted e Wallapop e enviar para a Redirect Europa',
+      usa: 'Quero usar a estratégia EUA - me explica como comprar em outlets e eBay e enviar para a WeZip4U ou Viajabox',
+      china: 'Quero usar a estratégia China - me explica como comprar no Xianyu e 1688, usando a CSSBuy como agente'
     };
     
     setInput(strategyMessages[strategy]);
@@ -313,14 +304,6 @@ const WolfChat: React.FC = () => {
     if (!convId) {
       convId = await createNewConversation();
       if (!convId) return;
-    }
-
-    // Preparar mensagem com contexto de garimpo se ativado
-    let messageContent = input;
-    if (garimpoMode && imagePreview) {
-      messageContent = `${input || 'Analise esta imagem'} - MODO GARIMPO ATIVO - busque produtos similares`;
-    } else if (garimpoMode && !imagePreview) {
-      messageContent = `${input} - faz o garimpo`;
     }
 
     const userMessage: Message = {
@@ -346,10 +329,10 @@ const WolfChat: React.FC = () => {
     try {
       const finalContent = imagePreview 
         ? [
-            { type: 'text', text: messageContent || 'Analise esta imagem de produto para importação - MODO PERÍCIA' },
+            { type: 'text', text: input || 'Analise esta imagem de produto para importação - MODO PERÍCIA' },
             { type: 'image_url', image_url: { url: imagePreview } }
           ]
-        : messageContent;
+        : input;
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wolf-chat`, {
         method: 'POST',
@@ -471,25 +454,6 @@ const WolfChat: React.FC = () => {
             <span className="md:hidden w-8" />
             🐺 Lobo das Importações
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">Modo Perícia - Análise de Produtos</p>
-          
-          {/* Garimpo Mode Indicator */}
-          {garimpoMode && (
-            <div className="mt-2 flex items-center justify-center gap-2">
-              <Badge className="bg-accent text-accent-foreground animate-pulse">
-                <Search className="w-3 h-3 mr-1" />
-                Modo Garimpo Ativo
-              </Badge>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setGarimpoMode(false)}
-                className="text-xs h-6"
-              >
-                Desativar
-              </Button>
-            </div>
-          )}
         </div>
 
         {/* Messages */}
@@ -504,19 +468,11 @@ const WolfChat: React.FC = () => {
                 <p className="text-sm mt-2 max-w-sm mx-auto">
                   Envie uma foto de um produto e eu faço a análise completa: marca, peso, composição e dicas de revenda!
                 </p>
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={activateGarimpoMode}
-                    className="text-xs"
-                  >
-                    <Search className="w-3 h-3 mr-1" />
-                    Ativar Modo Garimpo
-                  </Button>
-                </div>
                 <p className="text-xs mt-4 text-muted-foreground/70">
                   📸 Dica: Envie uma foto para receber a Ficha Técnica do produto
+                </p>
+                <p className="text-xs mt-2 text-muted-foreground/70">
+                  💵 Digite um valor em moeda estrangeira para conversão direta
                 </p>
               </div>
             )}
@@ -562,17 +518,6 @@ const WolfChat: React.FC = () => {
                 <X className="h-3 w-3" />
               </Button>
             </div>
-            {!garimpoMode && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={activateGarimpoMode}
-                className="ml-2 text-xs"
-              >
-                <Search className="w-3 h-3 mr-1" />
-                Garimpar Similar
-              </Button>
-            )}
           </div>
         )}
 
@@ -597,7 +542,7 @@ const WolfChat: React.FC = () => {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={garimpoMode ? "Descreva o produto ou envie foto..." : "Envie uma foto para análise ou pergunte..."}
+              placeholder="Envie uma foto para análise ou pergunte algo..."
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
               disabled={isLoading}
               className="flex-1 rounded-xl border-border focus-visible:ring-primary"
