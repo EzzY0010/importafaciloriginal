@@ -352,64 +352,64 @@ const WolfChat: React.FC = () => {
       }
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder('utf-8', { fatal: false });
+      // Use UTF-8 decoder with stream mode for proper multi-byte character handling
+      const decoder = new TextDecoder('utf-8');
       let assistantMessage = '';
-      let buffer = '';
+      let sseBuffer = '';
 
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
-      while (reader) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        // Decode with stream: true to handle multi-byte UTF-8 characters properly
-        const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
+      const processSSELine = (line: string) => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === 'data: [DONE]') return;
         
-        // Process complete lines only
-        const lines = buffer.split('\n');
-        // Keep the last incomplete line in buffer
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmedLine = line.trim();
-          if (trimmedLine.startsWith('data: ') && trimmedLine !== 'data: [DONE]') {
-            try {
-              const jsonStr = trimmedLine.slice(6);
-              if (jsonStr) {
-                const json = JSON.parse(jsonStr);
-                const content = json.choices?.[0]?.delta?.content;
-                if (content) {
-                  assistantMessage += content;
-                  setMessages(prev => {
-                    const updated = [...prev];
-                    updated[updated.length - 1] = { role: 'assistant', content: assistantMessage };
-                    return updated;
-                  });
-                }
+        if (trimmed.startsWith('data: ')) {
+          try {
+            const jsonStr = trimmed.slice(6);
+            if (jsonStr && jsonStr.startsWith('{')) {
+              const json = JSON.parse(jsonStr);
+              const content = json.choices?.[0]?.delta?.content;
+              if (content && typeof content === 'string') {
+                assistantMessage += content;
+                setMessages(prev => {
+                  const updated = [...prev];
+                  updated[updated.length - 1] = { role: 'assistant', content: assistantMessage };
+                  return updated;
+                });
               }
-            } catch (parseError) {
-              // Skip malformed JSON chunks silently
-              console.debug('Skipping malformed SSE chunk');
             }
+          } catch {
+            // Skip malformed chunks - they'll be reprocessed with more data
           }
         }
-      }
-      
-      // Process any remaining buffer content
-      if (buffer.trim().startsWith('data: ') && buffer.trim() !== 'data: [DONE]') {
-        try {
-          const json = JSON.parse(buffer.trim().slice(6));
-          const content = json.choices?.[0]?.delta?.content;
-          if (content) {
-            assistantMessage += content;
-            setMessages(prev => {
-              const updated = [...prev];
-              updated[updated.length - 1] = { role: 'assistant', content: assistantMessage };
-              return updated;
-            });
+      };
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          // Flush remaining decoder bytes and process final buffer
+          const finalChunk = decoder.decode(new Uint8Array(), { stream: false });
+          sseBuffer += finalChunk;
+          const finalLines = sseBuffer.split('\n');
+          for (const line of finalLines) {
+            processSSELine(line);
           }
-        } catch {}
+          break;
+        }
+
+        // Decode with stream: true to handle UTF-8 multi-byte characters across chunk boundaries
+        const chunk = decoder.decode(value, { stream: true });
+        sseBuffer += chunk;
+        
+        // Process only complete lines (ending with \n)
+        const lines = sseBuffer.split('\n');
+        // Keep incomplete line in buffer for next iteration
+        sseBuffer = lines.pop() || '';
+
+        for (const line of lines) {
+          processSSELine(line);
+        }
       }
 
       await saveMessage(convId, 'assistant', assistantMessage);
