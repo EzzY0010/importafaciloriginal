@@ -481,16 +481,16 @@ const WolfChat: React.FC = () => {
               </div>
             )}
             {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-                <div className={`max-w-[90%] md:max-w-[85%] rounded-2xl p-4 ${
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in mb-3`}>
+                <div className={`max-w-[85%] md:max-w-[80%] p-4 shadow-sm ${
                   msg.role === 'user' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-foreground'
+                    ? 'bg-[hsl(220,60%,25%)] text-white rounded-2xl rounded-br-md' 
+                    : 'bg-[hsl(0,0%,95%)] text-[hsl(0,0%,15%)] rounded-2xl rounded-bl-md'
                 }`}>
                   {msg.image_url && (
                     <img src={msg.image_url} alt="Uploaded" className="max-w-full rounded-xl mb-3 max-h-48 object-contain" />
                   )}
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed break-words" style={{ wordBreak: 'break-word' }}>
                     {renderMessageContent(msg.content)}
                   </div>
                 </div>
