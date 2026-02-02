@@ -408,7 +408,7 @@ const WolfChat: React.FC = () => {
       {/* Sidebar */}
       <Card className={`
         ${sidebarOpen ? 'absolute inset-0 z-20' : 'hidden'} 
-        md:relative md:flex md:w-16 p-2 flex-col items-center border border-border rounded-2xl shadow-card
+        md:relative md:flex md:w-48 p-2 flex-col border border-border rounded-2xl shadow-card
       `}>
         <Button 
           onClick={createNewConversation} 
@@ -419,23 +419,27 @@ const WolfChat: React.FC = () => {
           <Plus className="h-5 w-5" />
         </Button>
         <ScrollArea className="flex-1 w-full">
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col gap-2 px-1">
             {conversations.map(conv => (
               <div
                 key={conv.id}
-                className={`w-10 h-10 rounded-xl cursor-pointer flex items-center justify-center group relative transition-all ${
+                className={`w-full min-h-[40px] rounded-xl cursor-pointer flex items-center px-2 py-2 group relative transition-all ${
                   currentConversationId === conv.id 
                     ? 'bg-primary text-primary-foreground shadow-soft' 
                     : 'bg-muted hover:bg-muted/80 text-muted-foreground'
                 }`}
                 onClick={() => selectConversation(conv)}
-                title={conv.title}
+                title={conv.title || 'Nova conversa'}
               >
-                <MessageSquare className="h-4 w-4" />
+                <span className="text-xs font-medium truncate flex-1 leading-tight">
+                  {conv.title 
+                    ? (conv.title.length > 30 ? conv.title.substring(0, 30) + '...' : conv.title)
+                    : 'Nova conversa'}
+                </span>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 bg-destructive text-destructive-foreground rounded-full p-0 shadow-soft"
+                  className="h-5 w-5 absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 bg-destructive text-destructive-foreground rounded-full p-0 shadow-soft flex-shrink-0"
                   onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
                 >
                   <X className="h-3 w-3" />
