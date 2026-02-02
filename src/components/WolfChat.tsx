@@ -352,8 +352,9 @@ const WolfChat: React.FC = () => {
       }
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      const decoder = new TextDecoder('utf-8', { fatal: false });
       let assistantMessage = '';
+      let buffer = '';
 
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
@@ -361,25 +362,54 @@ const WolfChat: React.FC = () => {
         const { done, value } = await reader.read();
         if (done) break;
 
+        // Decode with stream: true to handle multi-byte UTF-8 characters properly
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += chunk;
+        
+        // Process complete lines only
+        const lines = buffer.split('\n');
+        // Keep the last incomplete line in buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          const trimmedLine = line.trim();
+          if (trimmedLine.startsWith('data: ') && trimmedLine !== 'data: [DONE]') {
             try {
-              const json = JSON.parse(line.slice(6));
-              const content = json.choices?.[0]?.delta?.content;
-              if (content) {
-                assistantMessage += content;
-                setMessages(prev => {
-                  const updated = [...prev];
-                  updated[updated.length - 1] = { role: 'assistant', content: assistantMessage };
-                  return updated;
-                });
+              const jsonStr = trimmedLine.slice(6);
+              if (jsonStr) {
+                const json = JSON.parse(jsonStr);
+                const content = json.choices?.[0]?.delta?.content;
+                if (content) {
+                  assistantMessage += content;
+                  setMessages(prev => {
+                    const updated = [...prev];
+                    updated[updated.length - 1] = { role: 'assistant', content: assistantMessage };
+                    return updated;
+                  });
+                }
               }
-            } catch {}
+            } catch (parseError) {
+              // Skip malformed JSON chunks silently
+              console.debug('Skipping malformed SSE chunk');
+            }
           }
         }
+      }
+      
+      // Process any remaining buffer content
+      if (buffer.trim().startsWith('data: ') && buffer.trim() !== 'data: [DONE]') {
+        try {
+          const json = JSON.parse(buffer.trim().slice(6));
+          const content = json.choices?.[0]?.delta?.content;
+          if (content) {
+            assistantMessage += content;
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { role: 'assistant', content: assistantMessage };
+              return updated;
+            });
+          }
+        } catch {}
       }
 
       await saveMessage(convId, 'assistant', assistantMessage);
