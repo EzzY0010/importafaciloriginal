@@ -342,7 +342,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   const getCurrencySymbol = (currency: Currency) => CURRENCY_CONFIG[currency].symbol;
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full max-w-2xl" translate="no">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
