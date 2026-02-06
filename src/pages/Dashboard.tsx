@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Package, LogOut, Crown, User, MessageSquare, Calculator } from "lucide-react";
+import { Package, LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import LanguageSelector from "@/components/LanguageSelector";
 import WolfChat from "@/components/WolfChat";
 import AdvancedPricingCalculator from "@/components/AdvancedPricingCalculator";
+import CurrencyConverter from "@/components/CurrencyConverter";
 import PaymentButton from "@/components/PaymentButton";
 
 const Dashboard = () => {
@@ -127,7 +128,8 @@ const Dashboard = () => {
               </TabsContent>
 
               <TabsContent value="calculator" className="mt-0 animate-fade-in">
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-6">
+                  <CurrencyConverter />
                   <AdvancedPricingCalculator />
                 </div>
               </TabsContent>

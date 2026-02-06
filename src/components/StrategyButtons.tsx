@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 
 interface StrategyButtonsProps {
-  onSelect?: (strategy: 'europe' | 'usa' | 'china') => void;
+  onSelect?: (strategy: 'europe' | 'usa' | 'china' | 'uscloser') => void;
 }
 
 const StrategyButtons: React.FC<StrategyButtonsProps> = ({ onSelect }) => {
@@ -18,10 +18,18 @@ const StrategyButtons: React.FC<StrategyButtonsProps> = ({ onSelect }) => {
     {
       id: 'usa' as const,
       emoji: '🟢',
-      title: 'Opção EUA',
-      description: 'Compre em Outlets oficiais ou eBay. Envie para a Viajabox ou WeZip4U. Utilize o galpão deles para economizar no frete internacional.',
+      title: '📦 Zip4Me — Ideal para Iniciantes',
+      description: 'Você ganha um endereço nos EUA para receber suas compras. Comprou? Eles recebem, embalam e enviam pro Brasil. Qualquer dúvida, é só chamar no WhatsApp — tem suporte humano em português pra te ajudar em cada etapa.',
       color: 'border-green-500/30 bg-green-500/5 hover:bg-green-500/10',
       platforms: ['eBay', 'Outlets', 'Amazon']
+    },
+    {
+      id: 'uscloser' as const,
+      emoji: '🟡',
+      title: '🏭 USCloser — Para Revendedores e Experts',
+      description: 'Sistema robusto para quem já opera em escala. Galpão próprio em Utah com eficiência logística para grandes volumes de pedidos. Consolidação inteligente, rastreamento avançado e suporte dedicado para revendedores profissionais.',
+      color: 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10',
+      platforms: ['Alto Volume', 'Revenda', 'Logística Pro']
     },
     {
       id: 'china' as const,
