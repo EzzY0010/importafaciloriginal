@@ -74,7 +74,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-center py-4 bg-muted rounded-lg">
-          <p className="text-4xl font-bold text-primary">R$ 30,00</p>
+          <p className="text-5xl font-extrabold text-gold">R$ 30,00</p>
           <p className="text-sm text-muted-foreground mt-1">Pagamento único</p>
         </div>
         
