@@ -22,7 +22,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate("/");
+      navigate("/login");
     }
   }, [user, loading, navigate]);
 
@@ -45,7 +45,7 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/");
+    navigate("/login");
   };
 
   if (loading) {

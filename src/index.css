@@ -67,6 +67,13 @@
     --ring: 214 75% 25%;
 
     --radius: 0.875rem;
+
+    /* Gold accent for hero */
+    --gold: 43 80% 55%;
+    --gold-foreground: 0 0% 8%;
+    --hero-bg: 220 15% 13%;
+    --hero-foreground: 0 0% 95%;
+    --hero-muted: 220 10% 45%;
     
     /* Custom design tokens */
     --gradient-primary: linear-gradient(135deg, hsl(214 75% 25%), hsl(216 80% 54%));
