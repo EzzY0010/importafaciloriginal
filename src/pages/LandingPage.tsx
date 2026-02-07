@@ -15,10 +15,13 @@ const LandingPage = () => {
     }
   }, [user, hasPaid, isAdmin, navigate]);
 
+  const scrollToDeliverables = () => {
+    document.getElementById("deliverables-section")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const scrollToPayment = () => {
     document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" });
   };
-
   const deliverables = [
     {
       icon: <Brain className="w-7 h-7" />,
@@ -66,14 +69,14 @@ const LandingPage = () => {
             <span className="text-gold font-semibold">Jordan Belfort</span>, o Lobo de Wall Street.
           </p>
 
-          <button onClick={scrollToPayment} className="mx-auto block animate-bounce text-gold/60 hover:text-gold transition-colors" aria-label="Rolar para baixo">
+          <button onClick={scrollToDeliverables} className="mx-auto block animate-bounce text-gold/60 hover:text-gold transition-colors" aria-label="Rolar para baixo">
             <ChevronDown className="w-8 h-8" />
           </button>
         </div>
       </section>
 
       {/* ── O Que Entregamos ── */}
-      <section className="py-20 px-6">
+      <section id="deliverables-section" className="py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold text-center mb-14">
             O Que <span className="text-gold">Entregamos</span>
