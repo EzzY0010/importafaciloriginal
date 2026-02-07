@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Calculator, Headset, Infinity, Sparkles, Camera, Globe } from "lucide-react";
+import { ChevronDown, Calculator, Headset, Infinity, Sparkles, Camera, Globe, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import PaymentButton from "@/components/PaymentButton";
 
@@ -41,56 +42,89 @@ const LandingPage = () => {
     <div translate="no" className="bg-hero text-hero-foreground">
       {/* ── Hero Section ── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center overflow-hidden">
-        {/* Subtle radial glow */}
         <div className="absolute inset-0 pointer-events-none" style={{
           background: "radial-gradient(ellipse 60% 50% at 50% 40%, hsl(43 80% 55% / 0.06), transparent)"
         }} />
 
-        <div className="relative z-10 max-w-3xl mx-auto space-y-10">
+        <div className="relative z-10 max-w-4xl mx-auto space-y-10">
           {/* Badge */}
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium border border-gold/30 bg-gold/10 text-gold">
             <Sparkles className="w-4 h-4" />
             Plataforma Exclusiva
           </span>
 
-          {/* Title */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
-            Bem-vindo ao{" "}
-            <span className="text-gold">ImportaFácil</span>
-            <br />
-            <span className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-hero-foreground/80 mt-2 block">
-              Seu guia mais completo sobre importações
-            </span>
-          </h1>
+          {/* Tabs */}
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-hero-foreground/10 border border-hero-foreground/10">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-gold/20 data-[state=active]:text-gold text-hero-foreground/60">
+                Visão Geral
+              </TabsTrigger>
+              <TabsTrigger value="ai-power" className="data-[state=active]:bg-gold/20 data-[state=active]:text-gold text-hero-foreground/60">
+                O Poder da IA
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Description */}
-          <p className="text-lg sm:text-xl leading-relaxed text-hero-foreground/70 max-w-2xl mx-auto">
-            Domine as importações nos{" "}
-            <span className="text-hero-foreground font-semibold">Estados Unidos, China</span> e em toda a{" "}
-            <span className="text-hero-foreground font-semibold">Europa</span>.
-          </p>
+            {/* Tab 1 - Visão Geral */}
+            <TabsContent value="overview" className="mt-8 space-y-8">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
+                Bem-vindo ao{" "}
+                <span className="text-gold">ImportaFácil</span>
+                <br />
+                <span className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-hero-foreground/80 mt-2 block">
+                  Seu guia mais completo sobre importações
+                </span>
+              </h1>
 
-          {/* AI highlights */}
-          <div className="grid sm:grid-cols-2 gap-4 text-left max-w-2xl mx-auto">
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-hero-foreground/5 border border-hero-foreground/10">
-              <Sparkles className="w-5 h-5 text-gold mt-0.5 shrink-0" />
-              <p className="text-sm text-hero-foreground/80">
-                <span className="font-semibold text-hero-foreground">IA exclusiva</span> focada em Lucro e Marketing, inspirada no Jordan Belfort.
+              <p className="text-lg sm:text-xl leading-relaxed text-hero-foreground/70 max-w-3xl mx-auto">
+                Domine as importações nos{" "}
+                <span className="text-hero-foreground font-semibold">Estados Unidos, China</span> e em toda a{" "}
+                <span className="text-hero-foreground font-semibold">Europa</span> com uma estrutura de elite.
+                Nossa plataforma oferece acesso vitalício a ferramentas de análise e lucro inspiradas na mentalidade de{" "}
+                <span className="text-gold font-semibold">Jordan Belfort</span>, o Lobo de Wall Street.
               </p>
-            </div>
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-hero-foreground/5 border border-hero-foreground/10">
-              <Camera className="w-5 h-5 text-gold mt-0.5 shrink-0" />
-              <p className="text-sm text-hero-foreground/80">
-                Envie uma foto e a IA faz o <span className="font-semibold text-hero-foreground">raio-x completo</span>: Original, material, peso e Collabs.
+            </TabsContent>
+
+            {/* Tab 2 - O Poder da IA */}
+            <TabsContent value="ai-power" className="mt-8 space-y-8">
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <Brain className="w-8 h-8 text-gold" />
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-hero-foreground">
+                  Inteligência Artificial{" "}
+                  <span className="text-gold">Especialista</span>
+                </h2>
+              </div>
+              <p className="text-sm text-gold font-medium uppercase tracking-widest">
+                Importação &amp; Lucro
               </p>
-            </div>
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-hero-foreground/5 border border-hero-foreground/10 sm:col-span-2">
-              <Globe className="w-5 h-5 text-gold mt-0.5 shrink-0" />
-              <p className="text-sm text-hero-foreground/80">
-                Receba as <span className="font-semibold text-hero-foreground">palavras-chave técnicas traduzidas</span> — é só copiar e colar para pesquisar como quem já domina o mercado.
+
+              <p className="text-lg leading-relaxed text-hero-foreground/70 max-w-3xl mx-auto">
+                Nossa IA não é apenas um chat comum; ela é o seu{" "}
+                <span className="text-hero-foreground font-semibold">consultor técnico 24h</span>.
+                Envie uma foto e ela faz o raio-x completo do produto: analisa se é{" "}
+                <span className="text-hero-foreground font-semibold">Original</span>, detalha a composição do material, estima o peso para frete e identifica{" "}
+                <span className="text-hero-foreground font-semibold">Collabs exclusivas</span>.
               </p>
-            </div>
-          </div>
+
+              <div className="grid sm:grid-cols-2 gap-4 text-left max-w-3xl mx-auto">
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-hero-foreground/5 border border-hero-foreground/10">
+                  <Camera className="w-5 h-5 text-gold mt-0.5 shrink-0" />
+                  <p className="text-sm text-hero-foreground/80">
+                    <span className="font-semibold text-hero-foreground">Raio-X por Foto</span> — Envie a imagem e receba análise de autenticidade, material e peso.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-hero-foreground/5 border border-hero-foreground/10">
+                  <Globe className="w-5 h-5 text-gold mt-0.5 shrink-0" />
+                  <p className="text-sm text-hero-foreground/80">
+                    <span className="font-semibold text-hero-foreground">Tradução Técnica</span> — Termos traduzidos para copiar e colar nos fornecedores.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-base leading-relaxed text-hero-foreground/60 max-w-3xl mx-auto">
+                Ela resolve a barreira do idioma traduzindo termos técnicos para você apenas copiar e colar nos nossos fornecedores, garantindo que você garimpe exatamente o que os grandes players compram.
+              </p>
+            </TabsContent>
+          </Tabs>
 
           {/* CTA Button */}
           <div className="pt-4">
