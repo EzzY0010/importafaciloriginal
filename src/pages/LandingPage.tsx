@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import PaymentButton from "@/components/PaymentButton";
+
 
 const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
@@ -19,9 +19,6 @@ const LandingPage = () => {
     document.getElementById("deliverables-section")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const scrollToPayment = () => {
-    document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" });
-  };
   const deliverables = [
     {
       icon: <Brain className="w-7 h-7" />,
@@ -98,7 +95,7 @@ const LandingPage = () => {
           {/* CTA Button */}
           <div className="pt-12 text-center">
             <Button
-              onClick={scrollToPayment}
+              onClick={() => navigate("/login")}
               className="h-16 px-10 text-lg sm:text-xl font-bold rounded-2xl bg-gold text-gold-foreground hover:bg-gold/90 shadow-[0_0_30px_hsl(43_80%_55%_/_0.3)] hover:shadow-[0_0_40px_hsl(43_80%_55%_/_0.45)] transition-all duration-300"
             >
               EU QUERO MEU ACESSO VITALÍCIO
@@ -107,25 +104,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ── Payment Section ── */}
-      <section id="payment-section" className="py-20 px-6">
-        <div className="max-w-lg mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-4">
-            Garanta seu <span className="text-gold">Acesso Vitalício</span>
-          </h2>
-          <p className="text-center text-hero-foreground/60 mb-10">
-            Pagamento único, sem mensalidades. Acesso para sempre.
-          </p>
-          <PaymentButton />
-
-          <p className="text-center mt-8 text-sm text-hero-foreground/50">
-            Já tem uma conta?{" "}
-            <a href="/login" className="text-gold hover:underline font-semibold">
-              Entrar
-            </a>
-          </p>
-        </div>
-      </section>
     </div>
   );
 };
