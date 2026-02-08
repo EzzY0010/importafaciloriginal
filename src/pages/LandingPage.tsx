@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, MessageCircle } from "lucide-react";
+import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity } from "lucide-react";
+import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -52,7 +53,7 @@ const LandingPage = () => {
       <section className="h-screen flex flex-col items-center justify-start pt-[15vh] sm:pt-[18vh] px-6 text-center relative snap-start">
         {/* Wolf watermark */}
         <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none">
-          <span className="text-[20rem] sm:text-[28rem] opacity-[0.08] select-none leading-none">🐺</span>
+          <img src={wolfLogo} alt="" className="w-[60vw] sm:w-[40vw] max-w-[500px] opacity-[0.08] select-none" />
         </div>
 
         <div className="max-w-4xl mx-auto space-y-6 relative z-10">
@@ -105,18 +106,6 @@ const LandingPage = () => {
               EU QUERO MEU ACESSO VITALÍCIO
             </Button>
 
-            {/* WhatsApp Community Button */}
-            <div>
-              <a
-                href="https://chat.whatsapp.com/IBxNhd45sfF6lNCKIxpe7N"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-hero-foreground/60 hover:text-gold transition-colors font-medium"
-              >
-                <MessageCircle className="w-4 h-4" />
-                Entrar na comunidade
-              </a>
-            </div>
           </div>
         </div>
       </section>
