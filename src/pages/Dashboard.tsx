@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Package, LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft } from "lucide-react";
+import { Package, LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft, MessageCircle } from "lucide-react";
+import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,9 +69,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-soft">
-                <Package className="w-5 h-5 text-accent-foreground" />
-              </div>
+              <img src={wolfLogo} alt="ImportaFácil" className="w-10 h-10 rounded-xl shadow-soft" />
               <div>
                 <h1 className="text-lg font-bold text-primary-foreground">{t('appName')}</h1>
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -86,6 +85,15 @@ const Dashboard = () => {
             
             {/* Actions */}
             <div className="flex items-center gap-3">
+              <a
+                href="https://chat.whatsapp.com/IBxNhd45sfF6lNCKIxpe7N"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-primary-foreground/70 hover:text-gold transition-colors font-medium"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">Comunidade</span>
+              </a>
               <LanguageSelector />
               <Button 
                 variant="ghost" 
