@@ -461,10 +461,12 @@ const AdvancedPricingCalculator: React.FC = () => {
                       {isCamouflaged ? '🐺' : index + 1}
                     </Badge>
                     <Input
-                      placeholder="Nome do produto (ex: Boné Nike)"
+                      placeholder="Nome do item ou anotação..."
                       value={item.name}
                       onChange={(e) => updateItem(item.id, 'name', e.target.value)}
                       className="h-8 text-sm flex-1"
+                      translate="no"
+                      lang="pt-BR"
                     />
                     {/* Currency Selector per Item */}
                     <Select 
