@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Send, ImagePlus, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag } from 'lucide-react';
+import wolfLogo from '@/assets/wolf-logo-clean.png';
 import StrategyButtons from './StrategyButtons';
 
 interface Message {
@@ -481,9 +482,16 @@ const WolfChat: React.FC = () => {
       </Card>
 
       {/* Chat Area */}
-      <Card className="flex-1 flex flex-col border border-border rounded-2xl shadow-card overflow-hidden">
+      <Card className="flex-1 flex flex-col border border-border rounded-2xl shadow-card overflow-hidden relative">
+        {/* Wolf watermark background */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div 
+            className="w-full h-full bg-center bg-cover bg-no-repeat opacity-[0.08]"
+            style={{ backgroundImage: `url(${wolfLogo})` }}
+          />
+        </div>
         {/* Chat Header - Clean */}
-        <div className="text-center p-4 border-b border-border bg-card">
+        <div className="text-center p-4 border-b border-border bg-card relative z-[1]">
           <h2 className="text-xl font-bold flex items-center justify-center gap-2 text-foreground">
             <span className="md:hidden w-8" />
             🐺 Lobo das Importações
@@ -491,7 +499,7 @@ const WolfChat: React.FC = () => {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/40 transition-colors">
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/40 transition-colors relative z-[1]">
           <div className="p-4 space-y-4 min-h-full">
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground py-8 px-4">
