@@ -618,7 +618,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         {/* Tip */}
         <div className="p-3 bg-accent/5 rounded-lg border border-accent/10">
           <p className="text-xs text-muted-foreground">
-            <strong className="text-foreground">💡 Dica:</strong> Use a estratégia de consolidar várias peças no seu endereço dos EUA para baixar o frete unitário
+            <strong className="text-foreground">💡 Dica:</strong> Use a estratégia de consolidar várias peças na sua redirecionadora para baixar o frete unitário
           </p>
         </div>
       </CardContent>
