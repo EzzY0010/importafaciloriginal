@@ -243,8 +243,6 @@ const AdvancedPricingCalculator: React.FC = () => {
       if (field === 'name') {
         if (containsBrand(value)) {
           setBrandWarning('Cuidado! O Lobo recomenda não usar nomes de marcas para evitar a fiscalização de pirataria.');
-          const { name: camouflagedName } = camouflageProductName(value);
-          updatedItem.name = camouflagedName;
           setCamouflagedItems(prev => new Set(prev).add(id));
           
           // Detectar peso e auto-preencher declaração
@@ -461,12 +459,19 @@ const AdvancedPricingCalculator: React.FC = () => {
                       {isCamouflaged ? '🐺' : index + 1}
                     </Badge>
                     <Input
+                      type="text"
                       placeholder="Nome do item ou anotação..."
                       value={item.name}
                       onChange={(e) => updateItem(item.id, 'name', e.target.value)}
                       className="h-8 text-sm flex-1"
                       translate="no"
                       lang="pt-BR"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                      data-notranslate="true"
+                      style={{ textTransform: 'none' }}
                     />
                     {/* Currency Selector per Item */}
                     <Select 
