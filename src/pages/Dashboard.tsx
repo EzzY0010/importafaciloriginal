@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Package, LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft } from "lucide-react";
+import { LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft } from "lucide-react";
+import wolfPaymentLogo from "@/assets/wolf-payment-logo.png";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -146,9 +147,7 @@ const Dashboard = () => {
             </Tabs>
           ) : (
             <div className="card-premium max-w-lg mx-auto text-center animate-slide-up">
-              <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Package className="w-8 h-8 text-accent" />
-              </div>
+              <img src={wolfPaymentLogo} alt="ImportaFácil" className="w-24 h-24 rounded-2xl object-cover mx-auto mb-6" />
               <h2 className="text-2xl font-bold mb-3 text-foreground">{t('unlockAccess')}</h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
                 {t('unlockDescription')}
