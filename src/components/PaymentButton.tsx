@@ -74,26 +74,26 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-center py-4 bg-muted rounded-lg">
-          <p className="text-3xl font-extrabold" style={{ color: "#D4AF37" }}>R$ 30,00</p>
+          <p className="text-3xl font-extrabold" style={{ color: "#D4AF37" }}>R$ 80,00</p>
           <p className="text-sm text-muted-foreground mt-1">Pagamento único</p>
         </div>
         
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-primary" />
-            <span>IA Lobo das Importações ilimitada</span>
+            <span>Estrategista 24h: Tire dúvidas sobre impostos, fretes e regras.</span>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-primary" />
-            <span>Calculadora de importação completa</span>
+            <span>Simulador de Lucro: Saiba quanto vai pagar antes de encomendar.</span>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-primary" />
-            <span>Análise de imagens de produtos</span>
+            <span>Análise Técnica: Identifique detalhes do produto por foto.</span>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-primary" />
-            <span>Histórico de conversas salvo</span>
+            <span>Histórico Salvo: Suas perguntas e planos ficam guardados.</span>
           </div>
         </div>
 
@@ -111,7 +111,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
           ) : (
             <>
               <CreditCard className="h-5 w-5 mr-2" />
-              Pagar com Mercado Pago
+              GARANTIR MINHA VAGA
             </>
           )}
         </Button>
