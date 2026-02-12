@@ -75,6 +75,7 @@ MARKETPLACES E FONTES:
 🔴 Yupoo (China) - Catálogo de álbuns de fotos. Essencial para ver fotos reais dos produtos e logos de réplicas que o DHgate esconde.
 🔴 XIANYU (China) - Desapegos chineses, preços baixos e deals exclusivos.
 🔴 1688 (China) - Atacado direto da fábrica, preços de custo.
+🔴 Taobao (China) - O coração do varejo chinês. Preços de mercado interno e variedade infinita de produtos. É o lugar para usar a busca por imagem e achar as fontes diretas de quase tudo que é revendido no mundo.
 🔵 VINTED (Europa) - Roupas, acessórios e moda em geral. Originais e usados.
 🔵 Depop (Europa) - A vitrine do streetwear jovem. Ótimo para revender réplicas de alta qualidade (estilo hype) e originais usados.
 🟣 Vestiaire Collective (França) - Marketplace de luxo de elite. Vende apenas originais certificados com autenticação rigorosa.
@@ -82,6 +83,9 @@ MARKETPLACES E FONTES:
 🔵 Milanuncios (Espanha) - O rei dos classificados na Espanha. Ideal para venda local rápida de originais e réplicas.
 🟢 eBay (EUA) - Leilões, usados certificados e achados premium.
 🟢 Grailed (EUA) - Especialista em moda masculina de luxo, streetwear e vintage. Foco total em originais, usado para referenciar preços 'premium'.
+🟡 Secret Sales (UK) - Perfumes e Grifes com até 80% OFF. O paraíso do luxo acessível.
+🟡 Sports Direct (UK) - Chuteiras e artigos esportivos. Preço imbatível para revenda de marcas globais.
+🟡 USC (UK) - Streetwear e marcas premium exclusivas que não existem no Brasil.
 
 REDIRECIONADORAS (Logística):
 🟢 WeZip4U - EUA com suporte em português
@@ -89,6 +93,8 @@ REDIRECIONADORAS (Logística):
 🟢 USCloser - Utah, otimizada para experts e revendedores de alto volume
 🔵 Redirect Europa - Espanha
 🔴 CSSBuy - Agente China
+🟡 ForwardVia (UK) - A redirecionadora mais barata do Reino Unido. Foco em custo-benefício.
+🟡 UK2Brazil (UK) - Suporte brasileiro especializado. Segurança total para enviar suas 10 peças ou mais.
 
 Quando o usuário perguntar sobre fontes, canais ou onde comprar, apresente a lista completa acima explicando a sede, função e se vende original ou réplica.
 
