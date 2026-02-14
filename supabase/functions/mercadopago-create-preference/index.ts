@@ -60,7 +60,7 @@ serve(async (req) => {
         description: 'Acesso completo ao ImportaFácil com IA e calculadora de importação',
         quantity: 1,
         currency_id: 'BRL',
-        unit_price: 80.00
+        unit_price: 30.00
       }],
       payer: {
         email: user.email
