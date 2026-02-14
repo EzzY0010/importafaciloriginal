@@ -48,7 +48,7 @@ serve(async (req) => {
     await adminClient.from('payments').insert({
       user_id: user.id,
       external_reference: externalReference,
-      amount: 80.00,
+      amount: 30.00,
       status: 'pending'
     });
 
