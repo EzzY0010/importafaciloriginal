@@ -115,26 +115,50 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          device_approved: boolean | null
           email: string | null
           full_name: string | null
           has_paid: boolean | null
           id: string
+          last_city: string | null
+          last_country: string | null
+          last_device_fingerprint: string | null
+          last_ip: string | null
+          last_latitude: number | null
+          last_login_at: string | null
+          last_longitude: number | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          device_approved?: boolean | null
           email?: string | null
           full_name?: string | null
           has_paid?: boolean | null
           id: string
+          last_city?: string | null
+          last_country?: string | null
+          last_device_fingerprint?: string | null
+          last_ip?: string | null
+          last_latitude?: number | null
+          last_login_at?: string | null
+          last_longitude?: number | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          device_approved?: boolean | null
           email?: string | null
           full_name?: string | null
           has_paid?: boolean | null
           id?: string
+          last_city?: string | null
+          last_country?: string | null
+          last_device_fingerprint?: string | null
+          last_ip?: string | null
+          last_latitude?: number | null
+          last_login_at?: string | null
+          last_longitude?: number | null
           updated_at?: string
         }
         Relationships: []
