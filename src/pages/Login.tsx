@@ -11,6 +11,30 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import LanguageSelector from "@/components/LanguageSelector";
 
+// Generate a simple device fingerprint from browser properties
+const generateFingerprint = (): string => {
+  const nav = window.navigator;
+  const screen = window.screen;
+  const parts = [
+    nav.userAgent,
+    nav.language,
+    screen.width + 'x' + screen.height,
+    screen.colorDepth,
+    nav.hardwareConcurrency,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    nav.platform,
+  ];
+  // Simple hash
+  let hash = 0;
+  const str = parts.join('|');
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+};
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,6 +57,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    // RULE 3: Sign out all other sessions first (single session)
     const { error } = await signIn(email, password);
 
     if (error) {
@@ -41,14 +66,61 @@ const Login = () => {
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: t('loginSuccess'),
-        description: t('welcomeBack'),
-      });
-      navigate("/dashboard");
+      setIsLoading(false);
+      return;
     }
 
+    // Get the current user after login
+    const { data: { user: loggedUser } } = await supabase.auth.getUser();
+    if (!loggedUser) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Generate device fingerprint and check with backend
+    const fingerprint = generateFingerprint();
+    try {
+      const checkRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/login-check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          userId: loggedUser.id,
+          deviceFingerprint: fingerprint,
+        }),
+      });
+      const checkData = await checkRes.json();
+
+      if (checkData.blocked) {
+        // Sign out immediately if blocked
+        await supabase.auth.signOut();
+        toast({
+          title: '🔒 Acesso Bloqueado',
+          description: checkData.message,
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.error('Login check failed:', err);
+      // Allow login if check fails (graceful degradation)
+    }
+
+    // RULE 3: Sign out other sessions (single session enforcement)
+    try {
+      await supabase.auth.signOut({ scope: 'others' });
+    } catch {
+      // Non-critical
+    }
+
+    toast({
+      title: t('loginSuccess'),
+      description: t('welcomeBack'),
+    });
+    navigate("/dashboard");
     setIsLoading(false);
   };
 
