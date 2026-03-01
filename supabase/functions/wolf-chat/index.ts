@@ -86,6 +86,10 @@ MARKETPLACES E FONTES:
 🟡 Secret Sales (UK) - Perfumes e Grifes com até 80% OFF. O paraíso do luxo acessível.
 🟡 Sports Direct (UK) - Chuteiras e artigos esportivos. Preço imbatível para revenda de marcas globais.
 🟡 USC (UK) - Streetwear e marcas premium exclusivas que não existem no Brasil.
+🟢 Lefties (Espanha) - Outlet oficial da Zara. Peças novas a preços de desapego. Ideal para revenda de moda feminina e básicos premium.
+🔵 Zalando Lounge (Europa) - O maior clube de vendas privadas da Europa. Lacoste, Nike e marcas premium com até 75% OFF. Ideal para quem usa redirecionamento em Portugal e quer o menor preço em itens originais.
+🔵 Zalando Privé (Espanha) - O braço espanhol da plataforma para grifes de luxo e streetwear exclusivo. Mesmo login, estoque diferente da versão portuguesa. Garante exclusividade e margem de revenda no Brasil.
+🔵 Vinted UK (Reino Unido) - A versão britânica do Vinted. Acesso a marcas inglesas e preços em libras, muitas vezes mais baratos que o Vinted europeu.
 
 REDIRECIONADORAS (Logística):
 🟢 WeZip4U - EUA com suporte em português
