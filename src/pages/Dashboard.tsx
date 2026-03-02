@@ -88,6 +88,17 @@ const Dashboard = () => {
             
             {/* Actions */}
             <div className="flex items-center gap-3">
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/admin")}
+                  className="gap-1 text-accent hover:bg-primary-foreground/10 text-xs font-bold"
+                >
+                  <Crown className="w-4 h-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Button>
+              )}
               <a
                 href="https://chat.whatsapp.com/IBxNhd45sfF6lNCKIxpe7N"
                 target="_blank"

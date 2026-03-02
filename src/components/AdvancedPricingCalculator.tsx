@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText } from 'lucide-react';
 
 type Currency = 'USD' | 'EUR' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
@@ -339,6 +339,88 @@ const AdvancedPricingCalculator: React.FC = () => {
 
   const getCurrencySymbol = (currency: Currency) => CURRENCY_CONFIG[currency].symbol;
 
+  const WEIGHT_LABELS: Record<WeightCategory, string> = {
+    light: '~130g (Leve)',
+    medium: '~500g (Médio)',
+    heavy: '~1.2kg (Pesado)',
+  };
+
+  const generatePDF = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('pt-BR');
+    const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    const itemsWithData = adjustedItems.filter(item => parseFloat(item.costPrice) > 0);
+    if (itemsWithData.length === 0) return;
+
+    let html = `
+      <html><head><meta charset="utf-8"><title>Resumo ImportaFácil</title>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
+        h1 { color: #0F3B6F; font-size: 24px; border-bottom: 3px solid #FF7A00; padding-bottom: 8px; }
+        h2 { color: #2C6FE8; font-size: 16px; margin-top: 24px; }
+        .meta { color: #666; font-size: 13px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+        th { background: #0F3B6F; color: white; padding: 8px 12px; text-align: left; }
+        td { padding: 8px 12px; border-bottom: 1px solid #e0e6eb; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        .profit { color: #16a34a; font-weight: bold; }
+        .cost { color: #dc2626; }
+        .total-box { background: #f0f4ff; border: 2px solid #2C6FE8; border-radius: 12px; padding: 20px; margin-top: 20px; }
+        .total-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; text-align: center; }
+        .total-label { font-size: 12px; color: #666; }
+        .total-value { font-size: 22px; font-weight: bold; }
+        .footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #e0e6eb; font-size: 11px; color: #999; }
+        .wolf { font-size: 14px; color: #0F3B6F; font-style: italic; margin-top: 16px; }
+        @media print { body { padding: 20px; } }
+      </style></head><body>
+      <h1>🐺 ImportaFácil — Resumo de Precificação</h1>
+      <div class="meta">Data: ${dateStr} às ${timeStr} | Câmbio: 1 USD = R$ ${usdToBrl.toFixed(2)} | 1 EUR = R$ ${eurToBrl.toFixed(2)} | 1 CNY = R$ ${cnyToBrl.toFixed(2)}</div>
+
+      <h2>📦 Detalhamento por Item</h2>
+      <table>
+        <tr><th>Item</th><th>Peso Est.</th><th>Custo (${itemsWithData[0] ? getCurrencySymbol(itemsWithData[0].currency) : '$'})</th><th>Frete Rateado</th><th>Imposto 60%</th><th>Custo Final</th><th>Venda</th><th>Lucro</th></tr>`;
+
+    itemsWithData.forEach((item) => {
+      const costs = calculateItemCosts(item);
+      const displayName = item.name || `Item ${adjustedItems.indexOf(item) + 1}`;
+      const weightLabel = WEIGHT_LABELS[item.weightCategory];
+      html += `
+        <tr>
+          <td><strong>${displayName}</strong></td>
+          <td>${weightLabel}</td>
+          <td>${getCurrencySymbol(item.currency)} ${parseFloat(item.costPrice).toFixed(2)}</td>
+          <td>R$ ${shippingPerItemBRL.toFixed(2)}</td>
+          <td class="cost">R$ ${costs.taxBRL.toFixed(2)}</td>
+          <td><strong>R$ ${costs.finalCostBRL.toFixed(2)}</strong></td>
+          <td>R$ ${costs.sellingPrice.toFixed(2)}</td>
+          <td class="profit">R$ ${costs.netProfit.toFixed(2)}</td>
+        </tr>`;
+    });
+
+    html += `</table>
+
+      <div class="total-box">
+        <div class="total-grid">
+          <div><div class="total-label">Investimento Total</div><div class="total-value">R$ ${totalResults.totalCost.toFixed(2)}</div></div>
+          <div><div class="total-label">Faturamento</div><div class="total-value">R$ ${totalResults.totalSelling.toFixed(2)}</div></div>
+          <div><div class="total-label">Lucro Total</div><div class="total-value profit">R$ ${totalResults.totalProfit.toFixed(2)}</div></div>
+        </div>
+      </div>
+
+      <p class="wolf">💡 Dica do Lobo: Consolide várias peças na sua redirecionadora para baixar o frete unitário.</p>
+      <div class="footer">Gerado por ImportaFácil — Seu guia mais completo sobre importações</div>
+      </body></html>`;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => printWindow.print(), 500);
+    }
+  };
+
   return (
     <Card className="w-full max-w-2xl" translate="no">
       <CardHeader className="pb-3">
@@ -617,6 +699,16 @@ const AdvancedPricingCalculator: React.FC = () => {
                 </p>
               </div>
             </div>
+
+            {/* PDF Button */}
+            <Button
+              variant="outline"
+              className="w-full mt-2 gap-2 border-accent/30 text-accent hover:bg-accent/10"
+              onClick={() => generatePDF()}
+            >
+              <FileText className="h-4 w-4" />
+              Gerar Resumo em PDF
+            </Button>
           </div>
         )}
 
