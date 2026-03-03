@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +15,20 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const isBackendConfigured = Boolean(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+);
+
+let supabaseClient: SupabaseClient<Database> | null = null;
+
+const getSupabase = async (): Promise<SupabaseClient<Database> | null> => {
+  if (!isBackendConfigured) return null;
+  if (supabaseClient) return supabaseClient;
+
+  const module = await import('@/integrations/supabase/client');
+  supabaseClient = module.supabase;
+  return supabaseClient;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -23,97 +37,147 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasPaid, setHasPaid] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const checkAdminRole = async (userId: string) => {
-    const { data } = await supabase
+  const checkAdminRole = async (userId: string, client: SupabaseClient<Database>) => {
+    const { data } = await client
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
       .eq('role', 'admin')
       .maybeSingle();
-    
+
     setIsAdmin(!!data);
   };
 
-  const checkPaymentStatus = async (userId: string) => {
-    const { data } = await supabase
+  const checkPaymentStatus = async (userId: string, client: SupabaseClient<Database>) => {
+    const { data } = await client
       .from('profiles')
       .select('has_paid')
       .eq('id', userId)
       .maybeSingle();
-    
+
     setHasPaid(data?.has_paid ?? false);
   };
 
   const refreshPaymentStatus = async () => {
-    if (user) {
-      await checkPaymentStatus(user.id);
+    const client = await getSupabase();
+    if (user && client) {
+      await checkPaymentStatus(user.id, client);
     }
   };
 
   useEffect(() => {
-    let subscription: { unsubscribe: () => void } | null = null;
-    
-    try {
-      const { data } = supabase.auth.onAuthStateChange(
-        (event, session) => {
-          setSession(session);
-          setUser(session?.user ?? null);
+    let unsubscribe: (() => void) | null = null;
+    let isMounted = true;
+
+    const initAuth = async () => {
+      if (!isBackendConfigured) {
+        if (isMounted) {
+          setUser(null);
+          setSession(null);
+          setIsAdmin(false);
+          setHasPaid(false);
           setLoading(false);
-          
-          if (session?.user) {
+        }
+        return;
+      }
+
+      try {
+        const client = await getSupabase();
+        if (!client) {
+          if (isMounted) setLoading(false);
+          return;
+        }
+
+        const { data } = client.auth.onAuthStateChange((event, nextSession) => {
+          if (!isMounted) return;
+
+          setSession(nextSession);
+          setUser(nextSession?.user ?? null);
+          setLoading(false);
+
+          if (nextSession?.user) {
             setTimeout(() => {
-              checkAdminRole(session.user.id);
-              checkPaymentStatus(session.user.id);
+              checkAdminRole(nextSession.user.id, client);
+              checkPaymentStatus(nextSession.user.id, client);
             }, 0);
           } else {
             setIsAdmin(false);
             setHasPaid(false);
           }
-        }
-      );
-      subscription = data.subscription;
+        });
 
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+        unsubscribe = () => data.subscription.unsubscribe();
+
+        const {
+          data: { session: currentSession },
+        } = await client.auth.getSession();
+
+        if (!isMounted) return;
+
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
         setLoading(false);
-        
-        if (session?.user) {
-          checkAdminRole(session.user.id);
-          checkPaymentStatus(session.user.id);
+
+        if (currentSession?.user) {
+          await Promise.all([
+            checkAdminRole(currentSession.user.id, client),
+            checkPaymentStatus(currentSession.user.id, client),
+          ]);
         }
-      });
-    } catch (err) {
-      console.error('Auth initialization error:', err);
-      setLoading(false);
-    }
+      } catch (err) {
+        console.error('Auth initialization error:', err);
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    initAuth();
 
     return () => {
-      if (subscription) subscription.unsubscribe();
+      isMounted = false;
+      if (unsubscribe) unsubscribe();
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const client = await getSupabase();
+    if (!client) {
+      return { error: new Error('Backend indisponível no momento.') };
+    }
+
+    const { error } = await client.auth.signInWithPassword({ email, password });
     return { error };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    const client = await getSupabase();
+    if (!client) {
+      return { error: new Error('Backend indisponível no momento.') };
+    }
+
     const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
+
+    const { error } = await client.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { full_name: fullName }
-      }
+        data: { full_name: fullName },
+      },
     });
     return { error };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const client = await getSupabase();
+    if (!client) {
+      setUser(null);
+      setSession(null);
+      setIsAdmin(false);
+      setHasPaid(false);
+      return;
+    }
+
+    await client.auth.signOut();
   };
 
   return (

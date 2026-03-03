@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface UserProfile {
@@ -24,6 +23,43 @@ interface UserProfile {
   created_at: string;
 }
 
+const isBackendConfigured = Boolean(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+);
+
+const mockProfiles: UserProfile[] = [
+  {
+    id: "mock-1",
+    email: "aluno1@demo.com",
+    full_name: "Aluno Demo 1",
+    has_paid: true,
+    device_approved: false,
+    last_device_fingerprint: "fp_demo_001",
+    last_ip: "189.120.xx.xx",
+    last_city: "São Paulo",
+    last_country: "BR",
+    last_login_at: new Date().toISOString(),
+    last_latitude: null,
+    last_longitude: null,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "mock-2",
+    email: "aluno2@demo.com",
+    full_name: "Aluno Demo 2",
+    has_paid: false,
+    device_approved: true,
+    last_device_fingerprint: "fp_demo_002",
+    last_ip: "177.18.xx.xx",
+    last_city: "Lisboa",
+    last_country: "PT",
+    last_login_at: new Date(Date.now() - 1000 * 60 * 42).toISOString(),
+    last_latitude: null,
+    last_longitude: null,
+    created_at: new Date().toISOString(),
+  },
+];
+
 const AdminPanel = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
@@ -32,17 +68,26 @@ const AdminPanel = () => {
   const [loadingProfiles, setLoadingProfiles] = useState(true);
 
   useEffect(() => {
+    if (!isBackendConfigured) return;
     if (!loading && (!user || !isAdmin)) {
       navigate("/dashboard");
     }
   }, [user, isAdmin, loading, navigate]);
 
   useEffect(() => {
-    if (isAdmin) loadProfiles();
+    if (!isBackendConfigured || isAdmin) loadProfiles();
   }, [isAdmin]);
 
   const loadProfiles = async () => {
     setLoadingProfiles(true);
+
+    if (!isBackendConfigured) {
+      setProfiles(mockProfiles);
+      setLoadingProfiles(false);
+      return;
+    }
+
+    const { supabase } = await import("@/integrations/supabase/client");
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
@@ -58,6 +103,14 @@ const AdminPanel = () => {
 
   const toggleDeviceApproval = async (profileId: string, currentStatus: boolean | null) => {
     const newStatus = !currentStatus;
+
+    if (!isBackendConfigured) {
+      setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, device_approved: newStatus } : p)));
+      toast({ title: "Modo demo", description: "Alteração aplicada apenas localmente." });
+      return;
+    }
+
+    const { supabase } = await import("@/integrations/supabase/client");
     const { error } = await supabase
       .from("profiles")
       .update({ device_approved: newStatus })
@@ -78,6 +131,14 @@ const AdminPanel = () => {
 
   const togglePayment = async (profileId: string, currentStatus: boolean | null) => {
     const newStatus = !currentStatus;
+
+    if (!isBackendConfigured) {
+      setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, has_paid: newStatus } : p)));
+      toast({ title: "Modo demo", description: "Alteração aplicada apenas localmente." });
+      return;
+    }
+
+    const { supabase } = await import("@/integrations/supabase/client");
     const { error } = await supabase
       .from("profiles")
       .update({ has_paid: newStatus })
@@ -93,7 +154,7 @@ const AdminPanel = () => {
     }
   };
 
-  if (loading || !isAdmin) {
+  if ((loading && isBackendConfigured) || (isBackendConfigured && !isAdmin)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
