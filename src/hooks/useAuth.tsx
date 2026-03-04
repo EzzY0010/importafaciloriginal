@@ -15,14 +15,16 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const FORCE_MOCK_MODE = true;
 const isBackendConfigured = Boolean(
   import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 );
+const shouldUseBackend = isBackendConfigured && !FORCE_MOCK_MODE;
 
 let supabaseClient: SupabaseClient<Database> | null = null;
 
 const getSupabase = async (): Promise<SupabaseClient<Database> | null> => {
-  if (!isBackendConfigured) return null;
+  if (!shouldUseBackend) return null;
   if (supabaseClient) return supabaseClient;
 
   const module = await import('@/integrations/supabase/client');
@@ -70,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let isMounted = true;
 
     const initAuth = async () => {
-      if (!isBackendConfigured) {
+      if (!shouldUseBackend) {
         if (isMounted) {
           setUser(null);
           setSession(null);

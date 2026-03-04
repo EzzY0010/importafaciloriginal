@@ -23,9 +23,10 @@ interface UserProfile {
   created_at: string;
 }
 
+const FORCE_MOCK_MODE = true;
 const isBackendConfigured = Boolean(
   import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
+) && !FORCE_MOCK_MODE;
 
 const mockProfiles: UserProfile[] = [
   {
