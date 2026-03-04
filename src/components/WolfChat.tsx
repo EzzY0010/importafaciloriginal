@@ -336,11 +336,8 @@ const WolfChat: React.FC = () => {
 
   const sendMessage = async () => {
     if (!input.trim() && !imagePreview) return;
-    if (!user) {
-      toast({ title: 'Erro', description: 'Você precisa estar logado', variant: 'destructive' });
-      return;
-    }
 
+    const fallbackUserId = user?.id ?? 'mock-user';
     let convId = currentConversationId;
     if (!convId) {
       convId = await createNewConversation();
@@ -359,12 +356,17 @@ const WolfChat: React.FC = () => {
     setIsLoading(true);
     setShowStrategies(false);
 
-    await saveMessage(convId, 'user', input, imagePreview || undefined);
+    if (shouldUseBackend) {
+      await saveMessage(convId, 'user', input, imagePreview || undefined);
+    }
 
-    if (messages.length === 0 && input.trim()) {
-      const title = input.substring(0, 50) + (input.length > 50 ? '...' : '');
-      await supabase.from('conversations').update({ title }).eq('id', convId);
-      setConversations(prev => prev.map(c => c.id === convId ? { ...c, title } : c));
+    if (shouldUseBackend && messages.length === 0 && input.trim()) {
+      const client = await getSupabase();
+      if (client) {
+        const title = input.substring(0, 50) + (input.length > 50 ? '...' : '');
+        await client.from('conversations').update({ title }).eq('id', convId);
+        setConversations(prev => prev.map(c => c.id === convId ? { ...c, title } : c));
+      }
     }
 
     try {
@@ -384,7 +386,7 @@ const WolfChat: React.FC = () => {
         body: JSON.stringify({
           messages: [{ role: 'user', content: finalContent }],
           conversationId: convId,
-          userId: user.id
+          userId: fallbackUserId
         }),
       });
 
