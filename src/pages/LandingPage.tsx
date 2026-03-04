@@ -100,7 +100,7 @@ const LandingPage = () => {
           {/* CTA Button */}
           <div className="pt-8 text-center space-y-4">
             <Button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/login")}
               className="h-14 px-8 text-base sm:text-lg font-bold rounded-2xl bg-gold text-gold-foreground hover:bg-gold/90 shadow-[0_0_30px_hsl(43_80%_55%_/_0.3)] hover:shadow-[0_0_40px_hsl(43_80%_55%_/_0.45)] transition-all duration-300"
             >
               EU QUERO MEU ACESSO VITALÍCIO

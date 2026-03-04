@@ -116,8 +116,8 @@ const App = () => (
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/admin" element={<AdminPanel />} />
+                <Route path="/dashboard" element={isBackendConfigured ? <Dashboard /> : <MockDashboard />} />
+                <Route path="/admin" element={isBackendConfigured ? <AdminPanel /> : <MockAdminPanel />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -1,6 +1,6 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { LogOut, Crown, User, MessageSquare, Calculator } from "lucide-react";
+import { LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft } from "lucide-react";
 import wolfPaymentLogo from "@/assets/wolf-payment-logo.png";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import LanguageSelector from "@/components/LanguageSelector";
+import WolfChat from "@/components/WolfChat";
 import AdvancedPricingCalculator from "@/components/AdvancedPricingCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import PaymentButton from "@/components/PaymentButton";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
-
-const WolfChat = lazy(() => import("@/components/WolfChat"));
-const FORCE_MOCK_MODE = true;
 
 const Dashboard = () => {
   const { user, isAdmin, hasPaid, signOut, loading, refreshPaymentStatus } = useAuth();
@@ -26,7 +24,7 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("chat");
 
   useEffect(() => {
-    if (!loading && !user && !FORCE_MOCK_MODE) {
+    if (!loading && !user) {
       navigate("/login");
     }
   }, [user, loading, navigate]);
@@ -61,9 +59,9 @@ const Dashboard = () => {
     );
   }
 
-  if (!user && !FORCE_MOCK_MODE) return null;
+  if (!user) return null;
 
-  const hasAccess = FORCE_MOCK_MODE || hasPaid || isAdmin;
+  const hasAccess = hasPaid || isAdmin;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -148,9 +146,7 @@ const Dashboard = () => {
               </TabsList>
 
               <TabsContent value="chat" className="mt-0 animate-fade-in">
-                <Suspense fallback={<div className="min-h-[320px] flex items-center justify-center text-muted-foreground">Carregando Lobo...</div>}>
-                  <WolfChat />
-                </Suspense>
+                <WolfChat />
               </TabsContent>
 
               <TabsContent value="calculator" className="mt-0 animate-fade-in">
