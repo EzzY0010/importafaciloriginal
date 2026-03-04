@@ -61,7 +61,7 @@ const Dashboard = () => {
     );
   }
 
-  if (!user) return null;
+  if (!user && !FORCE_MOCK_MODE) return null;
 
   const hasAccess = FORCE_MOCK_MODE || hasPaid || isAdmin;
 
