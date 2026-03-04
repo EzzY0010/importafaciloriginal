@@ -6,7 +6,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { Send, ImagePlus, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag } from 'lucide-react';
 import wolfLogo from '@/assets/wolf-logo-clean.png';
 import StrategyButtons from './StrategyButtons';
@@ -172,6 +171,17 @@ const renderMessageContent = (content: string) => {
   return parts.length > 0 ? parts : content;
 };
 
+const FORCE_MOCK_MODE = true;
+const shouldUseBackend = Boolean(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+) && !FORCE_MOCK_MODE;
+
+const getSupabase = async () => {
+  if (!shouldUseBackend) return null;
+  const module = await import('@/integrations/supabase/client');
+  return module.supabase;
+};
+
 const WolfChat: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -187,7 +197,7 @@ const WolfChat: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user) {
+    if (shouldUseBackend && user) {
       loadConversations();
     }
   }, [user]);
@@ -205,21 +215,27 @@ const WolfChat: React.FC = () => {
   }, [messages]);
 
   const loadConversations = async () => {
-    const { data } = await supabase
+    const client = await getSupabase();
+    if (!client) return;
+
+    const { data } = await client
       .from('conversations')
       .select('*')
       .order('updated_at', { ascending: false });
-    
+
     if (data) setConversations(data);
   };
 
   const loadMessages = async (conversationId: string) => {
-    const { data } = await supabase
+    const client = await getSupabase();
+    if (!client) return;
+
+    const { data } = await client
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
-    
+
     if (data) {
       setMessages(data.map(m => ({
         role: m.role as 'user' | 'assistant',
@@ -230,14 +246,30 @@ const WolfChat: React.FC = () => {
   };
 
   const createNewConversation = async () => {
-    if (!user) return null;
-    
-    const { data } = await supabase
+    if (!shouldUseBackend || !user) {
+      const mockId = `mock-${Date.now()}`;
+      const mockConversation: Conversation = {
+        id: mockId,
+        title: 'Nova conversa',
+        created_at: new Date().toISOString(),
+      };
+      setConversations(prev => [mockConversation, ...prev]);
+      setCurrentConversationId(mockId);
+      setMessages([]);
+      setSidebarOpen(false);
+      setShowStrategies(false);
+      return mockId;
+    }
+
+    const client = await getSupabase();
+    if (!client) return null;
+
+    const { data } = await client
       .from('conversations')
       .insert({ user_id: user.id, title: 'Nova conversa' })
       .select()
       .single();
-    
+
     if (data) {
       setConversations(prev => [data, ...prev]);
       setCurrentConversationId(data.id);
@@ -251,12 +283,17 @@ const WolfChat: React.FC = () => {
 
   const selectConversation = async (conv: Conversation) => {
     setCurrentConversationId(conv.id);
-    await loadMessages(conv.id);
+    if (shouldUseBackend) {
+      await loadMessages(conv.id);
+    }
     setSidebarOpen(false);
   };
 
   const deleteConversation = async (convId: string) => {
-    await supabase.from('conversations').delete().eq('id', convId);
+    const client = await getSupabase();
+    if (client) {
+      await client.from('conversations').delete().eq('id', convId);
+    }
     setConversations(prev => prev.filter(c => c.id !== convId));
     if (currentConversationId === convId) {
       setCurrentConversationId(null);
@@ -276,7 +313,10 @@ const WolfChat: React.FC = () => {
   };
 
   const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string, imageUrl?: string) => {
-    await supabase.from('messages').insert({
+    const client = await getSupabase();
+    if (!client) return;
+
+    await client.from('messages').insert({
       conversation_id: conversationId,
       role,
       content,
@@ -296,11 +336,8 @@ const WolfChat: React.FC = () => {
 
   const sendMessage = async () => {
     if (!input.trim() && !imagePreview) return;
-    if (!user) {
-      toast({ title: 'Erro', description: 'Você precisa estar logado', variant: 'destructive' });
-      return;
-    }
 
+    const fallbackUserId = user?.id ?? 'mock-user';
     let convId = currentConversationId;
     if (!convId) {
       convId = await createNewConversation();
@@ -319,12 +356,17 @@ const WolfChat: React.FC = () => {
     setIsLoading(true);
     setShowStrategies(false);
 
-    await saveMessage(convId, 'user', input, imagePreview || undefined);
+    if (shouldUseBackend) {
+      await saveMessage(convId, 'user', input, imagePreview || undefined);
+    }
 
-    if (messages.length === 0 && input.trim()) {
-      const title = input.substring(0, 50) + (input.length > 50 ? '...' : '');
-      await supabase.from('conversations').update({ title }).eq('id', convId);
-      setConversations(prev => prev.map(c => c.id === convId ? { ...c, title } : c));
+    if (shouldUseBackend && messages.length === 0 && input.trim()) {
+      const client = await getSupabase();
+      if (client) {
+        const title = input.substring(0, 50) + (input.length > 50 ? '...' : '');
+        await client.from('conversations').update({ title }).eq('id', convId);
+        setConversations(prev => prev.map(c => c.id === convId ? { ...c, title } : c));
+      }
     }
 
     try {
@@ -344,7 +386,7 @@ const WolfChat: React.FC = () => {
         body: JSON.stringify({
           messages: [{ role: 'user', content: finalContent }],
           conversationId: convId,
-          userId: user.id
+          userId: fallbackUserId
         }),
       });
 
