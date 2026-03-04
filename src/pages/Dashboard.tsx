@@ -63,7 +63,7 @@ const Dashboard = () => {
 
   if (!user) return null;
 
-  const hasAccess = hasPaid || isAdmin;
+  const hasAccess = FORCE_MOCK_MODE || hasPaid || isAdmin;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -148,7 +148,9 @@ const Dashboard = () => {
               </TabsList>
 
               <TabsContent value="chat" className="mt-0 animate-fade-in">
-                <WolfChat />
+                <Suspense fallback={<div className="min-h-[320px] flex items-center justify-center text-muted-foreground">Carregando Lobo...</div>}>
+                  <WolfChat />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="calculator" className="mt-0 animate-fade-in">
