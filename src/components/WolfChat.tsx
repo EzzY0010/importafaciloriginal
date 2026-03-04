@@ -171,6 +171,17 @@ const renderMessageContent = (content: string) => {
   return parts.length > 0 ? parts : content;
 };
 
+const FORCE_MOCK_MODE = true;
+const shouldUseBackend = Boolean(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+) && !FORCE_MOCK_MODE;
+
+const getSupabase = async () => {
+  if (!shouldUseBackend) return null;
+  const module = await import('@/integrations/supabase/client');
+  return module.supabase;
+};
+
 const WolfChat: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
