@@ -3,6 +3,20 @@ import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import { getSupabaseClient, isBackendConfigured } from '@/lib/backend';
 
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  isAdmin: boolean;
+  hasPaid: boolean;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signOut: () => Promise<void>;
+  refreshPaymentStatus: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
