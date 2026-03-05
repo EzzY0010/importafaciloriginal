@@ -9,6 +9,7 @@ import React, { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { isBackendConfigured } from "@/lib/backend";
 
 const LandingPage = React.lazy(() => import("./pages/LandingPage"));
 const Login = React.lazy(() => import("./pages/Login"));
@@ -19,9 +20,6 @@ const NotFound = React.lazy(() => import("./pages/NotFound"));
 const AdminPanel = React.lazy(() => import("./pages/AdminPanel"));
 
 const queryClient = new QueryClient();
-const isBackendConfigured = Boolean(
-  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
 
 const Loading = () => (
   <div className="min-h-screen flex items-center justify-center">

@@ -9,16 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import LanguageSelector from "@/components/LanguageSelector";
-
-const isBackendConfigured = Boolean(
-  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
-
-const getSupabase = async () => {
-  if (!isBackendConfigured) return null;
-  const module = await import("@/integrations/supabase/client");
-  return module.supabase;
-};
+import { backendKey, backendUrl, getSupabaseClient } from "@/lib/backend";
 
 // Generate a simple device fingerprint from browser properties
 const generateFingerprint = (): string => {
@@ -79,7 +70,7 @@ const Login = () => {
       return;
     }
 
-    const client = await getSupabase();
+    const client = await getSupabaseClient();
     if (!client) {
       toast({
         title: t('error'),
@@ -100,12 +91,12 @@ const Login = () => {
     // Generate device fingerprint and check with backend
     const fingerprint = generateFingerprint();
     try {
-      if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
-        const checkRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/login-check`, {
+      if (backendUrl && backendKey) {
+        const checkRes = await fetch(`${backendUrl}/functions/v1/login-check`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${backendKey}`,
           },
           body: JSON.stringify({
             userId: loggedUser.id,
@@ -151,7 +142,7 @@ const Login = () => {
     if (!resetEmail.trim()) return;
     setResetLoading(true);
 
-    const client = await getSupabase();
+    const client = await getSupabaseClient();
     if (!client) {
       toast({ title: "Erro", description: "Backend indisponível no momento.", variant: "destructive" });
       setResetLoading(false);
