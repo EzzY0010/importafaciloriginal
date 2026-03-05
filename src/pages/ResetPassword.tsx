@@ -5,8 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { KeyRound } from "lucide-react";
+
+const isBackendConfigured = Boolean(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+);
+
+const getSupabase = async () => {
+  if (!isBackendConfigured) return null;
+  const module = await import("@/integrations/supabase/client");
+  return module.supabase;
+};
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -29,7 +38,15 @@ const ResetPassword = () => {
     }
 
     setIsLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
+
+    const client = await getSupabase();
+    if (!client) {
+      toast({ title: "Erro", description: "Backend indisponível no momento.", variant: "destructive" });
+      setIsLoading(false);
+      return;
+    }
+
+    const { error } = await client.auth.updateUser({ password });
 
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
