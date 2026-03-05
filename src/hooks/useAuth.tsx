@@ -1,34 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
-
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  isAdmin: boolean;
-  hasPaid: boolean;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-  refreshPaymentStatus: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const isBackendConfigured = Boolean(
-  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
-
-let supabaseClient: SupabaseClient<Database> | null = null;
-
-const getSupabase = async (): Promise<SupabaseClient<Database> | null> => {
-  if (!isBackendConfigured) return null;
-  if (supabaseClient) return supabaseClient;
-
-  const module = await import('@/integrations/supabase/client');
-  supabaseClient = module.supabase;
-  return supabaseClient;
-};
+import { getSupabaseClient, isBackendConfigured } from '@/lib/backend';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -59,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshPaymentStatus = async () => {
-    const client = await getSupabase();
+    const client = await getSupabaseClient();
     if (user && client) {
       await checkPaymentStatus(user.id, client);
     }
@@ -82,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       try {
-        const client = await getSupabase();
+        const client = await getSupabaseClient();
         if (!client) {
           if (isMounted) setLoading(false);
           return;
@@ -139,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const client = await getSupabase();
+    const client = await getSupabaseClient();
     if (!client) {
       return { error: new Error('Backend indisponível no momento.') };
     }
@@ -149,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const client = await getSupabase();
+    const client = await getSupabaseClient();
     if (!client) {
       return { error: new Error('Backend indisponível no momento.') };
     }
@@ -168,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    const client = await getSupabase();
+    const client = await getSupabaseClient();
     if (!client) {
       setUser(null);
       setSession(null);

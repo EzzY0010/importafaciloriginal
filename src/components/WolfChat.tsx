@@ -9,10 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Send, ImagePlus, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag } from 'lucide-react';
 import wolfLogo from '@/assets/wolf-logo-clean.png';
 import StrategyButtons from './StrategyButtons';
-
-const isBackendConfigured = Boolean(
-  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
+import { backendKey, backendUrl, getSupabaseClient, isBackendConfigured } from '@/lib/backend';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -213,8 +210,13 @@ const WolfChat: React.FC = () => {
       return null;
     }
 
-    const module = await import('@/integrations/supabase/client');
-    return module.supabase;
+    const client = await getSupabaseClient();
+    if (!client) {
+      toast({ title: 'Erro', description: 'Backend indisponível no momento', variant: 'destructive' });
+      return null;
+    }
+
+    return client;
   };
 
   const loadConversations = async () => {
@@ -366,11 +368,11 @@ const WolfChat: React.FC = () => {
           ]
         : input;
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wolf-chat`, {
+      const response = await fetch(`${backendUrl}/functions/v1/wolf-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Authorization': `Bearer ${backendKey}`,
         },
         body: JSON.stringify({
           messages: [{ role: 'user', content: finalContent }],

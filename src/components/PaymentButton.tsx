@@ -3,20 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CreditCard, CheckCircle } from 'lucide-react';
+import { getSupabaseClient } from '@/lib/backend';
 
 interface PaymentButtonProps {
   onPaymentSuccess?: () => void;
 }
-
-const isBackendConfigured = Boolean(
-  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
-
-const getSupabase = async () => {
-  if (!isBackendConfigured) return null;
-  const module = await import('@/integrations/supabase/client');
-  return module.supabase;
-};
 
 const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +17,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
     setIsLoading(true);
     
     try {
-      const client = await getSupabase();
+      const client = await getSupabaseClient();
       if (!client) {
         toast({
           title: 'Erro',

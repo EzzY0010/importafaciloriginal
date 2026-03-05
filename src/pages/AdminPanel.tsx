@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { getSupabaseClient, isBackendConfigured } from "@/lib/backend";
 
 interface UserProfile {
   id: string;
@@ -22,10 +23,6 @@ interface UserProfile {
   last_longitude: number | null;
   created_at: string;
 }
-
-const isBackendConfigured = Boolean(
-  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
 
 const mockProfiles: UserProfile[] = [
   {
@@ -87,7 +84,13 @@ const AdminPanel = () => {
       return;
     }
 
-    const { supabase } = await import("@/integrations/supabase/client");
+    const supabase = await getSupabaseClient();
+    if (!supabase) {
+      setLoadingProfiles(false);
+      toast({ title: "Erro", description: "Backend indisponível no momento.", variant: "destructive" });
+      return;
+    }
+
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
@@ -110,7 +113,12 @@ const AdminPanel = () => {
       return;
     }
 
-    const { supabase } = await import("@/integrations/supabase/client");
+    const supabase = await getSupabaseClient();
+    if (!supabase) {
+      toast({ title: "Erro", description: "Backend indisponível no momento.", variant: "destructive" });
+      return;
+    }
+
     const { error } = await supabase
       .from("profiles")
       .update({ device_approved: newStatus })
@@ -138,7 +146,12 @@ const AdminPanel = () => {
       return;
     }
 
-    const { supabase } = await import("@/integrations/supabase/client");
+    const supabase = await getSupabaseClient();
+    if (!supabase) {
+      toast({ title: "Erro", description: "Backend indisponível no momento.", variant: "destructive" });
+      return;
+    }
+
     const { error } = await supabase
       .from("profiles")
       .update({ has_paid: newStatus })
