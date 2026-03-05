@@ -207,8 +207,21 @@ const WolfChat: React.FC = () => {
     }
   }, [messages]);
 
+  const getSupabase = async () => {
+    if (!isBackendConfigured) {
+      toast({ title: 'Erro', description: 'Backend indisponível no momento', variant: 'destructive' });
+      return null;
+    }
+
+    const module = await import('@/integrations/supabase/client');
+    return module.supabase;
+  };
+
   const loadConversations = async () => {
-    const { data } = await supabase
+    const client = await getSupabase();
+    if (!client) return;
+
+    const { data } = await client
       .from('conversations')
       .select('*')
       .order('updated_at', { ascending: false });
@@ -217,7 +230,10 @@ const WolfChat: React.FC = () => {
   };
 
   const loadMessages = async (conversationId: string) => {
-    const { data } = await supabase
+    const client = await getSupabase();
+    if (!client) return;
+
+    const { data } = await client
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
@@ -234,8 +250,11 @@ const WolfChat: React.FC = () => {
 
   const createNewConversation = async () => {
     if (!user) return null;
+
+    const client = await getSupabase();
+    if (!client) return null;
     
-    const { data } = await supabase
+    const { data } = await client
       .from('conversations')
       .insert({ user_id: user.id, title: 'Nova conversa' })
       .select()
@@ -259,7 +278,10 @@ const WolfChat: React.FC = () => {
   };
 
   const deleteConversation = async (convId: string) => {
-    await supabase.from('conversations').delete().eq('id', convId);
+    const client = await getSupabase();
+    if (!client) return;
+
+    await client.from('conversations').delete().eq('id', convId);
     setConversations(prev => prev.filter(c => c.id !== convId));
     if (currentConversationId === convId) {
       setCurrentConversationId(null);
@@ -279,7 +301,10 @@ const WolfChat: React.FC = () => {
   };
 
   const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string, imageUrl?: string) => {
-    await supabase.from('messages').insert({
+    const client = await getSupabase();
+    if (!client) return;
+
+    await client.from('messages').insert({
       conversation_id: conversationId,
       role,
       content,
