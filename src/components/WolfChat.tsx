@@ -351,7 +351,10 @@ const WolfChat: React.FC = () => {
 
     if (messages.length === 0 && input.trim()) {
       const title = input.substring(0, 50) + (input.length > 50 ? '...' : '');
-      await supabase.from('conversations').update({ title }).eq('id', convId);
+      const client = await getSupabase();
+      if (client) {
+        await client.from('conversations').update({ title }).eq('id', convId);
+      }
       setConversations(prev => prev.map(c => c.id === convId ? { ...c, title } : c));
     }
 
