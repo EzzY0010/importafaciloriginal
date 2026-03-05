@@ -1,13 +1,22 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CreditCard, CheckCircle } from 'lucide-react';
 
 interface PaymentButtonProps {
   onPaymentSuccess?: () => void;
 }
+
+const isBackendConfigured = Boolean(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+);
+
+const getSupabase = async () => {
+  if (!isBackendConfigured) return null;
+  const module = await import('@/integrations/supabase/client');
+  return module.supabase;
+};
 
 const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +26,17 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
     setIsLoading(true);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const client = await getSupabase();
+      if (!client) {
+        toast({
+          title: 'Erro',
+          description: 'Backend indisponível no momento',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const { data: { session } } = await client.auth.getSession();
       
       if (!session) {
         toast({
@@ -28,7 +47,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
         return;
       }
 
-      const response = await supabase.functions.invoke('mercadopago-create-preference', {
+      const response = await client.functions.invoke('mercadopago-create-preference', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
         }

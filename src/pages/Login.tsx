@@ -8,8 +8,17 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import LanguageSelector from "@/components/LanguageSelector";
+
+const isBackendConfigured = Boolean(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+);
+
+const getSupabase = async () => {
+  if (!isBackendConfigured) return null;
+  const module = await import("@/integrations/supabase/client");
+  return module.supabase;
+};
 
 // Generate a simple device fingerprint from browser properties
 const generateFingerprint = (): string => {
@@ -70,8 +79,19 @@ const Login = () => {
       return;
     }
 
+    const client = await getSupabase();
+    if (!client) {
+      toast({
+        title: t('error'),
+        description: 'Backend indisponível no momento.',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+
     // Get the current user after login
-    const { data: { user: loggedUser } } = await supabase.auth.getUser();
+    const { data: { user: loggedUser } } = await client.auth.getUser();
     if (!loggedUser) {
       setIsLoading(false);
       return;
@@ -80,29 +100,31 @@ const Login = () => {
     // Generate device fingerprint and check with backend
     const fingerprint = generateFingerprint();
     try {
-      const checkRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/login-check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          userId: loggedUser.id,
-          deviceFingerprint: fingerprint,
-        }),
-      });
-      const checkData = await checkRes.json();
-
-      if (checkData.blocked) {
-        // Sign out immediately if blocked
-        await supabase.auth.signOut();
-        toast({
-          title: '🔒 Acesso Bloqueado',
-          description: checkData.message,
-          variant: 'destructive',
+      if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
+        const checkRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/login-check`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            userId: loggedUser.id,
+            deviceFingerprint: fingerprint,
+          }),
         });
-        setIsLoading(false);
-        return;
+        const checkData = await checkRes.json();
+
+        if (checkData.blocked) {
+          // Sign out immediately if blocked
+          await client.auth.signOut();
+          toast({
+            title: '🔒 Acesso Bloqueado',
+            description: checkData.message,
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
       }
     } catch (err) {
       console.error('Login check failed:', err);
@@ -111,7 +133,7 @@ const Login = () => {
 
     // RULE 3: Sign out other sessions (single session enforcement)
     try {
-      await supabase.auth.signOut({ scope: 'others' });
+      await client.auth.signOut({ scope: 'others' });
     } catch {
       // Non-critical
     }
@@ -129,7 +151,14 @@ const Login = () => {
     if (!resetEmail.trim()) return;
     setResetLoading(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+    const client = await getSupabase();
+    if (!client) {
+      toast({ title: "Erro", description: "Backend indisponível no momento.", variant: "destructive" });
+      setResetLoading(false);
+      return;
+    }
+
+    const { error } = await client.auth.resetPasswordForEmail(resetEmail, {
       redirectTo: "https://importafaciloriginal.lovable.app/reset-password",
     });
 
