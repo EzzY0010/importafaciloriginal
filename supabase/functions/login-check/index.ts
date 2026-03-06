@@ -6,7 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Haversine distance in km
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -21,7 +20,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, deviceFingerprint } = await req.json();
+    const { userId, deviceFingerprint, userAgent } = await req.json();
     if (!userId || !deviceFingerprint) {
       return new Response(JSON.stringify({ error: 'Missing data' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -33,7 +32,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Get user profile
     const { data: profile } = await supabase
       .from('profiles')
       .select('last_device_fingerprint, last_ip, last_city, last_country, last_login_at, device_approved, last_latitude, last_longitude')
@@ -46,7 +44,7 @@ serve(async (req) => {
       });
     }
 
-    // Get IP info from request or external API
+    // Get IP info
     let ipInfo = { ip: '', city: '', country: '', lat: 0, lon: 0 };
     try {
       const ipRes = await fetch('http://ip-api.com/json/?fields=query,city,country,lat,lon');
@@ -59,7 +57,6 @@ serve(async (req) => {
     // RULE 1: Device Binding
     if (profile.last_device_fingerprint && profile.last_device_fingerprint !== deviceFingerprint) {
       if (!profile.device_approved || profile.last_device_fingerprint !== deviceFingerprint) {
-        // Different device detected - block
         return new Response(JSON.stringify({
           blocked: true,
           reason: 'device_mismatch',
@@ -86,7 +83,7 @@ serve(async (req) => {
       }
     }
 
-    // All checks passed - update profile with current login info
+    // All checks passed - update profile with current login info including user_agent
     const isFirstLogin = !profile.last_device_fingerprint;
     await supabase.from('profiles').update({
       last_device_fingerprint: deviceFingerprint,
@@ -96,6 +93,7 @@ serve(async (req) => {
       last_latitude: ipInfo.lat,
       last_longitude: ipInfo.lon,
       last_login_at: new Date().toISOString(),
+      last_user_agent: userAgent || null,
       device_approved: isFirstLogin ? true : profile.device_approved,
     }).eq('id', userId);
 
