@@ -127,6 +127,7 @@ export type Database = {
           last_latitude: number | null
           last_login_at: string | null
           last_longitude: number | null
+          last_user_agent: string | null
           updated_at: string
         }
         Insert: {
@@ -143,6 +144,7 @@ export type Database = {
           last_latitude?: number | null
           last_login_at?: string | null
           last_longitude?: number | null
+          last_user_agent?: string | null
           updated_at?: string
         }
         Update: {
@@ -159,6 +161,7 @@ export type Database = {
           last_latitude?: number | null
           last_login_at?: string | null
           last_longitude?: number | null
+          last_user_agent?: string | null
           updated_at?: string
         }
         Relationships: []
