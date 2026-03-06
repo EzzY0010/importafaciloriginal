@@ -101,6 +101,7 @@ const Login = () => {
           body: JSON.stringify({
             userId: loggedUser.id,
             deviceFingerprint: fingerprint,
+            userAgent: navigator.userAgent,
           }),
         });
         const checkData = await checkRes.json();
