@@ -97,10 +97,12 @@ const SecurityPanel = ({ profiles }: SecurityPanelProps) => {
           <CardTitle className="text-base">🔒 Regras de Segurança Ativas</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>✅ <strong>Sessão Única:</strong> Apenas um dispositivo ativo por conta. Login novo derruba sessão anterior.</p>
-          <p>✅ <strong>Vinculação de Dispositivo:</strong> Primeiro login registra o dispositivo. Novos dispositivos requerem aprovação.</p>
+          <p>✅ <strong>Multi-Dispositivo Controlado:</strong> Cada conta tem limite de dispositivos (padrão: 1). Liberação de +1 via App Instalado.</p>
+          <p>✅ <strong>Sessão Única:</strong> Login novo derruba sessão anterior em cada dispositivo.</p>
+          <p>✅ <strong>Vinculação de Dispositivo:</strong> Dispositivos são registrados automaticamente. Exceder o limite bloqueia o acesso.</p>
           <p>✅ <strong>Geolocalização:</strong> Login a +200km em menos de 2h bloqueia automaticamente.</p>
-          <p>✅ <strong>Monitoramento:</strong> IP, User-Agent e localização registrados a cada login.</p>
+          <p>✅ <strong>Lista Negra de IPs:</strong> IPs bloqueados manualmente ou automaticamente (5+ IPs diferentes em 1h).</p>
+          <p>✅ <strong>Monitoramento:</strong> IP, User-Agent, localização e tentativas suspeitas registrados.</p>
         </CardContent>
       </Card>
     </div>
