@@ -10,6 +10,8 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 import OverviewCards from "@/components/admin/OverviewCards";
 import UsersTable, { type UserProfile } from "@/components/admin/UsersTable";
 import SecurityPanel from "@/components/admin/SecurityPanel";
+import DeviceManagement from "@/components/admin/DeviceManagement";
+import IPBlacklist from "@/components/admin/IPBlacklist";
 
 const AdminPanel = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -116,6 +118,8 @@ const AdminPanel = () => {
               <h1 className="text-lg font-bold text-foreground capitalize">
                 {activeSection === "overview" && "Visão Geral"}
                 {activeSection === "users" && "Usuários"}
+                {activeSection === "devices" && "Dispositivos"}
+                {activeSection === "blacklist" && "IPs Bloqueados"}
                 {activeSection === "security" && "Segurança"}
               </h1>
             </div>
@@ -126,7 +130,7 @@ const AdminPanel = () => {
 
           {/* Content */}
           <main className="flex-1 p-4 sm:p-6 space-y-6 overflow-auto">
-            {activeSection === "overview" && (
+              {activeSection === "overview" && (
               <>
                 <OverviewCards
                   total={profiles.length}
@@ -150,6 +154,14 @@ const AdminPanel = () => {
                 onToggleBan={toggleBan}
                 onTogglePayment={togglePayment}
               />
+            )}
+
+            {activeSection === "devices" && (
+              <DeviceManagement profiles={profiles} onRefresh={loadProfiles} />
+            )}
+
+            {activeSection === "blacklist" && (
+              <IPBlacklist profiles={profiles} />
             )}
 
             {activeSection === "security" && (

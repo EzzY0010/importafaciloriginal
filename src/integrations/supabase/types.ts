@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      authorized_devices: {
+        Row: {
+          approved: boolean | null
+          city: string | null
+          country: string | null
+          created_at: string
+          device_fingerprint: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          approved?: boolean | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_fingerprint: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          approved?: boolean | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_fingerprint?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      blocked_ips: {
+        Row: {
+          blocked_by: string | null
+          created_at: string
+          id: string
+          ip_address: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_by?: string | null
+          created_at?: string
+          id?: string
+          ip_address: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_by?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -114,6 +174,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          app_installed: boolean | null
           created_at: string
           device_approved: boolean | null
           email: string | null
@@ -128,9 +189,11 @@ export type Database = {
           last_login_at: string | null
           last_longitude: number | null
           last_user_agent: string | null
+          max_logins: number
           updated_at: string
         }
         Insert: {
+          app_installed?: boolean | null
           created_at?: string
           device_approved?: boolean | null
           email?: string | null
@@ -145,9 +208,11 @@ export type Database = {
           last_login_at?: string | null
           last_longitude?: number | null
           last_user_agent?: string | null
+          max_logins?: number
           updated_at?: string
         }
         Update: {
+          app_installed?: boolean | null
           created_at?: string
           device_approved?: boolean | null
           email?: string | null
@@ -162,7 +227,44 @@ export type Database = {
           last_login_at?: string | null
           last_longitude?: number | null
           last_user_agent?: string | null
+          max_logins?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      suspicious_login_attempts: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          device_fingerprint: string | null
+          id: string
+          ip_address: string | null
+          reason: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          id?: string
+          ip_address?: string | null
+          reason?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          id?: string
+          ip_address?: string | null
+          reason?: string | null
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

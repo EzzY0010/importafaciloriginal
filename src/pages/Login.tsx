@@ -107,7 +107,6 @@ const Login = () => {
         const checkData = await checkRes.json();
 
         if (checkData.blocked) {
-          // Sign out immediately if blocked
           await client.auth.signOut();
           toast({
             title: '🔒 Acesso Bloqueado',
@@ -116,6 +115,14 @@ const Login = () => {
           });
           setIsLoading(false);
           return;
+        }
+
+        // Show multi-device notification if applicable
+        if (checkData.message) {
+          toast({
+            title: '📱 Dispositivo',
+            description: checkData.message,
+          });
         }
       }
     } catch (err) {
