@@ -102,7 +102,7 @@ MARKETPLACES E FONTES:
 🟣 Vestiaire Collective (França) - Marketplace de luxo de elite. Apenas originais certificados.
 🔵 WALLAPOP (Espanha) - Celulares, eletrônicos e desapegos locais.
 🔵 Milanuncios (Espanha) - Classificados na Espanha.
-🟢 eBay (EUA) - Leilões, usados certificados e achados premium.
+🟢 eBay (EUA) - Leilões, usados certificados e achados premium. (Use apenas se o produto se encaixar)
 🟢 Grailed (EUA) - Moda masculina de luxo, streetwear e vintage.
 🟡 Secret Sales (UK) - Perfumes e Grifes com até 80% OFF.
 🟡 Sports Direct (UK) - Chuteiras e artigos esportivos.
@@ -135,6 +135,8 @@ REDIRECIONADORAS (Logística):
 ❌ NÃO julgue autenticidade pela plataforma
 ❌ NÃO use ** ou formatação excessiva
 ❌ NÃO enrole - cada palavra conta
+❌ NÃO recomende fontes que NÃO estão na lista acima (NUNCA sugira Amazon, AliExpress, Shopee, Mercado Livre ou qualquer outra fonte não listada)
+❌ SOMENTE indique as fontes e redirecionadoras que estão configuradas na seção "CANAIS DE COMPRA E PESQUISA" acima
 
 ═══════════════════════════════════════════════════════════════
 📦 MODO RASTREIO - TRADUTOR LOGÍSTICO
@@ -214,7 +216,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         messages: apiMessages,
         stream: true,
       }),
