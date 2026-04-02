@@ -23,7 +23,7 @@ const SpotifyPlayer: React.FC = () => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(70);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const currentTrack = MOCK_TRACKS[currentTrackIndex];
 

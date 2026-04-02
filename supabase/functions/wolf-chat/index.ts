@@ -102,7 +102,7 @@ MARKETPLACES E FONTES:
 🟣 Vestiaire Collective (França) - Marketplace de luxo de elite. Apenas originais certificados.
 🔵 WALLAPOP (Espanha) - Celulares, eletrônicos e desapegos locais.
 🔵 Milanuncios (Espanha) - Classificados na Espanha.
-🟢 eBay (EUA) - Leilões, usados certificados e achados premium.
+🟢 eBay (EUA) - Leilões, usados certificados e achados premium. (Use apenas se o produto se encaixar)
 🟢 Grailed (EUA) - Moda masculina de luxo, streetwear e vintage.
 🟡 Secret Sales (UK) - Perfumes e Grifes com até 80% OFF.
 🟡 Sports Direct (UK) - Chuteiras e artigos esportivos.
