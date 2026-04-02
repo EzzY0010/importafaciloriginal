@@ -208,6 +208,76 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Fetch conversation history
+    let conversationHistory: any[] = [];
+    if (conversationId) {
+      const { data: existingMessages } = await supabase
+        .from('messages')
+        .select('role, content, image_url')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+      
+      if (existingMessages) {
+        conversationHistory = existingMessages.map(msg => {
+          if (msg.image_url) {
+            return {
+              role: msg.role,
+              content: [
+                { type: 'text', text: msg.content },
+                { type: 'image_url', image_url: { url: msg.image_url } }
+              ]
+            };
+          }
+          return { role: msg.role, content: msg.content };
+        });
+      }
+    }
+
+    // Build messages array
+    const apiMessages = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...conversationHistory,
+      ...messages
+    ];
+
+    // Call Lovable AI Gateway
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: apiMessages,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI gateway error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Payment required" }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      throw new Error(`AI gateway error: ${response.status}`);
+    }
+
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
