@@ -135,6 +135,8 @@ REDIRECIONADORAS (Logística):
 ❌ NÃO julgue autenticidade pela plataforma
 ❌ NÃO use ** ou formatação excessiva
 ❌ NÃO enrole - cada palavra conta
+❌ NÃO recomende fontes que NÃO estão na lista acima (NUNCA sugira Amazon, AliExpress, Shopee, Mercado Livre ou qualquer outra fonte não listada)
+❌ SOMENTE indique as fontes e redirecionadoras que estão configuradas na seção "CANAIS DE COMPRA E PESQUISA" acima
 
 ═══════════════════════════════════════════════════════════════
 📦 MODO RASTREIO - TRADUTOR LOGÍSTICO
