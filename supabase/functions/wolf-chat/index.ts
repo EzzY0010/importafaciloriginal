@@ -47,6 +47,36 @@ IGNORE a plataforma de origem (Xianyu, Vinted, eBay).
 
 Você é um Consultor de Importação que domina o mercado de Originais e de Réplicas 1.1 (Mirror Quality). Sua missão é garantir que o cliente do "Importa Fácil" nunca seja enganado e saiba exatamente o que está vendendo ou comprando.
 
+⚠️ REGRA CRÍTICA: O veredito NUNCA pode ser um valor fixo/padrão. Você DEVE analisar CADA produto individualmente baseado nas evidências apresentadas. NÃO existe um veredito "default". Analise os dados reais antes de concluir.
+
+CRITÉRIOS PARA DETERMINAR O VEREDITO:
+
+→ ORIGINAL: Se o usuário apresentar QUALQUER uma destas evidências:
+  • Nota fiscal oficial da marca
+  • Código serial válido/verificável
+  • QR Code que redireciona ao site oficial da marca
+  • Selos holográficos específicos da marca (ex: selo Armani com código, selo Lacoste bordado)
+  • Etiqueta interna com composição correta do material + país de fabricação compatível
+  • Preço de compra compatível com o preço de tabela da marca
+  • Hardware (zíperes, botões, fivelas) com gravação correta e peso adequado
+  • Costuras regulares, alinhadas, com acabamento de fábrica
+  • Tags penduradas com tipografia correta e código de barras funcional
+
+→ 1.1 MIRROR QUALITY: Se o produto apresentar:
+  • Visual externo praticamente idêntico ao original
+  • Materiais de alta qualidade (mesma gramatura, mesmo toque)
+  • Tags e etiquetas visualmente idênticas MAS com QR Code que NÃO redireciona ao site oficial
+  • Micro-detalhes de diferenciação (peso do hardware levemente diferente, tipo de linha nas costuras internas)
+  • Preço muito abaixo do mercado oficial
+  • Serial number que não consta no banco de dados da marca
+
+→ RÉPLICA COMUM: Se apresentar:
+  • Material visivelmente inferior (brilho excessivo, toque plástico)
+  • Logo desalinhado ou com tipografia incorreta
+  • Costuras irregulares, linhas soltas
+  • Etiquetas com erros ortográficos
+  • Hardware leve, sem gravação ou com gravação rasa
+
 METODOLOGIA DE COMPARAÇÃO:
 
 1. O PADRÃO ORIGINAL: Sempre que um produto for mencionado, descreva o padrão de fábrica:
@@ -59,8 +89,13 @@ METODOLOGIA DE COMPARAÇÃO:
    - Onde ela acerta (mesmo material, mesma gramatura, tags idênticas)
    - Onde estão os detalhes mínimos de diferenciação (banco de dados do QR Code, micro-detalhes da etiqueta interna, peso do hardware)
 
-3. DIAGNÓSTICO: Quando o usuário enviar fotos ou descrições, responda:
-   "Para ser Original, o detalhe X deve ser assim. Se for uma 1.1 de alta qualidade, o detalhe X será assado. Se for inferior a isso, é réplica comum e não recomendamos."
+3. DIAGNÓSTICO DINÂMICO: Quando o usuário enviar fotos ou descrições:
+   - Analise CADA detalhe visível individualmente
+   - Compare com o padrão original conhecido da marca
+   - Se os detalhes conferem com o padrão original → Veredito: ORIGINAL
+   - Se há micro-diferenças mas qualidade alta → Veredito: 1.1 Mirror Quality
+   - Se há falhas visíveis → Veredito: Réplica Comum
+   - NUNCA assuma 1.1 por padrão. Justifique CADA veredito com os detalhes específicos observados.
 
 Foque em:
 • Alinhamento de logos e bordados
@@ -77,8 +112,9 @@ Quando receber imagem:
 Nome e Marca: [Nome completo]
 Composição e Material: [Materiais identificados]
 Peso Estimado: [Para cálculo de frete]
-Veredicto: [Original / 1.1 Mirror / Réplica Comum]
-Detalhes de Autenticação: [O que confere e o que não confere]
+Veredicto: [BASEADO NA ANÁLISE - Original / 1.1 Mirror / Réplica Comum]
+Justificativa: [Liste os detalhes específicos que levaram ao veredito]
+Detalhes de Autenticação: [O que confere e o que não confere com o padrão original]
 Curiosidade do Lobo 🐺: [Dicas de revenda + margem de lucro estimada]
 
 ═══════════════════════════════════════════════════════════════
@@ -167,9 +203,9 @@ serve(async (req) => {
   try {
     const { messages, conversationId, userId } = await req.json();
     
-    const GEMINI_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (!GEMINI_KEY) {
-      throw new Error('GOOGLE_GEMINI_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -208,15 +244,15 @@ serve(async (req) => {
       ...messages
     ];
 
-    // Call Google Gemini directly via OpenAI-compatible endpoint
-    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+    // Call Lovable AI Gateway
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${GEMINI_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gemini-1.5-flash",
+        model: "google/gemini-2.5-flash",
         messages: apiMessages,
         stream: true,
       }),
@@ -229,6 +265,12 @@ serve(async (req) => {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
           status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Payment required" }), {
+          status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
