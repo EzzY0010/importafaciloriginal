@@ -140,17 +140,22 @@ const camouflageProductName = (name: string): { name: string; wasCamouflaged: bo
   return { name, wasCamouflaged: false };
 };
 
-// Detectar categoria de peso pelo nome
-const detectWeightCategory = (name: string): WeightCategory => {
-  const lowerName = name.toLowerCase();
-  
-  const lightItems = ['boné', 'bone', 'cap', 'camiseta', 'camisa', 'polo', 't-shirt', 'tshirt', 'meia', 'cueca', 'calcinha'];
-  const heavyItems = ['jaqueta', 'casaco', 'coat', 'jacket', 'sobretudo', 'parka', 'couro'];
-  
-  if (lightItems.some(item => lowerName.includes(item))) return 'light';
-  if (heavyItems.some(item => lowerName.includes(item))) return 'heavy';
-  return 'medium'; // Tênis, moletom, bolsa, etc.
+// Estimar peso em gramas pelo nome do item
+const estimateWeight = (name: string): { grams: number; label: string; category: WeightCategory } => {
+  const lowerName = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (const entry of WEIGHT_MAP) {
+    for (const kw of entry.keywords) {
+      const normalizedKw = kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (lowerName.includes(normalizedKw)) {
+        const cat: WeightCategory = entry.grams <= 200 ? 'light' : entry.grams >= 700 ? 'heavy' : 'medium';
+        return { grams: entry.grams, label: entry.label, category: cat };
+      }
+    }
+  }
+  return { grams: 300, label: '~300g', category: 'medium' };
 };
+
+const detectWeightCategory = (name: string): WeightCategory => estimateWeight(name).category;
 
 const AdvancedPricingCalculator: React.FC = () => {
   const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80 });
