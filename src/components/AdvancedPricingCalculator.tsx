@@ -605,8 +605,11 @@ const AdvancedPricingCalculator: React.FC = () => {
                   )}
                 </div>
 
-                {/* Weight Category Selector */}
-                <div className="flex gap-2">
+                {/* Weight display + Category Selector */}
+                <div className="flex gap-2 items-center">
+                  <Badge variant="outline" className="text-xs whitespace-nowrap">
+                    ⚖️ {item.weightLabel || '~300g'}
+                  </Badge>
                   <Select 
                     value={item.weightCategory} 
                     onValueChange={(v) => updateItem(item.id, 'weightCategory', v)}
@@ -618,6 +621,11 @@ const AdvancedPricingCalculator: React.FC = () => {
                       {Object.entries(WEIGHT_DECLARATION_RANGES).map(([key, config]) => (
                         <SelectItem key={key} value={key} className="text-xs">
                           {config.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
