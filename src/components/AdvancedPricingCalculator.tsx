@@ -34,9 +34,9 @@ interface ProductItem {
   profitMargin: string;
   currency: Currency;
   weightCategory: WeightCategory;
+  estimatedGrams: number;
+  weightLabel: string;
 }
-
-const CURRENCY_CONFIG = {
   USD: { symbol: '$', flag: '🇺🇸', label: 'Dólar' },
   EUR: { symbol: '€', flag: '🇪🇺', label: 'Euro' },
   CNY: { symbol: '¥', flag: '🇨🇳', label: 'Yuan' },
