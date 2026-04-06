@@ -360,11 +360,6 @@ const AdvancedPricingCalculator: React.FC = () => {
 
   const getCurrencySymbol = (currency: Currency) => CURRENCY_CONFIG[currency].symbol;
 
-  const WEIGHT_LABELS: Record<WeightCategory, string> = {
-    light: '~130g (Leve)',
-    medium: '~500g (Médio)',
-    heavy: '~1.2kg (Pesado)',
-  };
 
   const generatePDF = () => {
     const now = new Date();
