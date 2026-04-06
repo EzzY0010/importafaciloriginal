@@ -444,7 +444,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Exchange Rates - 3 moedas */}
+        <div ref={summaryRef}>
         <div className="flex gap-2 flex-wrap">
           <Badge variant="outline" className="text-xs font-mono">
             🇺🇸 1 USD = R$ {usdToBrl.toFixed(2)}
