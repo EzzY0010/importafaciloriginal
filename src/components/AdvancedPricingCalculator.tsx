@@ -525,9 +525,9 @@ const AdvancedPricingCalculator: React.FC = () => {
             <AlertCircle className="h-3 w-3" />
             Sugestão: O frete costuma representar entre 10% a 20% do valor dos produtos
           </p>
-          {activeItems.length > 1 && shippingPerItemBRL > 0 && (
+          {activeItems.length > 1 && totalShippingBRL > 0 && (
             <Badge variant="secondary" className="text-xs">
-              Rateado: R$ {shippingPerItemBRL.toFixed(2)} por item ({activeItems.length} itens)
+              Frete proporcional ao peso ({activeItems.length} itens, {(totalWeight / 1000).toFixed(1)}kg total)
             </Badge>
           )}
         </div>
