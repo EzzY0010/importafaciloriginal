@@ -163,7 +163,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   const [totalShipping, setTotalShipping] = useState<string>('');
   const [shippingCurrency, setShippingCurrency] = useState<Currency>('USD');
   const [items, setItems] = useState<ProductItem[]>([
-    { id: '1', name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD', weightCategory: 'medium' }
+    { id: '1', name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD', weightCategory: 'medium', estimatedGrams: 300, weightLabel: '~300g' }
   ]);
   const [camouflagedItems, setCamouflagedItems] = useState<Set<string>>(new Set());
   const [brandWarning, setBrandWarning] = useState<string | null>(null);
