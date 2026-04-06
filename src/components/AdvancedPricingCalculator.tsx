@@ -328,7 +328,8 @@ const AdvancedPricingCalculator: React.FC = () => {
     const profitMargin = parseFloat(item.profitMargin) || 0;
 
     const costPriceBRL = convertToBRL(costPrice, item.currency);
-    const costWithShippingBRL = costPriceBRL + shippingPerItemBRL;
+    const itemShippingBRL = getShippingForItem(item);
+    const costWithShippingBRL = costPriceBRL + itemShippingBRL;
     const declaredValueBRL = convertToBRL(declaredValue, 'USD'); // Declaração sempre em USD
     const taxBRL = declaredValueBRL * 0.60;
     const finalCostBRL = costWithShippingBRL + taxBRL;
