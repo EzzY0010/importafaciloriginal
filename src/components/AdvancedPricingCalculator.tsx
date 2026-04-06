@@ -257,24 +257,22 @@ const AdvancedPricingCalculator: React.FC = () => {
       
       let updatedItem = { ...item, [field]: value };
       
-      // Se mudou o nome, verificar marca e aplicar camuflagem
+      // Se mudou o nome, verificar marca, estimar peso e aplicar camuflagem
       if (field === 'name') {
+        const w = estimateWeight(value);
+        updatedItem.estimatedGrams = w.grams;
+        updatedItem.weightLabel = w.label;
+        updatedItem.weightCategory = w.category;
+
         if (containsBrand(value)) {
           setBrandWarning('Cuidado! O Lobo recomenda não usar nomes de marcas para evitar a fiscalização de pirataria.');
           setCamouflagedItems(prev => new Set(prev).add(id));
-          
-          // Detectar peso e auto-preencher declaração
-          const weightCat = detectWeightCategory(value);
-          updatedItem.weightCategory = weightCat;
-          const range = WEIGHT_DECLARATION_RANGES[weightCat];
+          const range = WEIGHT_DECLARATION_RANGES[w.category];
           updatedItem.declaredValue = generateBrokenValue(range.min, range.max);
         } else {
           setBrandWarning(null);
-          // Mesmo sem marca, detectar peso se mudar nome
-          const weightCat = detectWeightCategory(value);
-          if (weightCat !== item.weightCategory) {
-            updatedItem.weightCategory = weightCat;
-            const range = WEIGHT_DECLARATION_RANGES[weightCat];
+          if (w.category !== item.weightCategory) {
+            const range = WEIGHT_DECLARATION_RANGES[w.category];
             updatedItem.declaredValue = generateBrokenValue(range.min, range.max);
           }
         }
