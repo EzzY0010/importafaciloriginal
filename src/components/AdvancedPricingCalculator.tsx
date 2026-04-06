@@ -339,6 +339,7 @@ const AdvancedPricingCalculator: React.FC = () => {
     return {
       costPriceBRL,
       costWithShippingBRL,
+      itemShippingBRL,
       declaredValueBRL,
       taxBRL,
       finalCostBRL,
