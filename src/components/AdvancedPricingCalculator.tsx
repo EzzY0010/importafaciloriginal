@@ -10,6 +10,15 @@ import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck,
 type Currency = 'USD' | 'EUR' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 
+// Peso estimado em gramas por palavra-chave do nome
+const WEIGHT_MAP: { keywords: string[]; grams: number; label: string }[] = [
+  { keywords: ['boné', 'bone', 'touca', 'acessório', 'acessorio', 'meia', 'cueca', 'calcinha', 'cap'], grams: 150, label: '~150g' },
+  { keywords: ['camiseta', 't-shirt', 'tshirt', 'camisa', 'polo', 'regata'], grams: 200, label: '~200g' },
+  { keywords: ['bermuda', 'short', 'calção', 'calcao', 'shorts'], grams: 350, label: '~350g' },
+  { keywords: ['calça', 'calca', 'moletom', 'jaqueta', 'hoodie', 'casaco', 'jacket'], grams: 700, label: '~700g' },
+  { keywords: ['tênis', 'tenis', 'sapato', 'sneaker', 'bota'], grams: 1000, label: '~1kg' },
+];
+
 interface ExchangeRates {
   USD: number;
   EUR: number;
@@ -25,6 +34,8 @@ interface ProductItem {
   profitMargin: string;
   currency: Currency;
   weightCategory: WeightCategory;
+  estimatedGrams: number;
+  weightLabel: string;
 }
 
 const CURRENCY_CONFIG = {
@@ -129,17 +140,22 @@ const camouflageProductName = (name: string): { name: string; wasCamouflaged: bo
   return { name, wasCamouflaged: false };
 };
 
-// Detectar categoria de peso pelo nome
-const detectWeightCategory = (name: string): WeightCategory => {
-  const lowerName = name.toLowerCase();
-  
-  const lightItems = ['boné', 'bone', 'cap', 'camiseta', 'camisa', 'polo', 't-shirt', 'tshirt', 'meia', 'cueca', 'calcinha'];
-  const heavyItems = ['jaqueta', 'casaco', 'coat', 'jacket', 'sobretudo', 'parka', 'couro'];
-  
-  if (lightItems.some(item => lowerName.includes(item))) return 'light';
-  if (heavyItems.some(item => lowerName.includes(item))) return 'heavy';
-  return 'medium'; // Tênis, moletom, bolsa, etc.
+// Estimar peso em gramas pelo nome do item
+const estimateWeight = (name: string): { grams: number; label: string; category: WeightCategory } => {
+  const lowerName = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (const entry of WEIGHT_MAP) {
+    for (const kw of entry.keywords) {
+      const normalizedKw = kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (lowerName.includes(normalizedKw)) {
+        const cat: WeightCategory = entry.grams <= 200 ? 'light' : entry.grams >= 700 ? 'heavy' : 'medium';
+        return { grams: entry.grams, label: entry.label, category: cat };
+      }
+    }
+  }
+  return { grams: 300, label: '~300g', category: 'medium' };
 };
+
+const detectWeightCategory = (name: string): WeightCategory => estimateWeight(name).category;
 
 const AdvancedPricingCalculator: React.FC = () => {
   const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80 });
@@ -147,7 +163,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   const [totalShipping, setTotalShipping] = useState<string>('');
   const [shippingCurrency, setShippingCurrency] = useState<Currency>('USD');
   const [items, setItems] = useState<ProductItem[]>([
-    { id: '1', name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD', weightCategory: 'medium' }
+    { id: '1', name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD', weightCategory: 'medium', estimatedGrams: 300, weightLabel: '~300g' }
   ]);
   const [camouflagedItems, setCamouflagedItems] = useState<Set<string>>(new Set());
   const [brandWarning, setBrandWarning] = useState<string | null>(null);
@@ -219,7 +235,9 @@ const AdvancedPricingCalculator: React.FC = () => {
       declaredValue: '',
       profitMargin: '30',
       currency: 'USD',
-      weightCategory: 'medium'
+      weightCategory: 'medium',
+      estimatedGrams: 300,
+      weightLabel: '~300g'
     }]);
   };
 
@@ -239,24 +257,22 @@ const AdvancedPricingCalculator: React.FC = () => {
       
       let updatedItem = { ...item, [field]: value };
       
-      // Se mudou o nome, verificar marca e aplicar camuflagem
+      // Se mudou o nome, verificar marca, estimar peso e aplicar camuflagem
       if (field === 'name') {
+        const w = estimateWeight(value);
+        updatedItem.estimatedGrams = w.grams;
+        updatedItem.weightLabel = w.label;
+        updatedItem.weightCategory = w.category;
+
         if (containsBrand(value)) {
           setBrandWarning('Cuidado! O Lobo recomenda não usar nomes de marcas para evitar a fiscalização de pirataria.');
           setCamouflagedItems(prev => new Set(prev).add(id));
-          
-          // Detectar peso e auto-preencher declaração
-          const weightCat = detectWeightCategory(value);
-          updatedItem.weightCategory = weightCat;
-          const range = WEIGHT_DECLARATION_RANGES[weightCat];
+          const range = WEIGHT_DECLARATION_RANGES[w.category];
           updatedItem.declaredValue = generateBrokenValue(range.min, range.max);
         } else {
           setBrandWarning(null);
-          // Mesmo sem marca, detectar peso se mudar nome
-          const weightCat = detectWeightCategory(value);
-          if (weightCat !== item.weightCategory) {
-            updatedItem.weightCategory = weightCat;
-            const range = WEIGHT_DECLARATION_RANGES[weightCat];
+          if (w.category !== item.weightCategory) {
+            const range = WEIGHT_DECLARATION_RANGES[w.category];
             updatedItem.declaredValue = generateBrokenValue(range.min, range.max);
           }
         }
@@ -289,13 +305,16 @@ const AdvancedPricingCalculator: React.FC = () => {
     }));
   };
 
-  // Calcular frete rateado por item (já convertido para BRL)
+  // Calcular frete rateado proporcional ao peso (já convertido para BRL)
   const activeItems = adjustedItems.filter(item => parseFloat(item.costPrice) > 0);
   const totalShippingValue = parseFloat(totalShipping) || 0;
   const totalShippingBRL = convertToBRL(totalShippingValue, shippingCurrency);
-  const shippingPerItemBRL = activeItems.length > 0 
-    ? totalShippingBRL / activeItems.length 
-    : 0;
+  const totalWeight = activeItems.reduce((sum, item) => sum + (item.estimatedGrams || 300), 0);
+  
+  const getShippingForItem = (item: ProductItem): number => {
+    if (totalWeight === 0 || totalShippingBRL === 0) return 0;
+    return (item.estimatedGrams || 300) / totalWeight * totalShippingBRL;
+  };
 
   // Calcular cotações para display
   const usdToBrl = rates.BRL;
@@ -309,7 +328,8 @@ const AdvancedPricingCalculator: React.FC = () => {
     const profitMargin = parseFloat(item.profitMargin) || 0;
 
     const costPriceBRL = convertToBRL(costPrice, item.currency);
-    const costWithShippingBRL = costPriceBRL + shippingPerItemBRL;
+    const itemShippingBRL = getShippingForItem(item);
+    const costWithShippingBRL = costPriceBRL + itemShippingBRL;
     const declaredValueBRL = convertToBRL(declaredValue, 'USD'); // Declaração sempre em USD
     const taxBRL = declaredValueBRL * 0.60;
     const finalCostBRL = costWithShippingBRL + taxBRL;
@@ -319,6 +339,7 @@ const AdvancedPricingCalculator: React.FC = () => {
     return {
       costPriceBRL,
       costWithShippingBRL,
+      itemShippingBRL,
       declaredValueBRL,
       taxBRL,
       finalCostBRL,
@@ -339,11 +360,6 @@ const AdvancedPricingCalculator: React.FC = () => {
 
   const getCurrencySymbol = (currency: Currency) => CURRENCY_CONFIG[currency].symbol;
 
-  const WEIGHT_LABELS: Record<WeightCategory, string> = {
-    light: '~130g (Leve)',
-    medium: '~500g (Médio)',
-    heavy: '~1.2kg (Pesado)',
-  };
 
   const generatePDF = () => {
     const now = new Date();
@@ -384,13 +400,13 @@ const AdvancedPricingCalculator: React.FC = () => {
     itemsWithData.forEach((item) => {
       const costs = calculateItemCosts(item);
       const displayName = item.name || `Item ${adjustedItems.indexOf(item) + 1}`;
-      const weightLabel = WEIGHT_LABELS[item.weightCategory];
+      const weightLabel = item.weightLabel || '~300g';
       html += `
         <tr>
           <td><strong>${displayName}</strong></td>
           <td>${weightLabel}</td>
           <td>${getCurrencySymbol(item.currency)} ${parseFloat(item.costPrice).toFixed(2)}</td>
-          <td>R$ ${shippingPerItemBRL.toFixed(2)}</td>
+          <td>R$ ${costs.itemShippingBRL.toFixed(2)}</td>
           <td class="cost">R$ ${costs.taxBRL.toFixed(2)}</td>
           <td><strong>R$ ${costs.finalCostBRL.toFixed(2)}</strong></td>
           <td>R$ ${costs.sellingPrice.toFixed(2)}</td>
@@ -504,9 +520,9 @@ const AdvancedPricingCalculator: React.FC = () => {
             <AlertCircle className="h-3 w-3" />
             Sugestão: O frete costuma representar entre 10% a 20% do valor dos produtos
           </p>
-          {activeItems.length > 1 && shippingPerItemBRL > 0 && (
+          {activeItems.length > 1 && totalShippingBRL > 0 && (
             <Badge variant="secondary" className="text-xs">
-              Rateado: R$ {shippingPerItemBRL.toFixed(2)} por item ({activeItems.length} itens)
+              Frete proporcional ao peso ({activeItems.length} itens, {(totalWeight / 1000).toFixed(1)}kg total)
             </Badge>
           )}
         </div>
@@ -584,8 +600,11 @@ const AdvancedPricingCalculator: React.FC = () => {
                   )}
                 </div>
 
-                {/* Weight Category Selector */}
-                <div className="flex gap-2">
+                {/* Weight display + Category Selector */}
+                <div className="flex gap-2 items-center">
+                  <Badge variant="outline" className="text-xs whitespace-nowrap">
+                    ⚖️ {item.weightLabel || '~300g'}
+                  </Badge>
                   <Select 
                     value={item.weightCategory} 
                     onValueChange={(v) => updateItem(item.id, 'weightCategory', v)}
