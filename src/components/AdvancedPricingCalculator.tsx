@@ -405,13 +405,13 @@ const AdvancedPricingCalculator: React.FC = () => {
     itemsWithData.forEach((item) => {
       const costs = calculateItemCosts(item);
       const displayName = item.name || `Item ${adjustedItems.indexOf(item) + 1}`;
-      const weightLabel = WEIGHT_LABELS[item.weightCategory];
+      const weightLabel = item.weightLabel || '~300g';
       html += `
         <tr>
           <td><strong>${displayName}</strong></td>
           <td>${weightLabel}</td>
           <td>${getCurrencySymbol(item.currency)} ${parseFloat(item.costPrice).toFixed(2)}</td>
-          <td>R$ ${shippingPerItemBRL.toFixed(2)}</td>
+          <td>R$ ${costs.itemShippingBRL.toFixed(2)}</td>
           <td class="cost">R$ ${costs.taxBRL.toFixed(2)}</td>
           <td><strong>R$ ${costs.finalCostBRL.toFixed(2)}</strong></td>
           <td>R$ ${costs.sellingPrice.toFixed(2)}</td>
