@@ -626,11 +626,6 @@ const AdvancedPricingCalculator: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-1">
