@@ -305,13 +305,16 @@ const AdvancedPricingCalculator: React.FC = () => {
     }));
   };
 
-  // Calcular frete rateado por item (já convertido para BRL)
+  // Calcular frete rateado proporcional ao peso (já convertido para BRL)
   const activeItems = adjustedItems.filter(item => parseFloat(item.costPrice) > 0);
   const totalShippingValue = parseFloat(totalShipping) || 0;
   const totalShippingBRL = convertToBRL(totalShippingValue, shippingCurrency);
-  const shippingPerItemBRL = activeItems.length > 0 
-    ? totalShippingBRL / activeItems.length 
-    : 0;
+  const totalWeight = activeItems.reduce((sum, item) => sum + (item.estimatedGrams || 300), 0);
+  
+  const getShippingForItem = (item: ProductItem): number => {
+    if (totalWeight === 0 || totalShippingBRL === 0) return 0;
+    return (item.estimatedGrams || 300) / totalWeight * totalShippingBRL;
+  };
 
   // Calcular cotações para display
   const usdToBrl = rates.BRL;
