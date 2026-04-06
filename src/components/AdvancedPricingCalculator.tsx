@@ -10,6 +10,15 @@ import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck,
 type Currency = 'USD' | 'EUR' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 
+// Peso estimado em gramas por palavra-chave do nome
+const WEIGHT_MAP: { keywords: string[]; grams: number; label: string }[] = [
+  { keywords: ['boné', 'bone', 'touca', 'acessório', 'acessorio', 'meia', 'cueca', 'calcinha', 'cap'], grams: 150, label: '~150g' },
+  { keywords: ['camiseta', 't-shirt', 'tshirt', 'camisa', 'polo', 'regata'], grams: 200, label: '~200g' },
+  { keywords: ['bermuda', 'short', 'calção', 'calcao', 'shorts'], grams: 350, label: '~350g' },
+  { keywords: ['calça', 'calca', 'moletom', 'jaqueta', 'hoodie', 'casaco', 'jacket'], grams: 700, label: '~700g' },
+  { keywords: ['tênis', 'tenis', 'sapato', 'sneaker', 'bota'], grams: 1000, label: '~1kg' },
+];
+
 interface ExchangeRates {
   USD: number;
   EUR: number;
