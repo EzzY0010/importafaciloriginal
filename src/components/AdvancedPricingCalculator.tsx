@@ -235,7 +235,9 @@ const AdvancedPricingCalculator: React.FC = () => {
       declaredValue: '',
       profitMargin: '30',
       currency: 'USD',
-      weightCategory: 'medium'
+      weightCategory: 'medium',
+      estimatedGrams: 300,
+      weightLabel: '~300g'
     }]);
   };
 
