@@ -722,6 +722,7 @@ const AdvancedPricingCalculator: React.FC = () => {
             </Button>
           </div>
         )}
+        </div>{/* end summaryRef */}
 
         {/* Tip */}
         <div className="p-3 bg-accent/5 rounded-lg border border-accent/10">
