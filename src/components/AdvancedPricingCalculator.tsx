@@ -366,24 +366,42 @@ const AdvancedPricingCalculator: React.FC = () => {
 
   const generatePDF = async () => {
     const element = summaryRef.current;
-    if (!element) return;
+    if (!element) {
+      console.error('PDF: summaryRef element not found');
+      return;
+    }
+
+    setGeneratingPDF(true);
+    console.log('PDF: Iniciando geração...');
 
     try {
       // Temporarily expand for capture (avoid mobile clipping)
       const originalWidth = element.style.width;
+      const originalMaxWidth = element.style.maxWidth;
+      const originalOverflow = element.style.overflow;
       element.style.width = '800px';
+      element.style.maxWidth = '800px';
+      element.style.overflow = 'visible';
 
+      // Small delay to let the browser reflow
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      console.log('PDF: Capturando HTML com html2canvas...');
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        logging: false,
+        logging: true,
         backgroundColor: '#ffffff',
         windowWidth: 800,
+        scrollY: -window.scrollY,
       });
 
-      // Restore original width
+      // Restore original styles
       element.style.width = originalWidth;
+      element.style.maxWidth = originalMaxWidth;
+      element.style.overflow = originalOverflow;
 
+      console.log('PDF: Canvas gerado, criando PDF...');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = 210;
       const pdfHeight = 297;
@@ -394,8 +412,8 @@ const AdvancedPricingCalculator: React.FC = () => {
       let imgWidth = pdfWidth - 2 * padding;
       let imgHeight = imgWidth / aspectRatio;
 
-      if (imgHeight > pdfHeight - 2 * padding) {
-        imgHeight = pdfHeight - 2 * padding;
+      if (imgHeight > pdfHeight - 2 * padding - 24) {
+        imgHeight = pdfHeight - 2 * padding - 24;
         imgWidth = imgHeight * aspectRatio;
       }
 
@@ -422,10 +440,25 @@ const AdvancedPricingCalculator: React.FC = () => {
       pdf.setTextColor(150, 150, 150);
       pdf.text('Gerado por ImportaFácil — Seu guia mais completo sobre importações', padding, pdfHeight - 8);
 
+      // Mobile-friendly download using blob + temp link
       const dateStr = now.toISOString().split('T')[0];
-      pdf.save(`Resumo_Importafacil_${dateStr}.pdf`);
+      const filename = `Resumo_Importafacil_${dateStr}.pdf`;
+      const blob = pdf.output('blob');
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+
+      console.log('PDF: Gerado com sucesso!', filename);
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
+      console.error('PDF: Erro ao gerar:', error);
+      alert('Erro ao gerar o PDF. Tente novamente.');
+    } finally {
+      setGeneratingPDF(false);
     }
   };
 
