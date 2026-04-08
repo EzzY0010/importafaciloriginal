@@ -161,6 +161,7 @@ const detectWeightCategory = (name: string): WeightCategory => estimateWeight(na
 
 const AdvancedPricingCalculator: React.FC = () => {
   const summaryRef = useRef<HTMLDivElement>(null);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
   const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80 });
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [totalShipping, setTotalShipping] = useState<string>('');
