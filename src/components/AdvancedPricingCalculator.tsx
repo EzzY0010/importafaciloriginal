@@ -5,7 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText } from 'lucide-react';
+import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText, CheckCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -162,6 +164,8 @@ const detectWeightCategory = (name: string): WeightCategory => estimateWeight(na
 const AdvancedPricingCalculator: React.FC = () => {
   const summaryRef = useRef<HTMLDivElement>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [pdfFileName, setPdfFileName] = useState('');
   const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80 });
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [totalShipping, setTotalShipping] = useState<string>('');
@@ -442,8 +446,9 @@ const AdvancedPricingCalculator: React.FC = () => {
       pdf.text('Gerado por ImportaFácil — Seu guia mais completo sobre importações', padding, pdfHeight - 8);
 
       // Mobile-friendly download using blob + temp link
-      const dateStr = now.toISOString().split('T')[0];
-      const filename = `Resumo_Importafacil_${dateStr}.pdf`;
+      const filename = pdfFileName.trim() 
+        ? `${pdfFileName.trim().replace(/\.pdf$/i, '')}.pdf`
+        : `Resumo_Importafacil_${now.toISOString().split('T')[0]}.pdf`;
       const blob = pdf.output('blob');
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -455,11 +460,19 @@ const AdvancedPricingCalculator: React.FC = () => {
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 
       console.log('PDF: Gerado com sucesso!', filename);
+      toast.success('Download concluído!', {
+        description: `Arquivo "${filename}" salvo com sucesso.`,
+        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+      });
     } catch (error) {
       console.error('PDF: Erro ao gerar:', error);
-      alert('Erro ao gerar o PDF. Tente novamente.');
+      toast.error('Erro ao gerar o PDF', {
+        description: 'Tente novamente em alguns segundos.',
+      });
     } finally {
       setGeneratingPDF(false);
+      setShowSaveDialog(false);
+      setPdfFileName('');
     }
   };
 
@@ -749,7 +762,10 @@ const AdvancedPricingCalculator: React.FC = () => {
             <Button
               variant="outline"
               className="w-full mt-2 gap-2 border-accent/30 text-accent hover:bg-accent/10"
-              onClick={() => generatePDF()}
+              onClick={() => {
+                setPdfFileName(`Resumo_Importafacil_${new Date().toISOString().split('T')[0]}`);
+                setShowSaveDialog(true);
+              }}
               disabled={generatingPDF}
             >
               {generatingPDF ? (
@@ -767,6 +783,60 @@ const AdvancedPricingCalculator: React.FC = () => {
           </div>
         )}
         </div>{/* end summaryRef */}
+
+        {/* Save As Dialog */}
+        <Dialog open={showSaveDialog} onOpenChange={(open) => {
+          if (!generatingPDF) {
+            setShowSaveDialog(open);
+            if (!open) setPdfFileName('');
+          }
+        }}>
+          <DialogContent className="rounded-xl border-border bg-card">
+            <DialogHeader>
+              <DialogTitle className="text-foreground">Salvar PDF como...</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="pdf-filename" className="text-muted-foreground text-sm mb-2 block">
+                Nome do arquivo
+              </Label>
+              <Input
+                id="pdf-filename"
+                value={pdfFileName}
+                onChange={(e) => setPdfFileName(e.target.value)}
+                placeholder="Digite o nome do arquivo..."
+                className="rounded-xl"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && pdfFileName.trim()) generatePDF();
+                }}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => { setShowSaveDialog(false); setPdfFileName(''); }}
+                disabled={generatingPDF}
+                className="rounded-xl"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => generatePDF()}
+                disabled={!pdfFileName.trim() || generatingPDF}
+                className="rounded-xl gap-2"
+              >
+                {generatingPDF ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  'Salvar'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Tip */}
         <div className="p-3 bg-accent/5 rounded-lg border border-accent/10">
