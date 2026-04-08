@@ -446,8 +446,9 @@ const AdvancedPricingCalculator: React.FC = () => {
       pdf.text('Gerado por ImportaFácil — Seu guia mais completo sobre importações', padding, pdfHeight - 8);
 
       // Mobile-friendly download using blob + temp link
-      const dateStr = now.toISOString().split('T')[0];
-      const filename = `Resumo_Importafacil_${dateStr}.pdf`;
+      const filename = pdfFileName.trim() 
+        ? `${pdfFileName.trim().replace(/\.pdf$/i, '')}.pdf`
+        : `Resumo_Importafacil_${now.toISOString().split('T')[0]}.pdf`;
       const blob = pdf.output('blob');
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -459,11 +460,19 @@ const AdvancedPricingCalculator: React.FC = () => {
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 
       console.log('PDF: Gerado com sucesso!', filename);
+      toast.success('Download concluído!', {
+        description: `Arquivo "${filename}" salvo com sucesso.`,
+        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+      });
     } catch (error) {
       console.error('PDF: Erro ao gerar:', error);
-      alert('Erro ao gerar o PDF. Tente novamente.');
+      toast.error('Erro ao gerar o PDF', {
+        description: 'Tente novamente em alguns segundos.',
+      });
     } finally {
       setGeneratingPDF(false);
+      setShowSaveDialog(false);
+      setPdfFileName('');
     }
   };
 
