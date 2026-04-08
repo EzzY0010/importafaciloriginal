@@ -762,7 +762,10 @@ const AdvancedPricingCalculator: React.FC = () => {
             <Button
               variant="outline"
               className="w-full mt-2 gap-2 border-accent/30 text-accent hover:bg-accent/10"
-              onClick={() => generatePDF()}
+              onClick={() => {
+                setPdfFileName(`Resumo_Importafacil_${new Date().toISOString().split('T')[0]}`);
+                setShowSaveDialog(true);
+              }}
               disabled={generatingPDF}
             >
               {generatingPDF ? (
@@ -780,6 +783,60 @@ const AdvancedPricingCalculator: React.FC = () => {
           </div>
         )}
         </div>{/* end summaryRef */}
+
+        {/* Save As Dialog */}
+        <Dialog open={showSaveDialog} onOpenChange={(open) => {
+          if (!generatingPDF) {
+            setShowSaveDialog(open);
+            if (!open) setPdfFileName('');
+          }
+        }}>
+          <DialogContent className="rounded-xl border-border bg-card">
+            <DialogHeader>
+              <DialogTitle className="text-foreground">Salvar PDF como...</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="pdf-filename" className="text-muted-foreground text-sm mb-2 block">
+                Nome do arquivo
+              </Label>
+              <Input
+                id="pdf-filename"
+                value={pdfFileName}
+                onChange={(e) => setPdfFileName(e.target.value)}
+                placeholder="Digite o nome do arquivo..."
+                className="rounded-xl"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && pdfFileName.trim()) generatePDF();
+                }}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => { setShowSaveDialog(false); setPdfFileName(''); }}
+                disabled={generatingPDF}
+                className="rounded-xl"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => generatePDF()}
+                disabled={!pdfFileName.trim() || generatingPDF}
+                className="rounded-xl gap-2"
+              >
+                {generatingPDF ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  'Salvar'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Tip */}
         <div className="p-3 bg-accent/5 rounded-lg border border-accent/10">
