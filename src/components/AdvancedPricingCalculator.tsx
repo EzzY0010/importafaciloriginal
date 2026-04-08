@@ -749,9 +749,19 @@ const AdvancedPricingCalculator: React.FC = () => {
               variant="outline"
               className="w-full mt-2 gap-2 border-accent/30 text-accent hover:bg-accent/10"
               onClick={() => generatePDF()}
+              disabled={generatingPDF}
             >
-              <FileText className="h-4 w-4" />
-              Gerar Resumo em PDF
+              {generatingPDF ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Gerando PDF...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4" />
+                  Gerar Resumo em PDF
+                </>
+              )}
             </Button>
           </div>
         )}
