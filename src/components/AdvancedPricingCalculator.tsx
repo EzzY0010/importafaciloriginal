@@ -6,14 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText, FileSpreadsheet, CheckCircle } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
 
 type Currency = 'USD' | 'EUR' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
+type ExportType = 'pdf' | 'docx';
 
 // Peso estimado em gramas por palavra-chave do nome
 const WEIGHT_MAP: { keywords: string[]; grams: number; label: string }[] = [
@@ -167,7 +169,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [pdfFileName, setPdfFileName] = useState('');
-  const [exportType, setExportType] = useState<'pdf' | 'docx'>('pdf');
+  const [exportType, setExportType] = useState<ExportType>('pdf');
   const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80 });
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [totalShipping, setTotalShipping] = useState<string>('');
@@ -370,144 +372,138 @@ const AdvancedPricingCalculator: React.FC = () => {
 
   const getCurrencySymbol = (currency: Currency) => CURRENCY_CONFIG[currency].symbol;
 
+  const getDefaultFileName = (type: ExportType) => {
+    const date = new Date().toISOString().split('T')[0];
+    return `Resumo_Importafacil_${date}`;
+  };
+
+  const buildExportFileName = (type: ExportType) => {
+    const extension = type === 'pdf' ? 'pdf' : 'docx';
+    const baseName = (pdfFileName.trim() || getDefaultFileName(type))
+      .replace(/\.(pdf|docx)$/i, '')
+      .trim();
+
+    return `${baseName}.${extension}`;
+  };
+
+  const closeSaveDialog = () => {
+    if (generatingPDF) return;
+    setShowSaveDialog(false);
+    setPdfFileName('');
+  };
+
+  const openSaveDialog = (type: ExportType) => {
+    if (generatingPDF) return;
+    setExportType(type);
+    setPdfFileName(getDefaultFileName(type));
+    setShowSaveDialog(true);
+  };
 
   const generatePDF = async () => {
     setGeneratingPDF(true);
+    const loadingToast = toast.loading('Gerando PDF...', {
+      description: 'Preparando a área de precificação para download.',
+    });
 
     try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const W = 210;
-      const H = 297;
-      const pad = 14;
-      const maxW = W - 2 * pad;
-      let y = pad;
-      const now = new Date();
+      const target = summaryRef.current;
 
-      // ── Header ──
-      pdf.setFillColor(15, 59, 111);
-      pdf.rect(0, 0, W, 36, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(18);
-      pdf.text('Relatorio de Importacao - ImportaFacil', pad, 16);
-      pdf.setFontSize(10);
-      pdf.text(`Data: ${now.toLocaleDateString('pt-BR')}  |  Cambio: 1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`, pad, 26);
-      pdf.setDrawColor(255, 140, 0);
-      pdf.setLineWidth(1);
-      pdf.line(0, 36, W, 36);
-      y = 44;
-
-      // ── Items table ──
-      const itemsToExport = adjustedItems.filter(i => parseFloat(i.costPrice) > 0);
-      if (itemsToExport.length === 0) {
-        pdf.setTextColor(100, 100, 100);
-        pdf.setFontSize(12);
-        pdf.text('Nenhum item adicionado.', pad, y);
-      } else {
-        // Table header
-        const cols = [pad, pad + 8, pad + 58, pad + 88, pad + 118, pad + 148];
-        const colLabels = ['#', 'Item', 'Custo (BRL)', 'Frete (BRL)', 'Imposto (BRL)', 'Venda (BRL)'];
-
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(pad, y - 4, maxW, 8, 'F');
-        pdf.setFontSize(8);
-        pdf.setTextColor(60, 60, 60);
-        colLabels.forEach((label, i) => pdf.text(label, cols[i], y));
-        y += 8;
-
-        pdf.setTextColor(30, 30, 30);
-        pdf.setFontSize(9);
-
-        itemsToExport.forEach((item, idx) => {
-          if (y > H - 40) {
-            pdf.addPage();
-            y = pad;
-          }
-
-          const costs = calculateItemCosts(item);
-          const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name, wasCamouflaged: false };
-          const displayName = camouflaged.name || item.name || 'Sem nome';
-
-          // Alternate row background
-          if (idx % 2 === 0) {
-            pdf.setFillColor(250, 250, 250);
-            pdf.rect(pad, y - 4, maxW, 8, 'F');
-          }
-
-          pdf.setTextColor(30, 30, 30);
-          pdf.text(`${idx + 1}`, cols[0], y);
-          pdf.text(displayName.substring(0, 20), cols[1], y);
-          pdf.text(`R$ ${costs.costPriceBRL.toFixed(2)}`, cols[2], y);
-          pdf.text(`R$ ${costs.itemShippingBRL.toFixed(2)}`, cols[3], y);
-
-          // Tax in red
-          pdf.setTextColor(200, 30, 30);
-          pdf.text(`R$ ${costs.taxBRL.toFixed(2)}`, cols[4], y);
-
-          // Selling price in dark
-          pdf.setTextColor(30, 30, 30);
-          pdf.text(`R$ ${costs.sellingPrice.toFixed(2)}`, cols[5], y);
-
-          y += 8;
-        });
-
-        // ── Totals ──
-        y += 6;
-        if (y > H - 50) { pdf.addPage(); y = pad; }
-
-        pdf.setDrawColor(15, 59, 111);
-        pdf.setLineWidth(0.5);
-        pdf.line(pad, y, W - pad, y);
-        y += 8;
-
-        pdf.setFontSize(11);
-        pdf.setTextColor(30, 30, 30);
-        pdf.text(`Investimento Total:  R$ ${totalResults.totalCost.toFixed(2)}`, pad, y);
-        y += 7;
-        pdf.text(`Faturamento Total:   R$ ${totalResults.totalSelling.toFixed(2)}`, pad, y);
-        y += 7;
-
-        if (totalResults.totalProfit >= 0) {
-          pdf.setTextColor(22, 130, 50);
-        } else {
-          pdf.setTextColor(200, 30, 30);
-        }
-        pdf.setFontSize(13);
-        pdf.text(`Lucro Total:  R$ ${totalResults.totalProfit.toFixed(2)}`, pad, y);
-        y += 10;
-
-        // Shipping info
-        if (totalShippingBRL > 0) {
-          pdf.setFontSize(9);
-          pdf.setTextColor(100, 100, 100);
-          pdf.text(`Frete total: R$ ${totalShippingBRL.toFixed(2)} (rateado por peso)`, pad, y);
-          y += 5;
-        }
-
-        // Declaration info
-        pdf.setFontSize(9);
-        pdf.setTextColor(100, 100, 100);
-        pdf.text(`Declaracao total: US$ ${totalDeclaration.toFixed(2)}${wasAdjusted ? ' (ajustado automaticamente pelo Lobo)' : ''}`, pad, y);
+      if (!target) {
+        throw new Error('Área de precificação não encontrada para exportação.');
       }
 
-      // ── Footer ──
-      pdf.setFontSize(8);
-      pdf.setTextColor(150, 150, 150);
-      pdf.text('Gerado por ImportaFacil - Seu guia mais completo sobre importacoes', pad, H - 8);
+      const canvas = await html2canvas(target, {
+        backgroundColor: '#ffffff',
+        scale: Math.max(2, window.devicePixelRatio || 1),
+        useCORS: true,
+        logging: false,
+        scrollX: 0,
+        scrollY: -window.scrollY,
+        windowWidth: target.scrollWidth,
+        windowHeight: target.scrollHeight,
+        onclone: (clonedDocument) => {
+          const exportRoot = clonedDocument.querySelector('[data-export-root="pricing-export"]') as HTMLElement | null;
+          if (exportRoot) {
+            exportRoot.style.background = '#ffffff';
+            exportRoot.style.color = '#111827';
+            exportRoot.style.padding = '16px';
+            exportRoot.style.borderRadius = '24px';
+            exportRoot.style.boxShadow = 'none';
+          }
 
-      // Download
-      const filename = pdfFileName.trim()
-        ? `${pdfFileName.trim().replace(/\.pdf$/i, '')}.pdf`
-        : `Resumo_Importafacil_${now.toISOString().split('T')[0]}.pdf`;
+          const style = clonedDocument.createElement('style');
+          style.textContent = `
+            [data-export-root="pricing-export"] {
+              background: #ffffff !important;
+              color: #111827 !important;
+            }
+            [data-export-root="pricing-export"] * {
+              box-shadow: none !important;
+            }
+            [data-export-root="pricing-export"] .bg-background,
+            [data-export-root="pricing-export"] .bg-card,
+            [data-export-root="pricing-export"] .bg-muted,
+            [data-export-root="pricing-export"] [class*="bg-"] {
+              background: #ffffff !important;
+            }
+            [data-export-root="pricing-export"] .text-foreground,
+            [data-export-root="pricing-export"] .text-muted-foreground,
+            [data-export-root="pricing-export"] .text-primary,
+            [data-export-root="pricing-export"] .text-accent {
+              color: #111827 !important;
+            }
+            [data-export-root="pricing-export"] .text-destructive {
+              color: #b91c1c !important;
+            }
+            [data-export-root="pricing-export"] .text-green-600,
+            [data-export-root="pricing-export"] .dark\\:text-green-400 {
+              color: #15803d !important;
+            }
+            [data-export-root="pricing-export"] .border-border,
+            [data-export-root="pricing-export"] [class*="border-"] {
+              border-color: #d1d5db !important;
+            }
+          `;
+          clonedDocument.head.appendChild(style);
+        },
+      });
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const padding = 10;
+      const printableWidth = pageWidth - padding * 2;
+      const printableHeight = pageHeight - padding * 2;
+      const imageHeight = (canvas.height * printableWidth) / canvas.width;
+      const imageData = canvas.toDataURL('image/png');
+      const filename = buildExportFileName('pdf');
+
+      let heightLeft = imageHeight;
+      let offsetY = padding;
+
+      pdf.addImage(imageData, 'PNG', padding, offsetY, printableWidth, imageHeight, undefined, 'FAST');
+      heightLeft -= printableHeight;
+
+      while (heightLeft > 0) {
+        pdf.addPage();
+        offsetY = padding - (imageHeight - heightLeft);
+        pdf.addImage(imageData, 'PNG', padding, offsetY, printableWidth, imageHeight, undefined, 'FAST');
+        heightLeft -= printableHeight;
+      }
+
       const blob = pdf.output('blob');
       saveAs(blob, filename);
 
-      toast.success('Download concluido!', {
-        description: `Arquivo "${filename}" salvo com sucesso.`,
+      toast.success('Download enviado', {
+        id: loadingToast,
+        description: `Arquivo "${filename}" enviado para o navegador.`,
         icon: <CheckCircle className="h-5 w-5 text-green-500" />,
       });
     } catch (error) {
+      console.log('PDF export error:', error);
       console.error('PDF: Erro ao gerar:', error);
       toast.error('Erro ao gerar o PDF', {
+        id: loadingToast,
         description: 'Tente novamente em alguns segundos.',
       });
     } finally {
@@ -519,16 +515,20 @@ const AdvancedPricingCalculator: React.FC = () => {
 
   const generateDOCX = async () => {
     setGeneratingPDF(true);
+    const loadingToast = toast.loading('Gerando Word...', {
+      description: 'Montando a tabela para download.',
+    });
+
     try {
       const itemsToExport = adjustedItems.filter(i => parseFloat(i.costPrice) > 0);
       const now = new Date();
       const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
       const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
 
-      const headerCells = ['#', 'Item', 'Custo (BRL)', 'Frete (BRL)', 'Imposto (BRL)', 'Venda (BRL)'].map(label =>
+      const headerCells = ['Nome do item', 'Custo (BRL)', 'Frete (BRL)', 'Preço de venda (BRL)'].map((label, index) =>
         new TableCell({
           borders: cellBorders,
-          width: { size: label === 'Item' ? 2400 : 1200, type: WidthType.DXA },
+          width: { size: index === 0 ? 3600 : 1800, type: WidthType.DXA },
           shading: { fill: '0F3B6F', type: ShadingType.CLEAR },
           margins: { top: 60, bottom: 60, left: 80, right: 80 },
           children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: label, bold: true, color: 'FFFFFF', size: 18, font: 'Arial' })] })],
@@ -538,16 +538,16 @@ const AdvancedPricingCalculator: React.FC = () => {
       const dataRows = itemsToExport.map((item, idx) => {
         const costs = calculateItemCosts(item);
         const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name };
-        const displayName = (camouflaged.name || item.name || 'Sem nome').substring(0, 25);
-        const values = [`${idx + 1}`, displayName, `R$ ${costs.costPriceBRL.toFixed(2)}`, `R$ ${costs.itemShippingBRL.toFixed(2)}`, `R$ ${costs.taxBRL.toFixed(2)}`, `R$ ${costs.sellingPrice.toFixed(2)}`];
+        const displayName = (camouflaged.name || item.name || `Item ${idx + 1}`).substring(0, 40);
+        const values = [displayName, `R$ ${costs.costPriceBRL.toFixed(2)}`, `R$ ${costs.itemShippingBRL.toFixed(2)}`, `R$ ${costs.sellingPrice.toFixed(2)}`];
         return new TableRow({
           children: values.map((val, i) =>
             new TableCell({
               borders: cellBorders,
-              width: { size: i === 1 ? 2400 : 1200, type: WidthType.DXA },
+              width: { size: i === 0 ? 3600 : 1800, type: WidthType.DXA },
               shading: idx % 2 === 0 ? { fill: 'F5F5F5', type: ShadingType.CLEAR } : undefined,
               margins: { top: 40, bottom: 40, left: 80, right: 80 },
-              children: [new Paragraph({ alignment: i >= 2 ? AlignmentType.RIGHT : AlignmentType.LEFT, children: [new TextRun({ text: val, size: 18, font: 'Arial', color: i === 4 ? 'CC1E1E' : '1E1E1E' })] })],
+              children: [new Paragraph({ alignment: i >= 1 ? AlignmentType.RIGHT : AlignmentType.LEFT, children: [new TextRun({ text: val, size: 18, font: 'Arial', color: '1E1E1E' })] })],
             })
           ),
         });
@@ -558,7 +558,7 @@ const AdvancedPricingCalculator: React.FC = () => {
           children: [
             new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 100 }, children: [new TextRun({ text: 'Relatório de Importação - ImportaFácil', bold: true, size: 32, font: 'Arial', color: '0F3B6F' })] }),
             new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`, size: 18, font: 'Arial', color: '666666' })] }),
-            new Table({ width: { size: 9000, type: WidthType.DXA }, columnWidths: [1200, 2400, 1200, 1200, 1200, 1200], rows: [new TableRow({ children: headerCells }), ...dataRows] }),
+            new Table({ width: { size: 9000, type: WidthType.DXA }, columnWidths: [3600, 1800, 1800, 1800], rows: [new TableRow({ children: headerCells }), ...dataRows] }),
             new Paragraph({ spacing: { before: 300 }, children: [new TextRun({ text: `Investimento Total: R$ ${totalResults.totalCost.toFixed(2)}`, bold: true, size: 22, font: 'Arial' })] }),
             new Paragraph({ children: [new TextRun({ text: `Faturamento Total: R$ ${totalResults.totalSelling.toFixed(2)}`, bold: true, size: 22, font: 'Arial' })] }),
             new Paragraph({ children: [new TextRun({ text: `Lucro Total: R$ ${totalResults.totalProfit.toFixed(2)}`, bold: true, size: 24, font: 'Arial', color: totalResults.totalProfit >= 0 ? '168232' : 'CC1E1E' })] }),
@@ -568,18 +568,21 @@ const AdvancedPricingCalculator: React.FC = () => {
       });
 
       const blob = await Packer.toBlob(doc);
-      const filename = pdfFileName.trim()
-        ? `${pdfFileName.trim().replace(/\.docx$/i, '')}.docx`
-        : `Resumo_Importafacil_${now.toISOString().split('T')[0]}.docx`;
+      const filename = buildExportFileName('docx');
       saveAs(blob, filename);
 
-      toast.success('Download concluído!', {
-        description: `Arquivo "${filename}" salvo com sucesso.`,
+      toast.success('Download enviado', {
+        id: loadingToast,
+        description: `Arquivo "${filename}" enviado para o navegador.`,
         icon: <CheckCircle className="h-5 w-5 text-green-500" />,
       });
     } catch (error) {
+      console.log('DOCX export error:', error);
       console.error('DOCX: Erro ao gerar:', error);
-      toast.error('Erro ao gerar o DOCX', { description: 'Tente novamente em alguns segundos.' });
+      toast.error('Erro ao gerar o DOCX', {
+        id: loadingToast,
+        description: 'Tente novamente em alguns segundos.'
+      });
     } finally {
       setGeneratingPDF(false);
       setShowSaveDialog(false);
@@ -587,9 +590,10 @@ const AdvancedPricingCalculator: React.FC = () => {
     }
   };
 
-  const handleExport = () => {
-    if (exportType === 'pdf') generatePDF();
-    else generateDOCX();
+  const handleExport = async () => {
+    if (!pdfFileName.trim()) return;
+    if (exportType === 'pdf') await generatePDF();
+    else await generateDOCX();
   };
 
   return (
@@ -608,7 +612,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div ref={summaryRef}>
+        <div ref={summaryRef} data-export-root="pricing-export">
         <div className="flex gap-2 flex-wrap">
           <Badge variant="outline" className="text-xs font-mono">
             🇺🇸 1 USD = R$ {usdToBrl.toFixed(2)}
@@ -880,11 +884,7 @@ const AdvancedPricingCalculator: React.FC = () => {
               <Button
                 variant="outline"
                 className="flex-1 gap-2 border-accent/30 text-accent hover:bg-accent/10"
-                onClick={() => {
-                  setExportType('pdf');
-                  setPdfFileName(`Resumo_Importafacil_${new Date().toISOString().split('T')[0]}`);
-                  setShowSaveDialog(true);
-                }}
+                  onClick={() => openSaveDialog('pdf')}
                 disabled={generatingPDF}
               >
                 <FileText className="h-4 w-4" />
@@ -893,11 +893,7 @@ const AdvancedPricingCalculator: React.FC = () => {
               <Button
                 variant="outline"
                 className="flex-1 gap-2 border-accent/30 text-accent hover:bg-accent/10"
-                onClick={() => {
-                  setExportType('docx');
-                  setPdfFileName(`Resumo_Importafacil_${new Date().toISOString().split('T')[0]}`);
-                  setShowSaveDialog(true);
-                }}
+                  onClick={() => openSaveDialog('docx')}
                 disabled={generatingPDF}
               >
                 <FileSpreadsheet className="h-4 w-4" />
@@ -912,40 +908,48 @@ const AdvancedPricingCalculator: React.FC = () => {
         <Dialog open={showSaveDialog} onOpenChange={(open) => {
           if (!generatingPDF) {
             setShowSaveDialog(open);
-            if (!open) setPdfFileName('');
+            if (!open) closeSaveDialog();
           }
         }}>
           <DialogContent className="rounded-xl border-border bg-card">
             <DialogHeader>
               <DialogTitle className="text-foreground">Salvar {exportType === 'pdf' ? 'PDF' : 'Word (.docx)'} como...</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                Digite o nome do arquivo e confirme para iniciar o download no seu dispositivo.
+              </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
-              <Label htmlFor="pdf-filename" className="text-muted-foreground text-sm mb-2 block">
+            <div className="py-4 space-y-3">
+              <Label htmlFor="export-filename" className="text-muted-foreground text-sm block">
                 Nome do arquivo
               </Label>
               <Input
-                id="pdf-filename"
+                id="export-filename"
                 value={pdfFileName}
                 onChange={(e) => setPdfFileName(e.target.value)}
                 placeholder="Digite o nome do arquivo..."
                 className="rounded-xl"
                 autoFocus
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && pdfFileName.trim()) handleExport();
+                  if (e.key === 'Enter' && pdfFileName.trim()) {
+                    void handleExport();
+                  }
                 }}
               />
+              <p className="text-xs text-muted-foreground">
+                O download começa somente após tocar em <strong className="text-foreground">Salvar</strong>.
+              </p>
             </div>
             <DialogFooter>
               <Button
                 variant="outline"
-                onClick={() => { setShowSaveDialog(false); setPdfFileName(''); }}
+                onClick={closeSaveDialog}
                 disabled={generatingPDF}
                 className="rounded-xl"
               >
                 Cancelar
               </Button>
               <Button
-                onClick={() => handleExport()}
+                onClick={() => void handleExport()}
                 disabled={!pdfFileName.trim() || generatingPDF}
                 className="rounded-xl gap-2"
               >
