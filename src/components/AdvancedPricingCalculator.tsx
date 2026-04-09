@@ -5,11 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText, CheckCircle } from 'lucide-react';
+import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText, FileSpreadsheet, CheckCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { saveAs } from 'file-saver';
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
 
 type Currency = 'USD' | 'EUR' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
@@ -166,6 +167,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [pdfFileName, setPdfFileName] = useState('');
+  const [exportType, setExportType] = useState<'pdf' | 'docx'>('pdf');
   const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80 });
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [totalShipping, setTotalShipping] = useState<string>('');
@@ -497,14 +499,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         ? `${pdfFileName.trim().replace(/\.pdf$/i, '')}.pdf`
         : `Resumo_Importafacil_${now.toISOString().split('T')[0]}.pdf`;
       const blob = pdf.output('blob');
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      saveAs(blob, filename);
 
       toast.success('Download concluido!', {
         description: `Arquivo "${filename}" salvo com sucesso.`,
@@ -522,7 +517,83 @@ const AdvancedPricingCalculator: React.FC = () => {
     }
   };
 
+  const generateDOCX = async () => {
+    setGeneratingPDF(true);
+    try {
+      const itemsToExport = adjustedItems.filter(i => parseFloat(i.costPrice) > 0);
+      const now = new Date();
+      const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
+      const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
+
+      const headerCells = ['#', 'Item', 'Custo (BRL)', 'Frete (BRL)', 'Imposto (BRL)', 'Venda (BRL)'].map(label =>
+        new TableCell({
+          borders: cellBorders,
+          width: { size: label === 'Item' ? 2400 : 1200, type: WidthType.DXA },
+          shading: { fill: '0F3B6F', type: ShadingType.CLEAR },
+          margins: { top: 60, bottom: 60, left: 80, right: 80 },
+          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: label, bold: true, color: 'FFFFFF', size: 18, font: 'Arial' })] })],
+        })
+      );
+
+      const dataRows = itemsToExport.map((item, idx) => {
+        const costs = calculateItemCosts(item);
+        const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name };
+        const displayName = (camouflaged.name || item.name || 'Sem nome').substring(0, 25);
+        const values = [`${idx + 1}`, displayName, `R$ ${costs.costPriceBRL.toFixed(2)}`, `R$ ${costs.itemShippingBRL.toFixed(2)}`, `R$ ${costs.taxBRL.toFixed(2)}`, `R$ ${costs.sellingPrice.toFixed(2)}`];
+        return new TableRow({
+          children: values.map((val, i) =>
+            new TableCell({
+              borders: cellBorders,
+              width: { size: i === 1 ? 2400 : 1200, type: WidthType.DXA },
+              shading: idx % 2 === 0 ? { fill: 'F5F5F5', type: ShadingType.CLEAR } : undefined,
+              margins: { top: 40, bottom: 40, left: 80, right: 80 },
+              children: [new Paragraph({ alignment: i >= 2 ? AlignmentType.RIGHT : AlignmentType.LEFT, children: [new TextRun({ text: val, size: 18, font: 'Arial', color: i === 4 ? 'CC1E1E' : '1E1E1E' })] })],
+            })
+          ),
+        });
+      });
+
+      const doc = new Document({
+        sections: [{
+          children: [
+            new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 100 }, children: [new TextRun({ text: 'Relatório de Importação - ImportaFácil', bold: true, size: 32, font: 'Arial', color: '0F3B6F' })] }),
+            new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`, size: 18, font: 'Arial', color: '666666' })] }),
+            new Table({ width: { size: 9000, type: WidthType.DXA }, columnWidths: [1200, 2400, 1200, 1200, 1200, 1200], rows: [new TableRow({ children: headerCells }), ...dataRows] }),
+            new Paragraph({ spacing: { before: 300 }, children: [new TextRun({ text: `Investimento Total: R$ ${totalResults.totalCost.toFixed(2)}`, bold: true, size: 22, font: 'Arial' })] }),
+            new Paragraph({ children: [new TextRun({ text: `Faturamento Total: R$ ${totalResults.totalSelling.toFixed(2)}`, bold: true, size: 22, font: 'Arial' })] }),
+            new Paragraph({ children: [new TextRun({ text: `Lucro Total: R$ ${totalResults.totalProfit.toFixed(2)}`, bold: true, size: 24, font: 'Arial', color: totalResults.totalProfit >= 0 ? '168232' : 'CC1E1E' })] }),
+            new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: 'Gerado por ImportaFácil - Seu guia mais completo sobre importações', size: 16, font: 'Arial', color: '999999', italics: true })] }),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const filename = pdfFileName.trim()
+        ? `${pdfFileName.trim().replace(/\.docx$/i, '')}.docx`
+        : `Resumo_Importafacil_${now.toISOString().split('T')[0]}.docx`;
+      saveAs(blob, filename);
+
+      toast.success('Download concluído!', {
+        description: `Arquivo "${filename}" salvo com sucesso.`,
+        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+      });
+    } catch (error) {
+      console.error('DOCX: Erro ao gerar:', error);
+      toast.error('Erro ao gerar o DOCX', { description: 'Tente novamente em alguns segundos.' });
+    } finally {
+      setGeneratingPDF(false);
+      setShowSaveDialog(false);
+      setPdfFileName('');
+    }
+  };
+
+  const handleExport = () => {
+    if (exportType === 'pdf') generatePDF();
+    else generateDOCX();
+  };
+
   return (
+
     <Card className="w-full max-w-2xl" translate="no">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
@@ -804,28 +875,35 @@ const AdvancedPricingCalculator: React.FC = () => {
               </div>
             </div>
 
-            {/* PDF Button */}
-            <Button
-              variant="outline"
-              className="w-full mt-2 gap-2 border-accent/30 text-accent hover:bg-accent/10"
-              onClick={() => {
-                setPdfFileName(`Resumo_Importafacil_${new Date().toISOString().split('T')[0]}`);
-                setShowSaveDialog(true);
-              }}
-              disabled={generatingPDF}
-            >
-              {generatingPDF ? (
-                <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Gerando PDF...
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4" />
-                  Gerar Resumo em PDF
-                </>
-              )}
-            </Button>
+            {/* Export Buttons */}
+            <div className="flex gap-2 mt-2">
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 border-accent/30 text-accent hover:bg-accent/10"
+                onClick={() => {
+                  setExportType('pdf');
+                  setPdfFileName(`Resumo_Importafacil_${new Date().toISOString().split('T')[0]}`);
+                  setShowSaveDialog(true);
+                }}
+                disabled={generatingPDF}
+              >
+                <FileText className="h-4 w-4" />
+                Exportar PDF
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 border-accent/30 text-accent hover:bg-accent/10"
+                onClick={() => {
+                  setExportType('docx');
+                  setPdfFileName(`Resumo_Importafacil_${new Date().toISOString().split('T')[0]}`);
+                  setShowSaveDialog(true);
+                }}
+                disabled={generatingPDF}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Exportar Word
+              </Button>
+            </div>
           </div>
         )}
         </div>{/* end summaryRef */}
@@ -839,7 +917,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         }}>
           <DialogContent className="rounded-xl border-border bg-card">
             <DialogHeader>
-              <DialogTitle className="text-foreground">Salvar PDF como...</DialogTitle>
+              <DialogTitle className="text-foreground">Salvar {exportType === 'pdf' ? 'PDF' : 'Word (.docx)'} como...</DialogTitle>
             </DialogHeader>
             <div className="py-4">
               <Label htmlFor="pdf-filename" className="text-muted-foreground text-sm mb-2 block">
@@ -853,7 +931,7 @@ const AdvancedPricingCalculator: React.FC = () => {
                 className="rounded-xl"
                 autoFocus
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && pdfFileName.trim()) generatePDF();
+                  if (e.key === 'Enter' && pdfFileName.trim()) handleExport();
                 }}
               />
             </div>
@@ -867,7 +945,7 @@ const AdvancedPricingCalculator: React.FC = () => {
                 Cancelar
               </Button>
               <Button
-                onClick={() => generatePDF()}
+                onClick={() => handleExport()}
                 disabled={!pdfFileName.trim() || generatingPDF}
                 className="rounded-xl gap-2"
               >
