@@ -599,6 +599,8 @@ const AdvancedPricingCalculator: React.FC = () => {
     else generateDOCX();
   };
 
+  return (
+
     <Card className="w-full max-w-2xl" translate="no">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
