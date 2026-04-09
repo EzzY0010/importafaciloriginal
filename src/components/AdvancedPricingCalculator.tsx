@@ -952,7 +952,7 @@ const AdvancedPricingCalculator: React.FC = () => {
                 Cancelar
               </Button>
               <Button
-                onClick={() => generatePDF()}
+                onClick={() => handleExport()}
                 disabled={!pdfFileName.trim() || generatingPDF}
                 className="rounded-xl gap-2"
               >
