@@ -499,14 +499,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         ? `${pdfFileName.trim().replace(/\.pdf$/i, '')}.pdf`
         : `Resumo_Importafacil_${now.toISOString().split('T')[0]}.pdf`;
       const blob = pdf.output('blob');
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      saveAs(blob, filename);
 
       toast.success('Download concluido!', {
         description: `Arquivo "${filename}" salvo com sucesso.`,
