@@ -882,28 +882,35 @@ const AdvancedPricingCalculator: React.FC = () => {
               </div>
             </div>
 
-            {/* PDF Button */}
-            <Button
-              variant="outline"
-              className="w-full mt-2 gap-2 border-accent/30 text-accent hover:bg-accent/10"
-              onClick={() => {
-                setPdfFileName(`Resumo_Importafacil_${new Date().toISOString().split('T')[0]}`);
-                setShowSaveDialog(true);
-              }}
-              disabled={generatingPDF}
-            >
-              {generatingPDF ? (
-                <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Gerando PDF...
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4" />
-                  Gerar Resumo em PDF
-                </>
-              )}
-            </Button>
+            {/* Export Buttons */}
+            <div className="flex gap-2 mt-2">
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 border-accent/30 text-accent hover:bg-accent/10"
+                onClick={() => {
+                  setExportType('pdf');
+                  setPdfFileName(`Resumo_Importafacil_${new Date().toISOString().split('T')[0]}`);
+                  setShowSaveDialog(true);
+                }}
+                disabled={generatingPDF}
+              >
+                <FileText className="h-4 w-4" />
+                Exportar PDF
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 border-accent/30 text-accent hover:bg-accent/10"
+                onClick={() => {
+                  setExportType('docx');
+                  setPdfFileName(`Resumo_Importafacil_${new Date().toISOString().split('T')[0]}`);
+                  setShowSaveDialog(true);
+                }}
+                disabled={generatingPDF}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Exportar Word
+              </Button>
+            </div>
           </div>
         )}
         </div>{/* end summaryRef */}
