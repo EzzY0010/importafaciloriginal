@@ -370,83 +370,130 @@ const AdvancedPricingCalculator: React.FC = () => {
 
 
   const generatePDF = async () => {
-    const element = summaryRef.current;
-    if (!element) {
-      console.error('PDF: summaryRef element not found');
-      return;
-    }
-
     setGeneratingPDF(true);
-    console.log('PDF: Iniciando geração...');
 
     try {
-      // Temporarily expand for capture (avoid mobile clipping)
-      const originalWidth = element.style.width;
-      const originalMaxWidth = element.style.maxWidth;
-      const originalOverflow = element.style.overflow;
-      element.style.width = '800px';
-      element.style.maxWidth = '800px';
-      element.style.overflow = 'visible';
-
-      // Small delay to let the browser reflow
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      console.log('PDF: Capturando HTML com html2canvas...');
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: true,
-        backgroundColor: '#ffffff',
-        windowWidth: 800,
-        scrollY: -window.scrollY,
-      });
-
-      // Restore original styles
-      element.style.width = originalWidth;
-      element.style.maxWidth = originalMaxWidth;
-      element.style.overflow = originalOverflow;
-
-      console.log('PDF: Canvas gerado, criando PDF...');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      const padding = 12;
+      const W = 210;
+      const H = 297;
+      const pad = 14;
+      const maxW = W - 2 * pad;
+      let y = pad;
+      const now = new Date();
 
-      const imgData = canvas.toDataURL('image/png');
-      const aspectRatio = canvas.width / canvas.height;
-      let imgWidth = pdfWidth - 2 * padding;
-      let imgHeight = imgWidth / aspectRatio;
+      // ── Header ──
+      pdf.setFillColor(15, 59, 111);
+      pdf.rect(0, 0, W, 36, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(18);
+      pdf.text('Relatorio de Importacao - ImportaFacil', pad, 16);
+      pdf.setFontSize(10);
+      pdf.text(`Data: ${now.toLocaleDateString('pt-BR')}  |  Cambio: 1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`, pad, 26);
+      pdf.setDrawColor(255, 140, 0);
+      pdf.setLineWidth(1);
+      pdf.line(0, 36, W, 36);
+      y = 44;
 
-      if (imgHeight > pdfHeight - 2 * padding - 24) {
-        imgHeight = pdfHeight - 2 * padding - 24;
-        imgWidth = imgHeight * aspectRatio;
+      // ── Items table ──
+      const itemsToExport = adjustedItems.filter(i => parseFloat(i.costPrice) > 0);
+      if (itemsToExport.length === 0) {
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFontSize(12);
+        pdf.text('Nenhum item adicionado.', pad, y);
+      } else {
+        // Table header
+        const cols = [pad, pad + 8, pad + 58, pad + 88, pad + 118, pad + 148];
+        const colLabels = ['#', 'Item', 'Custo (BRL)', 'Frete (BRL)', 'Imposto (BRL)', 'Venda (BRL)'];
+
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(pad, y - 4, maxW, 8, 'F');
+        pdf.setFontSize(8);
+        pdf.setTextColor(60, 60, 60);
+        colLabels.forEach((label, i) => pdf.text(label, cols[i], y));
+        y += 8;
+
+        pdf.setTextColor(30, 30, 30);
+        pdf.setFontSize(9);
+
+        itemsToExport.forEach((item, idx) => {
+          if (y > H - 40) {
+            pdf.addPage();
+            y = pad;
+          }
+
+          const costs = calculateItemCosts(item);
+          const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name, wasCamouflaged: false };
+          const displayName = camouflaged.name || item.name || 'Sem nome';
+
+          // Alternate row background
+          if (idx % 2 === 0) {
+            pdf.setFillColor(250, 250, 250);
+            pdf.rect(pad, y - 4, maxW, 8, 'F');
+          }
+
+          pdf.setTextColor(30, 30, 30);
+          pdf.text(`${idx + 1}`, cols[0], y);
+          pdf.text(displayName.substring(0, 20), cols[1], y);
+          pdf.text(`R$ ${costs.costPriceBRL.toFixed(2)}`, cols[2], y);
+          pdf.text(`R$ ${costs.itemShippingBRL.toFixed(2)}`, cols[3], y);
+
+          // Tax in red
+          pdf.setTextColor(200, 30, 30);
+          pdf.text(`R$ ${costs.taxBRL.toFixed(2)}`, cols[4], y);
+
+          // Selling price in dark
+          pdf.setTextColor(30, 30, 30);
+          pdf.text(`R$ ${costs.sellingPrice.toFixed(2)}`, cols[5], y);
+
+          y += 8;
+        });
+
+        // ── Totals ──
+        y += 6;
+        if (y > H - 50) { pdf.addPage(); y = pad; }
+
+        pdf.setDrawColor(15, 59, 111);
+        pdf.setLineWidth(0.5);
+        pdf.line(pad, y, W - pad, y);
+        y += 8;
+
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 30, 30);
+        pdf.text(`Investimento Total:  R$ ${totalResults.totalCost.toFixed(2)}`, pad, y);
+        y += 7;
+        pdf.text(`Faturamento Total:   R$ ${totalResults.totalSelling.toFixed(2)}`, pad, y);
+        y += 7;
+
+        if (totalResults.totalProfit >= 0) {
+          pdf.setTextColor(22, 130, 50);
+        } else {
+          pdf.setTextColor(200, 30, 30);
+        }
+        pdf.setFontSize(13);
+        pdf.text(`Lucro Total:  R$ ${totalResults.totalProfit.toFixed(2)}`, pad, y);
+        y += 10;
+
+        // Shipping info
+        if (totalShippingBRL > 0) {
+          pdf.setFontSize(9);
+          pdf.setTextColor(100, 100, 100);
+          pdf.text(`Frete total: R$ ${totalShippingBRL.toFixed(2)} (rateado por peso)`, pad, y);
+          y += 5;
+        }
+
+        // Declaration info
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`Declaracao total: US$ ${totalDeclaration.toFixed(2)}${wasAdjusted ? ' (ajustado automaticamente pelo Lobo)' : ''}`, pad, y);
       }
 
-      // Header
-      pdf.setFontSize(18);
-      pdf.setTextColor(15, 59, 111);
-      pdf.text('ImportaFácil - Relatório de Operação', padding, padding + 6);
-      pdf.setFontSize(10);
-      pdf.setTextColor(100, 100, 100);
-      const now = new Date();
-      pdf.text(`Data: ${now.toLocaleDateString('pt-BR')} | Câmbio: 1 USD = R$ ${rates.BRL.toFixed(2)}`, padding, padding + 14);
-
-      // Separator line
-      pdf.setDrawColor(255, 122, 0);
-      pdf.setLineWidth(0.8);
-      pdf.line(padding, padding + 18, pdfWidth - padding, padding + 18);
-
-      // Add captured image
-      const imgY = padding + 22;
-      pdf.addImage(imgData, 'PNG', padding, imgY, imgWidth, imgHeight);
-
-      // Footer
+      // ── Footer ──
       pdf.setFontSize(8);
       pdf.setTextColor(150, 150, 150);
-      pdf.text('Gerado por ImportaFácil — Seu guia mais completo sobre importações', padding, pdfHeight - 8);
+      pdf.text('Gerado por ImportaFacil - Seu guia mais completo sobre importacoes', pad, H - 8);
 
-      // Mobile-friendly download using blob + temp link
-      const filename = pdfFileName.trim() 
+      // Download
+      const filename = pdfFileName.trim()
         ? `${pdfFileName.trim().replace(/\.pdf$/i, '')}.pdf`
         : `Resumo_Importafacil_${now.toISOString().split('T')[0]}.pdf`;
       const blob = pdf.output('blob');
@@ -459,8 +506,7 @@ const AdvancedPricingCalculator: React.FC = () => {
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 
-      console.log('PDF: Gerado com sucesso!', filename);
-      toast.success('Download concluído!', {
+      toast.success('Download concluido!', {
         description: `Arquivo "${filename}" salvo com sucesso.`,
         icon: <CheckCircle className="h-5 w-5 text-green-500" />,
       });
