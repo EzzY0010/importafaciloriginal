@@ -924,7 +924,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         }}>
           <DialogContent className="rounded-xl border-border bg-card">
             <DialogHeader>
-              <DialogTitle className="text-foreground">Salvar PDF como...</DialogTitle>
+              <DialogTitle className="text-foreground">Salvar {exportType === 'pdf' ? 'PDF' : 'Word (.docx)'} como...</DialogTitle>
             </DialogHeader>
             <div className="py-4">
               <Label htmlFor="pdf-filename" className="text-muted-foreground text-sm mb-2 block">
