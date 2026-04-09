@@ -524,7 +524,81 @@ const AdvancedPricingCalculator: React.FC = () => {
     }
   };
 
-  return (
+  const generateDOCX = async () => {
+    setGeneratingPDF(true);
+    try {
+      const itemsToExport = adjustedItems.filter(i => parseFloat(i.costPrice) > 0);
+      const now = new Date();
+      const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
+      const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
+
+      const headerCells = ['#', 'Item', 'Custo (BRL)', 'Frete (BRL)', 'Imposto (BRL)', 'Venda (BRL)'].map(label =>
+        new TableCell({
+          borders: cellBorders,
+          width: { size: label === 'Item' ? 2400 : 1200, type: WidthType.DXA },
+          shading: { fill: '0F3B6F', type: ShadingType.CLEAR },
+          margins: { top: 60, bottom: 60, left: 80, right: 80 },
+          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: label, bold: true, color: 'FFFFFF', size: 18, font: 'Arial' })] })],
+        })
+      );
+
+      const dataRows = itemsToExport.map((item, idx) => {
+        const costs = calculateItemCosts(item);
+        const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name };
+        const displayName = (camouflaged.name || item.name || 'Sem nome').substring(0, 25);
+        const values = [`${idx + 1}`, displayName, `R$ ${costs.costPriceBRL.toFixed(2)}`, `R$ ${costs.itemShippingBRL.toFixed(2)}`, `R$ ${costs.taxBRL.toFixed(2)}`, `R$ ${costs.sellingPrice.toFixed(2)}`];
+        return new TableRow({
+          children: values.map((val, i) =>
+            new TableCell({
+              borders: cellBorders,
+              width: { size: i === 1 ? 2400 : 1200, type: WidthType.DXA },
+              shading: idx % 2 === 0 ? { fill: 'F5F5F5', type: ShadingType.CLEAR } : undefined,
+              margins: { top: 40, bottom: 40, left: 80, right: 80 },
+              children: [new Paragraph({ alignment: i >= 2 ? AlignmentType.RIGHT : AlignmentType.LEFT, children: [new TextRun({ text: val, size: 18, font: 'Arial', color: i === 4 ? 'CC1E1E' : '1E1E1E' })] })],
+            })
+          ),
+        });
+      });
+
+      const doc = new Document({
+        sections: [{
+          children: [
+            new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 100 }, children: [new TextRun({ text: 'Relatório de Importação - ImportaFácil', bold: true, size: 32, font: 'Arial', color: '0F3B6F' })] }),
+            new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`, size: 18, font: 'Arial', color: '666666' })] }),
+            new Table({ width: { size: 9000, type: WidthType.DXA }, columnWidths: [1200, 2400, 1200, 1200, 1200, 1200], rows: [new TableRow({ children: headerCells }), ...dataRows] }),
+            new Paragraph({ spacing: { before: 300 }, children: [new TextRun({ text: `Investimento Total: R$ ${totalResults.totalCost.toFixed(2)}`, bold: true, size: 22, font: 'Arial' })] }),
+            new Paragraph({ children: [new TextRun({ text: `Faturamento Total: R$ ${totalResults.totalSelling.toFixed(2)}`, bold: true, size: 22, font: 'Arial' })] }),
+            new Paragraph({ children: [new TextRun({ text: `Lucro Total: R$ ${totalResults.totalProfit.toFixed(2)}`, bold: true, size: 24, font: 'Arial', color: totalResults.totalProfit >= 0 ? '168232' : 'CC1E1E' })] }),
+            new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: 'Gerado por ImportaFácil - Seu guia mais completo sobre importações', size: 16, font: 'Arial', color: '999999', italics: true })] }),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const filename = pdfFileName.trim()
+        ? `${pdfFileName.trim().replace(/\.docx$/i, '')}.docx`
+        : `Resumo_Importafacil_${now.toISOString().split('T')[0]}.docx`;
+      saveAs(blob, filename);
+
+      toast.success('Download concluído!', {
+        description: `Arquivo "${filename}" salvo com sucesso.`,
+        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+      });
+    } catch (error) {
+      console.error('DOCX: Erro ao gerar:', error);
+      toast.error('Erro ao gerar o DOCX', { description: 'Tente novamente em alguns segundos.' });
+    } finally {
+      setGeneratingPDF(false);
+      setShowSaveDialog(false);
+      setPdfFileName('');
+    }
+  };
+
+  const handleExport = () => {
+    if (exportType === 'pdf') generatePDF();
+    else generateDOCX();
+  };
+
     <Card className="w-full max-w-2xl" translate="no">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
