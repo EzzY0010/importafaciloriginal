@@ -938,7 +938,7 @@ const AdvancedPricingCalculator: React.FC = () => {
                 className="rounded-xl"
                 autoFocus
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && pdfFileName.trim()) generatePDF();
+                  if (e.key === 'Enter' && pdfFileName.trim()) handleExport();
                 }}
               />
             </div>
