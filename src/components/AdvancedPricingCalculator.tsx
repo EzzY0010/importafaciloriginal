@@ -17,6 +17,72 @@ type Currency = 'USD' | 'EUR' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 type ExportType = 'pdf' | 'docx';
 
+interface SaveAsModalProps {
+  exportType: ExportType;
+  filename: string;
+  isOpen: boolean;
+  isSaving: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  onFilenameChange: (value: string) => void;
+}
+
+const SaveAsModal: React.FC<SaveAsModalProps> = ({
+  exportType,
+  filename,
+  isOpen,
+  isSaving,
+  onClose,
+  onConfirm,
+  onFilenameChange,
+}) => (
+  <Dialog open={isOpen} onOpenChange={(open) => !isSaving && !open && onClose()}>
+    <DialogContent className="save-as-dialog z-[60] border-border bg-card p-0 text-card-foreground sm:max-w-md">
+      <div className="rounded-xl border border-border/70 bg-card/95 p-6 shadow-strong backdrop-blur-sm">
+        <DialogHeader className="space-y-2">
+          <DialogTitle className="font-semibold text-foreground">
+            Salvar {exportType === 'pdf' ? 'PDF' : 'Word (.docx)'} como...
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Digite o nome do arquivo e toque em OK para iniciar o download real no seu dispositivo.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="relative z-[70] space-y-3 py-5">
+          <Label htmlFor="export-filename" className="text-sm font-medium text-foreground">
+            Nome do arquivo
+          </Label>
+          <Input
+            id="export-filename"
+            value={filename}
+            onChange={(event) => onFilenameChange(event.target.value)}
+            placeholder="Digite o nome do arquivo..."
+            autoFocus
+            className="save-as-input relative z-[70] h-11 rounded-xl border-border font-sans shadow-soft"
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && filename.trim() && !isSaving) {
+                void onConfirm();
+              }
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            O arquivo será salvo como <span className="font-medium text-foreground">{filename.trim() || 'seu-arquivo'}.{exportType}</span>
+          </p>
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isSaving} className="rounded-xl">
+            Cancelar
+          </Button>
+          <Button onClick={() => void onConfirm()} disabled={!filename.trim() || isSaving} className="rounded-xl">
+            {isSaving ? 'Gerando...' : 'OK'}
+          </Button>
+        </DialogFooter>
+      </div>
+    </DialogContent>
+  </Dialog>
+);
+
 // Peso estimado em gramas por palavra-chave do nome
 const WEIGHT_MAP: { keywords: string[]; grams: number; label: string }[] = [
   { keywords: ['boné', 'bone', 'touca', 'acessório', 'acessorio', 'meia', 'cueca', 'calcinha', 'cap'], grams: 150, label: '~150g' },
@@ -168,7 +234,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   const summaryRef = useRef<HTMLDivElement>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [pdfFileName, setPdfFileName] = useState('');
+  const [filename, setFilename] = useState('');
   const [exportType, setExportType] = useState<ExportType>('pdf');
   const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80 });
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -379,7 +445,7 @@ const AdvancedPricingCalculator: React.FC = () => {
 
   const buildExportFileName = (type: ExportType) => {
     const extension = type === 'pdf' ? 'pdf' : 'docx';
-    const baseName = (pdfFileName.trim() || getDefaultFileName(type))
+    const baseName = (filename.trim() || getDefaultFileName(type))
       .replace(/\.(pdf|docx)$/i, '')
       .trim();
 
@@ -389,211 +455,273 @@ const AdvancedPricingCalculator: React.FC = () => {
   const closeSaveDialog = () => {
     if (generatingPDF) return;
     setShowSaveDialog(false);
-    setPdfFileName('');
+    setFilename('');
   };
 
   const openSaveDialog = (type: ExportType) => {
     if (generatingPDF) return;
     setExportType(type);
-    setPdfFileName(getDefaultFileName(type));
+    setFilename(getDefaultFileName(type));
     setShowSaveDialog(true);
   };
 
-  const generatePDF = async () => {
-    setGeneratingPDF(true);
-    const loadingToast = toast.loading('Gerando PDF...', {
-      description: 'Preparando a área de precificação para download.',
-    });
+  const triggerBlobDownload = (blob: Blob, nextFileName: string) => {
+    console.log('Iniciando download...', nextFileName);
+    alert(`Download iniciado: ${nextFileName}`);
+
+    const blobUrl = URL.createObjectURL(blob);
 
     try {
-      const target = summaryRef.current;
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = nextFileName;
+      link.rel = 'noopener';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.log('Falha no download por blob URL, aplicando fallback saveAs...', error);
+      saveAs(blob, nextFileName);
+    } finally {
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
+    }
+  };
 
-      if (!target) {
-        throw new Error('Área de precificação não encontrada para exportação.');
-      }
+  const createPdfBlob = async () => {
+    const target = summaryRef.current;
 
-      const canvas = await html2canvas(target, {
-        backgroundColor: '#ffffff',
-        scale: Math.max(2, window.devicePixelRatio || 1),
-        useCORS: true,
-        logging: false,
-        scrollX: 0,
-        scrollY: -window.scrollY,
-        windowWidth: target.scrollWidth,
-        windowHeight: target.scrollHeight,
-        onclone: (clonedDocument) => {
-          const exportRoot = clonedDocument.querySelector('[data-export-root="pricing-export"]') as HTMLElement | null;
-          if (exportRoot) {
-            exportRoot.style.background = '#ffffff';
-            exportRoot.style.color = '#111827';
-            exportRoot.style.padding = '16px';
-            exportRoot.style.borderRadius = '24px';
-            exportRoot.style.boxShadow = 'none';
+    if (!target) {
+      throw new Error('Área de precificação não encontrada para exportação.');
+    }
+
+    const canvas = await html2canvas(target, {
+      backgroundColor: '#ffffff',
+      scale: Math.max(2, window.devicePixelRatio || 1),
+      useCORS: true,
+      logging: false,
+      scrollX: 0,
+      scrollY: -window.scrollY,
+      windowWidth: target.scrollWidth,
+      windowHeight: target.scrollHeight,
+      onclone: (clonedDocument) => {
+        const exportRoot = clonedDocument.querySelector('[data-export-root="pricing-export"]') as HTMLElement | null;
+
+        if (exportRoot) {
+          exportRoot.style.background = '#ffffff';
+          exportRoot.style.color = '#111827';
+          exportRoot.style.padding = '16px';
+          exportRoot.style.borderRadius = '24px';
+          exportRoot.style.boxShadow = 'none';
+        }
+
+        const style = clonedDocument.createElement('style');
+        style.textContent = `
+          [data-export-root="pricing-export"] {
+            background: #ffffff !important;
+            color: #111827 !important;
           }
+          [data-export-root="pricing-export"] * {
+            box-shadow: none !important;
+          }
+          [data-export-root="pricing-export"] .bg-background,
+          [data-export-root="pricing-export"] .bg-card,
+          [data-export-root="pricing-export"] .bg-muted,
+          [data-export-root="pricing-export"] [class*="bg-"] {
+            background: #ffffff !important;
+          }
+          [data-export-root="pricing-export"] .text-foreground,
+          [data-export-root="pricing-export"] .text-muted-foreground,
+          [data-export-root="pricing-export"] .text-primary,
+          [data-export-root="pricing-export"] .text-accent {
+            color: #111827 !important;
+          }
+          [data-export-root="pricing-export"] .text-destructive {
+            color: #b91c1c !important;
+          }
+          [data-export-root="pricing-export"] .text-green-600,
+          [data-export-root="pricing-export"] .dark\\:text-green-400 {
+            color: #15803d !important;
+          }
+          [data-export-root="pricing-export"] .border-border,
+          [data-export-root="pricing-export"] [class*="border-"] {
+            border-color: #d1d5db !important;
+          }
+        `;
 
-          const style = clonedDocument.createElement('style');
-          style.textContent = `
-            [data-export-root="pricing-export"] {
-              background: #ffffff !important;
-              color: #111827 !important;
-            }
-            [data-export-root="pricing-export"] * {
-              box-shadow: none !important;
-            }
-            [data-export-root="pricing-export"] .bg-background,
-            [data-export-root="pricing-export"] .bg-card,
-            [data-export-root="pricing-export"] .bg-muted,
-            [data-export-root="pricing-export"] [class*="bg-"] {
-              background: #ffffff !important;
-            }
-            [data-export-root="pricing-export"] .text-foreground,
-            [data-export-root="pricing-export"] .text-muted-foreground,
-            [data-export-root="pricing-export"] .text-primary,
-            [data-export-root="pricing-export"] .text-accent {
-              color: #111827 !important;
-            }
-            [data-export-root="pricing-export"] .text-destructive {
-              color: #b91c1c !important;
-            }
-            [data-export-root="pricing-export"] .text-green-600,
-            [data-export-root="pricing-export"] .dark\\:text-green-400 {
-              color: #15803d !important;
-            }
-            [data-export-root="pricing-export"] .border-border,
-            [data-export-root="pricing-export"] [class*="border-"] {
-              border-color: #d1d5db !important;
-            }
-          `;
-          clonedDocument.head.appendChild(style);
-        },
-      });
+        clonedDocument.head.appendChild(style);
+      },
+    });
 
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const padding = 10;
-      const printableWidth = pageWidth - padding * 2;
-      const printableHeight = pageHeight - padding * 2;
-      const imageHeight = (canvas.height * printableWidth) / canvas.width;
-      const imageData = canvas.toDataURL('image/png');
-      const filename = buildExportFileName('pdf');
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const padding = 10;
+    const printableWidth = pageWidth - padding * 2;
+    const printableHeight = pageHeight - padding * 2;
+    const imageHeight = (canvas.height * printableWidth) / canvas.width;
+    const imageData = canvas.toDataURL('image/png');
 
-      let heightLeft = imageHeight;
-      let offsetY = padding;
+    let heightLeft = imageHeight;
+    let offsetY = padding;
 
+    pdf.addImage(imageData, 'PNG', padding, offsetY, printableWidth, imageHeight, undefined, 'FAST');
+    heightLeft -= printableHeight;
+
+    while (heightLeft > 0) {
+      pdf.addPage();
+      offsetY = padding - (imageHeight - heightLeft);
       pdf.addImage(imageData, 'PNG', padding, offsetY, printableWidth, imageHeight, undefined, 'FAST');
       heightLeft -= printableHeight;
-
-      while (heightLeft > 0) {
-        pdf.addPage();
-        offsetY = padding - (imageHeight - heightLeft);
-        pdf.addImage(imageData, 'PNG', padding, offsetY, printableWidth, imageHeight, undefined, 'FAST');
-        heightLeft -= printableHeight;
-      }
-
-      const blob = pdf.output('blob');
-      saveAs(blob, filename);
-
-      toast.success('Download enviado', {
-        id: loadingToast,
-        description: `Arquivo "${filename}" enviado para o navegador.`,
-        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
-      });
-    } catch (error) {
-      console.log('PDF export error:', error);
-      console.error('PDF: Erro ao gerar:', error);
-      toast.error('Erro ao gerar o PDF', {
-        id: loadingToast,
-        description: 'Tente novamente em alguns segundos.',
-      });
-    } finally {
-      setGeneratingPDF(false);
-      setShowSaveDialog(false);
-      setPdfFileName('');
     }
+
+    return pdf.output('blob');
   };
 
-  const generateDOCX = async () => {
+  const createDocxBlob = async () => {
+    const itemsToExport = adjustedItems.filter((item) => parseFloat(item.costPrice) > 0);
+    const now = new Date();
+    const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
+    const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
+
+    const headerCells = ['Nome do item', 'Custo (BRL)', 'Frete (BRL)', 'Preço de venda (BRL)'].map((label, index) =>
+      new TableCell({
+        borders: cellBorders,
+        width: { size: index === 0 ? 3600 : 1800, type: WidthType.DXA },
+        shading: { fill: '0F3B6F', type: ShadingType.CLEAR },
+        margins: { top: 60, bottom: 60, left: 80, right: 80 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: label, bold: true, color: 'FFFFFF', size: 18, font: 'Arial' })],
+          }),
+        ],
+      }),
+    );
+
+    const dataRows = itemsToExport.map((item, index) => {
+      const costs = calculateItemCosts(item);
+      const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name };
+      const displayName = (camouflaged.name || item.name || `Item ${index + 1}`).substring(0, 40);
+      const values = [displayName, `R$ ${costs.costPriceBRL.toFixed(2)}`, `R$ ${costs.itemShippingBRL.toFixed(2)}`, `R$ ${costs.sellingPrice.toFixed(2)}`];
+
+      return new TableRow({
+        children: values.map((value, cellIndex) =>
+          new TableCell({
+            borders: cellBorders,
+            width: { size: cellIndex === 0 ? 3600 : 1800, type: WidthType.DXA },
+            shading: index % 2 === 0 ? { fill: 'F5F5F5', type: ShadingType.CLEAR } : undefined,
+            margins: { top: 40, bottom: 40, left: 80, right: 80 },
+            children: [
+              new Paragraph({
+                alignment: cellIndex >= 1 ? AlignmentType.RIGHT : AlignmentType.LEFT,
+                children: [new TextRun({ text: value, size: 18, font: 'Arial', color: '1E1E1E' })],
+              }),
+            ],
+          }),
+        ),
+      });
+    });
+
+    const doc = new Document({
+      sections: [
+        {
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 100 },
+              children: [new TextRun({ text: 'Relatório de Importação - ImportaFácil', bold: true, size: 32, font: 'Arial', color: '0F3B6F' })],
+            }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 300 },
+              children: [
+                new TextRun({
+                  text: `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`,
+                  size: 18,
+                  font: 'Arial',
+                  color: '666666',
+                }),
+              ],
+            }),
+            new Table({
+              width: { size: 9000, type: WidthType.DXA },
+              columnWidths: [3600, 1800, 1800, 1800],
+              rows: [new TableRow({ children: headerCells }), ...dataRows],
+            }),
+            new Paragraph({
+              spacing: { before: 300 },
+              children: [new TextRun({ text: `Investimento Total: R$ ${totalResults.totalCost.toFixed(2)}`, bold: true, size: 22, font: 'Arial' })],
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: `Faturamento Total: R$ ${totalResults.totalSelling.toFixed(2)}`, bold: true, size: 22, font: 'Arial' })],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Lucro Total: R$ ${totalResults.totalProfit.toFixed(2)}`,
+                  bold: true,
+                  size: 24,
+                  font: 'Arial',
+                  color: totalResults.totalProfit >= 0 ? '168232' : 'CC1E1E',
+                }),
+              ],
+            }),
+            new Paragraph({
+              spacing: { before: 400 },
+              children: [
+                new TextRun({
+                  text: 'Gerado por ImportaFácil - Seu guia mais completo sobre importações',
+                  size: 16,
+                  font: 'Arial',
+                  color: '999999',
+                  italics: true,
+                }),
+              ],
+            }),
+          ],
+        },
+      ],
+    });
+
+    return Packer.toBlob(doc);
+  };
+
+  const handleSave = async () => {
+    if (!filename.trim()) return;
+
+    const nextFileName = buildExportFileName(exportType);
+    console.log('Iniciando download...', { exportType, nextFileName });
+    alert('Download iniciado!');
+
     setGeneratingPDF(true);
-    const loadingToast = toast.loading('Gerando Word...', {
-      description: 'Montando a tabela para download.',
+    const loadingToast = toast.loading(`Gerando ${exportType === 'pdf' ? 'PDF' : 'Word'}...`, {
+      description: 'Preparando o arquivo para envio ao navegador.',
     });
 
     try {
-      const itemsToExport = adjustedItems.filter(i => parseFloat(i.costPrice) > 0);
-      const now = new Date();
-      const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
-      const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
+      const blob = exportType === 'pdf' ? await createPdfBlob() : await createDocxBlob();
 
-      const headerCells = ['Nome do item', 'Custo (BRL)', 'Frete (BRL)', 'Preço de venda (BRL)'].map((label, index) =>
-        new TableCell({
-          borders: cellBorders,
-          width: { size: index === 0 ? 3600 : 1800, type: WidthType.DXA },
-          shading: { fill: '0F3B6F', type: ShadingType.CLEAR },
-          margins: { top: 60, bottom: 60, left: 80, right: 80 },
-          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: label, bold: true, color: 'FFFFFF', size: 18, font: 'Arial' })] })],
-        })
-      );
-
-      const dataRows = itemsToExport.map((item, idx) => {
-        const costs = calculateItemCosts(item);
-        const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name };
-        const displayName = (camouflaged.name || item.name || `Item ${idx + 1}`).substring(0, 40);
-        const values = [displayName, `R$ ${costs.costPriceBRL.toFixed(2)}`, `R$ ${costs.itemShippingBRL.toFixed(2)}`, `R$ ${costs.sellingPrice.toFixed(2)}`];
-        return new TableRow({
-          children: values.map((val, i) =>
-            new TableCell({
-              borders: cellBorders,
-              width: { size: i === 0 ? 3600 : 1800, type: WidthType.DXA },
-              shading: idx % 2 === 0 ? { fill: 'F5F5F5', type: ShadingType.CLEAR } : undefined,
-              margins: { top: 40, bottom: 40, left: 80, right: 80 },
-              children: [new Paragraph({ alignment: i >= 1 ? AlignmentType.RIGHT : AlignmentType.LEFT, children: [new TextRun({ text: val, size: 18, font: 'Arial', color: '1E1E1E' })] })],
-            })
-          ),
-        });
-      });
-
-      const doc = new Document({
-        sections: [{
-          children: [
-            new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 100 }, children: [new TextRun({ text: 'Relatório de Importação - ImportaFácil', bold: true, size: 32, font: 'Arial', color: '0F3B6F' })] }),
-            new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`, size: 18, font: 'Arial', color: '666666' })] }),
-            new Table({ width: { size: 9000, type: WidthType.DXA }, columnWidths: [3600, 1800, 1800, 1800], rows: [new TableRow({ children: headerCells }), ...dataRows] }),
-            new Paragraph({ spacing: { before: 300 }, children: [new TextRun({ text: `Investimento Total: R$ ${totalResults.totalCost.toFixed(2)}`, bold: true, size: 22, font: 'Arial' })] }),
-            new Paragraph({ children: [new TextRun({ text: `Faturamento Total: R$ ${totalResults.totalSelling.toFixed(2)}`, bold: true, size: 22, font: 'Arial' })] }),
-            new Paragraph({ children: [new TextRun({ text: `Lucro Total: R$ ${totalResults.totalProfit.toFixed(2)}`, bold: true, size: 24, font: 'Arial', color: totalResults.totalProfit >= 0 ? '168232' : 'CC1E1E' })] }),
-            new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: 'Gerado por ImportaFácil - Seu guia mais completo sobre importações', size: 16, font: 'Arial', color: '999999', italics: true })] }),
-          ],
-        }],
-      });
-
-      const blob = await Packer.toBlob(doc);
-      const filename = buildExportFileName('docx');
-      saveAs(blob, filename);
+      triggerBlobDownload(blob, nextFileName);
 
       toast.success('Download enviado', {
         id: loadingToast,
-        description: `Arquivo "${filename}" enviado para o navegador.`,
+        description: `Arquivo "${nextFileName}" enviado para o navegador.`,
         icon: <CheckCircle className="h-5 w-5 text-green-500" />,
       });
+
+      setShowSaveDialog(false);
+      setFilename('');
     } catch (error) {
-      console.log('DOCX export error:', error);
-      console.error('DOCX: Erro ao gerar:', error);
-      toast.error('Erro ao gerar o DOCX', {
+      console.log('Erro ao salvar arquivo:', error);
+      console.error('Erro crítico no download:', error);
+      toast.error('Erro ao gerar o arquivo', {
         id: loadingToast,
-        description: 'Tente novamente em alguns segundos.'
+        description: 'Confira o console e tente novamente.',
       });
     } finally {
       setGeneratingPDF(false);
-      setShowSaveDialog(false);
-      setPdfFileName('');
     }
-  };
-
-  const handleExport = async () => {
-    if (!pdfFileName.trim()) return;
-    if (exportType === 'pdf') await generatePDF();
-    else await generateDOCX();
   };
 
   return (
@@ -904,67 +1032,15 @@ const AdvancedPricingCalculator: React.FC = () => {
         )}
         </div>{/* end summaryRef */}
 
-        {/* Save As Dialog */}
-        <Dialog open={showSaveDialog} onOpenChange={(open) => {
-          if (!generatingPDF) {
-            setShowSaveDialog(open);
-            if (!open) closeSaveDialog();
-          }
-        }}>
-          <DialogContent className="rounded-xl border-border bg-card">
-            <DialogHeader>
-              <DialogTitle className="text-foreground">Salvar {exportType === 'pdf' ? 'PDF' : 'Word (.docx)'} como...</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                Digite o nome do arquivo e confirme para iniciar o download no seu dispositivo.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-3">
-              <Label htmlFor="export-filename" className="text-muted-foreground text-sm block">
-                Nome do arquivo
-              </Label>
-              <Input
-                id="export-filename"
-                value={pdfFileName}
-                onChange={(e) => setPdfFileName(e.target.value)}
-                placeholder="Digite o nome do arquivo..."
-                className="rounded-xl"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && pdfFileName.trim()) {
-                    void handleExport();
-                  }
-                }}
-              />
-              <p className="text-xs text-muted-foreground">
-                O download começa somente após tocar em <strong className="text-foreground">Salvar</strong>.
-              </p>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={closeSaveDialog}
-                disabled={generatingPDF}
-                className="rounded-xl"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => void handleExport()}
-                disabled={!pdfFileName.trim() || generatingPDF}
-                className="rounded-xl gap-2"
-              >
-                {generatingPDF ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    Gerando...
-                  </>
-                ) : (
-                  'Salvar'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <SaveAsModal
+          exportType={exportType}
+          filename={filename}
+          isOpen={showSaveDialog}
+          isSaving={generatingPDF}
+          onClose={closeSaveDialog}
+          onConfirm={handleSave}
+          onFilenameChange={setFilename}
+        />
 
         {/* Tip */}
         <div className="p-3 bg-accent/5 rounded-lg border border-accent/10">
