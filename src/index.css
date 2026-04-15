@@ -215,4 +215,22 @@
   .header-gradient {
     background: var(--gradient-header);
   }
+
+  .save-as-dialog {
+    z-index: 60;
+  }
+
+  .save-as-input {
+    background: hsl(0 0% 100%);
+    color: hsl(0 0% 0%);
+    border-color: hsl(var(--border));
+  }
+
+  .save-as-input::placeholder {
+    color: hsl(0 0% 35%);
+  }
+
+  .save-as-input:focus-visible {
+    box-shadow: 0 0 0 2px hsl(var(--ring));
+  }
 }
