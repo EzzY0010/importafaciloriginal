@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import { saveAs } from 'file-saver';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
 
 type Currency = 'USD' | 'EUR' | 'CNY';
@@ -470,22 +469,18 @@ const AdvancedPricingCalculator: React.FC = () => {
     alert(`Download iniciado: ${nextFileName}`);
 
     const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
 
-    try {
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = nextFileName;
-      link.rel = 'noopener';
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.log('Falha no download por blob URL, aplicando fallback saveAs...', error);
-      saveAs(blob, nextFileName);
-    } finally {
-      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
-    }
+    link.href = blobUrl;
+    link.setAttribute('download', nextFileName);
+    link.rel = 'noopener';
+    link.style.display = 'none';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
   };
 
   const createPdfBlob = async () => {
