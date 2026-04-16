@@ -635,9 +635,12 @@ const AdvancedPricingCalculator: React.FC = () => {
     });
 
     try {
-      const blob = exportType === 'pdf' ? await createPdfBlob() : await createDocxBlob();
-
-      triggerBlobDownload(blob, nextFileName);
+      if (exportType === 'pdf') {
+        await createPdfDownload(nextFileName);
+      } else {
+        const blob = await createDocxBlob();
+        triggerBlobDownload(blob, nextFileName);
+      }
 
       toast.success('Download enviado', {
         id: loadingToast,
