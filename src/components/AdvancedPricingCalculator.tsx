@@ -229,6 +229,7 @@ const estimateWeight = (name: string): { grams: number; label: string; category:
 const detectWeightCategory = (name: string): WeightCategory => estimateWeight(name).category;
 
 const AdvancedPricingCalculator: React.FC = () => {
+  const summaryRef = useRef<HTMLDivElement>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [filename, setFilename] = useState('');
@@ -476,109 +477,41 @@ const AdvancedPricingCalculator: React.FC = () => {
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
   };
 
-  const createPdfBlob = async (): Promise<Blob> => {
-    const itemsToExport = adjustedItems.filter((item) => parseFloat(item.costPrice) > 0);
-    const now = new Date();
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const margin = 15;
-    const contentWidth = pageWidth - margin * 2;
-    let y = margin;
+  const createPdfDownload = async (pdfFileName: string): Promise<void> => {
+    const element = summaryRef.current;
+    if (!element) throw new Error('Elemento de resumo não encontrado');
 
-    // Header
-    pdf.setFillColor(15, 59, 111);
-    pdf.rect(0, 0, pageWidth, 28, 'F');
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(16);
-    pdf.setTextColor(255, 255, 255);
-    pdf.text('Relatório de Importação - ImportaFácil', pageWidth / 2, 12, { align: 'center' });
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(
-      `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`,
-      pageWidth / 2, 20, { align: 'center' }
-    );
-    y = 36;
-
-    // Table header
-    const colWidths = [contentWidth * 0.4, contentWidth * 0.2, contentWidth * 0.2, contentWidth * 0.2];
-    const colX = [margin, margin + colWidths[0], margin + colWidths[0] + colWidths[1], margin + colWidths[0] + colWidths[1] + colWidths[2]];
-    const rowH = 8;
-
-    pdf.setFillColor(15, 59, 111);
-    pdf.rect(margin, y, contentWidth, rowH, 'F');
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
-    pdf.setTextColor(255, 255, 255);
-    const headers = ['Nome do Item', 'Custo (BRL)', 'Frete (BRL)', 'Preço Venda (BRL)'];
-    headers.forEach((h, i) => {
-      pdf.text(h, colX[i] + 2, y + 5.5);
+    // Clone the element so we can style it for PDF without affecting UI
+    const clone = element.cloneNode(true) as HTMLElement;
+    clone.style.background = '#ffffff';
+    clone.style.color = '#000000';
+    clone.style.padding = '24px';
+    clone.style.width = '700px';
+    clone.style.position = 'fixed';
+    clone.style.left = '-9999px';
+    clone.style.top = '0';
+    // Force all text to black for readability
+    clone.querySelectorAll('*').forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      htmlEl.style.color = '#000000';
+      htmlEl.style.background = 'transparent';
     });
-    y += rowH;
+    document.body.appendChild(clone);
 
-    // Table rows
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    itemsToExport.forEach((item, index) => {
-      const costs = calculateItemCosts(item);
-      const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name };
-      const displayName = (camouflaged.name || item.name || `Item ${index + 1}`).substring(0, 35);
-
-      // Check page break
-      if (y + rowH > pdf.internal.pageSize.getHeight() - 30) {
-        pdf.addPage();
-        y = margin;
-      }
-
-      // Alternate row bg
-      if (index % 2 === 0) {
-        pdf.setFillColor(245, 245, 245);
-        pdf.rect(margin, y, contentWidth, rowH, 'F');
-      }
-
-      pdf.setTextColor(30, 30, 30);
-      const values = [
-        displayName,
-        `R$ ${costs.costPriceBRL.toFixed(2)}`,
-        `R$ ${costs.itemShippingBRL.toFixed(2)}`,
-        `R$ ${costs.sellingPrice.toFixed(2)}`
-      ];
-      values.forEach((v, i) => {
-        pdf.text(v, colX[i] + 2, y + 5.5);
-      });
-
-      // Row border
-      pdf.setDrawColor(200, 200, 200);
-      pdf.line(margin, y + rowH, margin + contentWidth, y + rowH);
-      y += rowH;
-    });
-
-    // Summary
-    y += 8;
-    if (y > pdf.internal.pageSize.getHeight() - 40) {
-      pdf.addPage();
-      y = margin;
+    try {
+      await html2pdf()
+        .set({
+          margin: [0.5, 0.5, 0.5, 0.5],
+          filename: pdfFileName,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+        })
+        .from(clone)
+        .save();
+    } finally {
+      document.body.removeChild(clone);
     }
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(11);
-    pdf.setTextColor(30, 30, 30);
-    pdf.text(`Investimento Total: R$ ${totalResults.totalCost.toFixed(2)}`, margin, y);
-    y += 7;
-    pdf.text(`Faturamento Total: R$ ${totalResults.totalSelling.toFixed(2)}`, margin, y);
-    y += 7;
-    pdf.setTextColor(totalResults.totalProfit >= 0 ? 22 : 204, totalResults.totalProfit >= 0 ? 130 : 30, totalResults.totalProfit >= 0 ? 50 : 30);
-    pdf.setFontSize(13);
-    pdf.text(`Lucro Total: R$ ${totalResults.totalProfit.toFixed(2)}`, margin, y);
-
-    // Footer
-    y += 14;
-    pdf.setFont('helvetica', 'italic');
-    pdf.setFontSize(8);
-    pdf.setTextColor(150, 150, 150);
-    pdf.text('Gerado por ImportaFácil - Seu guia mais completo sobre importações', margin, y);
-
-    return pdf.output('blob');
   };
 
   const createDocxBlob = async () => {
