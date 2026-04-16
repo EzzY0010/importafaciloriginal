@@ -743,7 +743,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div ref={summaryRef} data-export-root="pricing-export">
+        <div data-export-root="pricing-export">
         <div className="flex gap-2 flex-wrap">
           <Badge variant="outline" className="text-xs font-mono">
             🇺🇸 1 USD = R$ {usdToBrl.toFixed(2)}
