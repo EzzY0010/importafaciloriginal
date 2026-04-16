@@ -463,22 +463,17 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const triggerBlobDownload = (blob: Blob, nextFileName: string) => {
-    console.log('Iniciando download...', nextFileName);
-    alert(`Download iniciado: ${nextFileName}`);
-
+    console.log('triggerBlobDownload:', nextFileName, blob.size);
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
-
     link.href = blobUrl;
     link.setAttribute('download', nextFileName);
     link.rel = 'noopener';
     link.style.display = 'none';
-
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
   };
 
   const createPdfBlob = async () => {
