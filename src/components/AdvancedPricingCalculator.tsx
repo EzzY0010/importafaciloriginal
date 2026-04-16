@@ -694,8 +694,7 @@ const AdvancedPricingCalculator: React.FC = () => {
     if (!filename.trim()) return;
 
     const nextFileName = buildExportFileName(exportType);
-    console.log('Iniciando download...', { exportType, nextFileName });
-    alert('Download iniciado!');
+    console.log('handleSave:', { exportType, nextFileName });
 
     setGeneratingPDF(true);
     const loadingToast = toast.loading(`Gerando ${exportType === 'pdf' ? 'PDF' : 'Word'}...`, {
