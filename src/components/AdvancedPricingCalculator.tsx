@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,6 @@ import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck,
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
 
 type Currency = 'USD' | 'EUR' | 'CNY';
@@ -230,7 +229,6 @@ const estimateWeight = (name: string): { grams: number; label: string; category:
 const detectWeightCategory = (name: string): WeightCategory => estimateWeight(name).category;
 
 const AdvancedPricingCalculator: React.FC = () => {
-  const summaryRef = useRef<HTMLDivElement>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [filename, setFilename] = useState('');
@@ -465,110 +463,120 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const triggerBlobDownload = (blob: Blob, nextFileName: string) => {
-    console.log('Iniciando download...', nextFileName);
-    alert(`Download iniciado: ${nextFileName}`);
-
+    console.log('triggerBlobDownload:', nextFileName, blob.size);
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
-
     link.href = blobUrl;
     link.setAttribute('download', nextFileName);
     link.rel = 'noopener';
     link.style.display = 'none';
-
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
   };
 
-  const createPdfBlob = async () => {
-    const target = summaryRef.current;
-
-    if (!target) {
-      throw new Error('Área de precificação não encontrada para exportação.');
-    }
-
-    const canvas = await html2canvas(target, {
-      backgroundColor: '#ffffff',
-      scale: Math.max(2, window.devicePixelRatio || 1),
-      useCORS: true,
-      logging: false,
-      scrollX: 0,
-      scrollY: -window.scrollY,
-      windowWidth: target.scrollWidth,
-      windowHeight: target.scrollHeight,
-      onclone: (clonedDocument) => {
-        const exportRoot = clonedDocument.querySelector('[data-export-root="pricing-export"]') as HTMLElement | null;
-
-        if (exportRoot) {
-          exportRoot.style.background = '#ffffff';
-          exportRoot.style.color = '#111827';
-          exportRoot.style.padding = '16px';
-          exportRoot.style.borderRadius = '24px';
-          exportRoot.style.boxShadow = 'none';
-        }
-
-        const style = clonedDocument.createElement('style');
-        style.textContent = `
-          [data-export-root="pricing-export"] {
-            background: #ffffff !important;
-            color: #111827 !important;
-          }
-          [data-export-root="pricing-export"] * {
-            box-shadow: none !important;
-          }
-          [data-export-root="pricing-export"] .bg-background,
-          [data-export-root="pricing-export"] .bg-card,
-          [data-export-root="pricing-export"] .bg-muted,
-          [data-export-root="pricing-export"] [class*="bg-"] {
-            background: #ffffff !important;
-          }
-          [data-export-root="pricing-export"] .text-foreground,
-          [data-export-root="pricing-export"] .text-muted-foreground,
-          [data-export-root="pricing-export"] .text-primary,
-          [data-export-root="pricing-export"] .text-accent {
-            color: #111827 !important;
-          }
-          [data-export-root="pricing-export"] .text-destructive {
-            color: #b91c1c !important;
-          }
-          [data-export-root="pricing-export"] .text-green-600,
-          [data-export-root="pricing-export"] .dark\\:text-green-400 {
-            color: #15803d !important;
-          }
-          [data-export-root="pricing-export"] .border-border,
-          [data-export-root="pricing-export"] [class*="border-"] {
-            border-color: #d1d5db !important;
-          }
-        `;
-
-        clonedDocument.head.appendChild(style);
-      },
-    });
-
+  const createPdfBlob = async (): Promise<Blob> => {
+    const itemsToExport = adjustedItems.filter((item) => parseFloat(item.costPrice) > 0);
+    const now = new Date();
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const padding = 10;
-    const printableWidth = pageWidth - padding * 2;
-    const printableHeight = pageHeight - padding * 2;
-    const imageHeight = (canvas.height * printableWidth) / canvas.width;
-    const imageData = canvas.toDataURL('image/png');
+    const margin = 15;
+    const contentWidth = pageWidth - margin * 2;
+    let y = margin;
 
-    let heightLeft = imageHeight;
-    let offsetY = padding;
+    // Header
+    pdf.setFillColor(15, 59, 111);
+    pdf.rect(0, 0, pageWidth, 28, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(16);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('Relatório de Importação - ImportaFácil', pageWidth / 2, 12, { align: 'center' });
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(
+      `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`,
+      pageWidth / 2, 20, { align: 'center' }
+    );
+    y = 36;
 
-    pdf.addImage(imageData, 'PNG', padding, offsetY, printableWidth, imageHeight, undefined, 'FAST');
-    heightLeft -= printableHeight;
+    // Table header
+    const colWidths = [contentWidth * 0.4, contentWidth * 0.2, contentWidth * 0.2, contentWidth * 0.2];
+    const colX = [margin, margin + colWidths[0], margin + colWidths[0] + colWidths[1], margin + colWidths[0] + colWidths[1] + colWidths[2]];
+    const rowH = 8;
 
-    while (heightLeft > 0) {
+    pdf.setFillColor(15, 59, 111);
+    pdf.rect(margin, y, contentWidth, rowH, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9);
+    pdf.setTextColor(255, 255, 255);
+    const headers = ['Nome do Item', 'Custo (BRL)', 'Frete (BRL)', 'Preço Venda (BRL)'];
+    headers.forEach((h, i) => {
+      pdf.text(h, colX[i] + 2, y + 5.5);
+    });
+    y += rowH;
+
+    // Table rows
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    itemsToExport.forEach((item, index) => {
+      const costs = calculateItemCosts(item);
+      const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name };
+      const displayName = (camouflaged.name || item.name || `Item ${index + 1}`).substring(0, 35);
+
+      // Check page break
+      if (y + rowH > pdf.internal.pageSize.getHeight() - 30) {
+        pdf.addPage();
+        y = margin;
+      }
+
+      // Alternate row bg
+      if (index % 2 === 0) {
+        pdf.setFillColor(245, 245, 245);
+        pdf.rect(margin, y, contentWidth, rowH, 'F');
+      }
+
+      pdf.setTextColor(30, 30, 30);
+      const values = [
+        displayName,
+        `R$ ${costs.costPriceBRL.toFixed(2)}`,
+        `R$ ${costs.itemShippingBRL.toFixed(2)}`,
+        `R$ ${costs.sellingPrice.toFixed(2)}`
+      ];
+      values.forEach((v, i) => {
+        pdf.text(v, colX[i] + 2, y + 5.5);
+      });
+
+      // Row border
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(margin, y + rowH, margin + contentWidth, y + rowH);
+      y += rowH;
+    });
+
+    // Summary
+    y += 8;
+    if (y > pdf.internal.pageSize.getHeight() - 40) {
       pdf.addPage();
-      offsetY = padding - (imageHeight - heightLeft);
-      pdf.addImage(imageData, 'PNG', padding, offsetY, printableWidth, imageHeight, undefined, 'FAST');
-      heightLeft -= printableHeight;
+      y = margin;
     }
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(30, 30, 30);
+    pdf.text(`Investimento Total: R$ ${totalResults.totalCost.toFixed(2)}`, margin, y);
+    y += 7;
+    pdf.text(`Faturamento Total: R$ ${totalResults.totalSelling.toFixed(2)}`, margin, y);
+    y += 7;
+    pdf.setTextColor(totalResults.totalProfit >= 0 ? 22 : 204, totalResults.totalProfit >= 0 ? 130 : 30, totalResults.totalProfit >= 0 ? 50 : 30);
+    pdf.setFontSize(13);
+    pdf.text(`Lucro Total: R$ ${totalResults.totalProfit.toFixed(2)}`, margin, y);
+
+    // Footer
+    y += 14;
+    pdf.setFont('helvetica', 'italic');
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('Gerado por ImportaFácil - Seu guia mais completo sobre importações', margin, y);
 
     return pdf.output('blob');
   };
@@ -686,8 +694,7 @@ const AdvancedPricingCalculator: React.FC = () => {
     if (!filename.trim()) return;
 
     const nextFileName = buildExportFileName(exportType);
-    console.log('Iniciando download...', { exportType, nextFileName });
-    alert('Download iniciado!');
+    console.log('handleSave:', { exportType, nextFileName });
 
     setGeneratingPDF(true);
     const loadingToast = toast.loading(`Gerando ${exportType === 'pdf' ? 'PDF' : 'Word'}...`, {
@@ -735,7 +742,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div ref={summaryRef} data-export-root="pricing-export">
+        <div data-export-root="pricing-export">
         <div className="flex gap-2 flex-wrap">
           <Badge variant="outline" className="text-xs font-mono">
             🇺🇸 1 USD = R$ {usdToBrl.toFixed(2)}
