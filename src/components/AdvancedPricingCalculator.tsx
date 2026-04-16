@@ -229,7 +229,6 @@ const estimateWeight = (name: string): { grams: number; label: string; category:
 const detectWeightCategory = (name: string): WeightCategory => estimateWeight(name).category;
 
 const AdvancedPricingCalculator: React.FC = () => {
-  const summaryRef = useRef<HTMLDivElement>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [filename, setFilename] = useState('');
