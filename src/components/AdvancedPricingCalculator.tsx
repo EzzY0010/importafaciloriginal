@@ -992,21 +992,21 @@ const AdvancedPricingCalculator: React.FC = () => {
             </div>
 
             {/* Export Buttons */}
-            <div className="flex gap-2 mt-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               <Button
-                variant="outline"
-                className="flex-1 gap-2 border-accent/30 text-accent hover:bg-accent/10"
-                  onClick={() => openSaveDialog('pdf')}
-                disabled={generatingPDF}
+                variant="default"
+                className="flex-1 gap-2"
+                onClick={() => openSaveDialog('pdf')}
+                disabled={generatingPDF || activeItems.length === 0}
               >
-                <FileText className="h-4 w-4" />
-                Exportar PDF
+                <FileDown className="h-4 w-4" />
+                Gerar PDF
               </Button>
               <Button
                 variant="outline"
                 className="flex-1 gap-2 border-accent/30 text-accent hover:bg-accent/10"
-                  onClick={() => openSaveDialog('docx')}
-                disabled={generatingPDF}
+                onClick={() => openSaveDialog('docx')}
+                disabled={generatingPDF || activeItems.length === 0}
               >
                 <FileSpreadsheet className="h-4 w-4" />
                 Exportar Word
