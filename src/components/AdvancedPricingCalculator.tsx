@@ -477,40 +477,87 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const createPdfDownload = async (pdfFileName: string): Promise<void> => {
-    const element = summaryRef.current;
-    if (!element) throw new Error('Elemento de resumo não encontrado');
+    // Lazy-load jspdf + autotable to keep main bundle small
+    const [{ default: JsPDF }, autoTableModule] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
+    const autoTable = (autoTableModule as { default: typeof import('jspdf-autotable').default }).default;
 
-    // Clone the element so we can style it for PDF without affecting UI
-    const clone = element.cloneNode(true) as HTMLElement;
-    clone.style.background = '#ffffff';
-    clone.style.color = '#000000';
-    clone.style.padding = '24px';
-    clone.style.width = '700px';
-    clone.style.position = 'fixed';
-    clone.style.left = '-9999px';
-    clone.style.top = '0';
-    // Force all text to black for readability
-    clone.querySelectorAll('*').forEach((el) => {
-      const htmlEl = el as HTMLElement;
-      htmlEl.style.color = '#000000';
-      htmlEl.style.background = 'transparent';
+    const itemsToExport = adjustedItems.filter((item) => parseFloat(item.costPrice) > 0);
+    const doc = new JsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const now = new Date();
+
+    // Header banner
+    doc.setFillColor(15, 59, 111);
+    doc.rect(0, 0, pageWidth, 70, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('Relatório de Importação - ImportaFácil', 40, 32);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(
+      `Data: ${now.toLocaleDateString('pt-BR')}  |  USD R$ ${rates.BRL.toFixed(2)}  |  EUR R$ ${eurToBrl.toFixed(2)}  |  CNY R$ ${cnyToBrl.toFixed(2)}`,
+      40,
+      52,
+    );
+
+    // Items table
+    const body = itemsToExport.map((item, index) => {
+      const costs = calculateItemCosts(item);
+      const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name };
+      const displayName = (camouflaged.name || item.name || `Item ${index + 1}`).substring(0, 50);
+      return [
+        displayName,
+        `${getCurrencySymbol(item.currency)} ${(parseFloat(item.costPrice) || 0).toFixed(2)}`,
+        `$ ${(parseFloat(item.declaredValue) || 0).toFixed(2)}`,
+        `${item.profitMargin || '0'}%`,
+        `R$ ${costs.sellingPrice.toFixed(2)}`,
+      ];
     });
-    document.body.appendChild(clone);
 
-    try {
-      await html2pdf()
-        .set({
-          margin: [0.5, 0.5, 0.5, 0.5],
-          filename: pdfFileName,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-        })
-        .from(clone)
-        .save();
-    } finally {
-      document.body.removeChild(clone);
-    }
+    autoTable(doc, {
+      startY: 90,
+      head: [['Nome', 'Preço Custo', 'Declaração', 'Margem', 'Preço Venda']],
+      body,
+      styles: { font: 'helvetica', fontSize: 10, cellPadding: 6, textColor: [30, 30, 30] },
+      headStyles: { fillColor: [15, 59, 111], textColor: [255, 255, 255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      columnStyles: {
+        0: { cellWidth: 'auto' },
+        1: { halign: 'right' },
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+      },
+      margin: { left: 40, right: 40 },
+    });
+
+    // Totals
+    const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 120;
+    let y = finalY + 24;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.text(`Investimento Total: R$ ${totalResults.totalCost.toFixed(2)}`, 40, y);
+    y += 18;
+    doc.text(`Faturamento Total: R$ ${totalResults.totalSelling.toFixed(2)}`, 40, y);
+    y += 18;
+    if (totalResults.totalProfit >= 0) doc.setTextColor(22, 130, 50);
+    else doc.setTextColor(204, 30, 30);
+    doc.text(`Lucro Total: R$ ${totalResults.totalProfit.toFixed(2)}`, 40, y);
+
+    // Footer
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Gerado por ImportaFácil', 40, doc.internal.pageSize.getHeight() - 24);
+
+    // Trigger real download via Blob + temporary anchor (mobile-friendly)
+    const blob = doc.output('blob');
+    triggerBlobDownload(blob, pdfFileName);
   };
 
   const createDocxBlob = async () => {
