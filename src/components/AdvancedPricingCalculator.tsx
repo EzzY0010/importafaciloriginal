@@ -1047,12 +1047,21 @@ const AdvancedPricingCalculator: React.FC = () => {
             <div className="flex flex-wrap gap-2 mt-2">
               <Button
                 variant="default"
+                className="w-full gap-2 bg-accent text-accent-foreground hover:bg-accent/90 shadow-medium"
+                onClick={handlePreviewPdf}
+                disabled={generatingPDF || activeItems.length === 0}
+              >
+                <Eye className="h-4 w-4" />
+                Visualizar e Gerar PDF
+              </Button>
+              <Button
+                variant="default"
                 className="flex-1 gap-2"
                 onClick={() => openSaveDialog('pdf')}
                 disabled={generatingPDF || activeItems.length === 0}
               >
                 <FileDown className="h-4 w-4" />
-                Gerar PDF
+                Baixar PDF
               </Button>
               <Button
                 variant="outline"
