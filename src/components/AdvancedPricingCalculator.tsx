@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText, FileSpreadsheet, CheckCircle, FileDown } from 'lucide-react';
+import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText, FileSpreadsheet, CheckCircle, FileDown, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
@@ -476,7 +476,7 @@ const AdvancedPricingCalculator: React.FC = () => {
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
   };
 
-  const createPdfDownload = async (pdfFileName: string): Promise<void> => {
+  const createPdfBlob = async (): Promise<Blob> => {
     // Lazy-load jspdf + autotable to keep main bundle small
     const [{ default: JsPDF }, autoTableModule] = await Promise.all([
       import('jspdf'),
@@ -555,8 +555,11 @@ const AdvancedPricingCalculator: React.FC = () => {
     doc.setTextColor(150, 150, 150);
     doc.text('Gerado por ImportaFácil', 40, doc.internal.pageSize.getHeight() - 24);
 
-    // Trigger real download via Blob + temporary anchor (mobile-friendly)
-    const blob = doc.output('blob');
+    return doc.output('blob') as Blob;
+  };
+
+  const createPdfDownload = async (pdfFileName: string): Promise<void> => {
+    const blob = await createPdfBlob();
     triggerBlobDownload(blob, pdfFileName);
   };
 
@@ -702,6 +705,55 @@ const AdvancedPricingCalculator: React.FC = () => {
       toast.error('Erro ao gerar o arquivo', {
         id: loadingToast,
         description: 'Confira o console e tente novamente.',
+      });
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
+  const handlePreviewPdf = async () => {
+    if (generatingPDF || activeItems.length === 0) return;
+
+    setGeneratingPDF(true);
+    const loadingToast = toast.loading('Gerando pré-visualização do PDF...', {
+      description: 'Abrindo em uma nova aba para visualização.',
+    });
+
+    // Pré-abre a aba de forma síncrona (necessário para evitar bloqueio de pop-up no Safari/Chrome mobile)
+    const previewWindow = window.open('', '_blank');
+
+    try {
+      const blob = await createPdfBlob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      if (previewWindow && !previewWindow.closed) {
+        // Funciona em desktop e na maioria dos navegadores mobile
+        previewWindow.location.href = blobUrl;
+      } else {
+        // Fallback: pop-up bloqueado — usa link temporário com target=_blank
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // Libera o URL após tempo suficiente para o navegador carregar o PDF
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+
+      toast.success('Pré-visualização aberta', {
+        id: loadingToast,
+        description: 'Use o menu do navegador para salvar ou compartilhar.',
+        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+      });
+    } catch (error) {
+      console.error('Erro ao gerar pré-visualização do PDF:', error);
+      previewWindow?.close();
+      toast.error('Erro ao gerar pré-visualização', {
+        id: loadingToast,
+        description: 'Tente novamente em instantes.',
       });
     } finally {
       setGeneratingPDF(false);
@@ -995,12 +1047,21 @@ const AdvancedPricingCalculator: React.FC = () => {
             <div className="flex flex-wrap gap-2 mt-2">
               <Button
                 variant="default"
+                className="w-full gap-2 bg-accent text-accent-foreground hover:bg-accent/90 shadow-medium"
+                onClick={handlePreviewPdf}
+                disabled={generatingPDF || activeItems.length === 0}
+              >
+                <Eye className="h-4 w-4" />
+                Visualizar e Gerar PDF
+              </Button>
+              <Button
+                variant="default"
                 className="flex-1 gap-2"
                 onClick={() => openSaveDialog('pdf')}
                 disabled={generatingPDF || activeItems.length === 0}
               >
                 <FileDown className="h-4 w-4" />
-                Gerar PDF
+                Baixar PDF
               </Button>
               <Button
                 variant="outline"
