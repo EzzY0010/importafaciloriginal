@@ -476,7 +476,7 @@ const AdvancedPricingCalculator: React.FC = () => {
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
   };
 
-  const createPdfDownload = async (pdfFileName: string): Promise<void> => {
+  const createPdfBlob = async (): Promise<Blob> => {
     // Lazy-load jspdf + autotable to keep main bundle small
     const [{ default: JsPDF }, autoTableModule] = await Promise.all([
       import('jspdf'),
@@ -555,8 +555,11 @@ const AdvancedPricingCalculator: React.FC = () => {
     doc.setTextColor(150, 150, 150);
     doc.text('Gerado por ImportaFácil', 40, doc.internal.pageSize.getHeight() - 24);
 
-    // Trigger real download via Blob + temporary anchor (mobile-friendly)
-    const blob = doc.output('blob');
+    return doc.output('blob') as Blob;
+  };
+
+  const createPdfDownload = async (pdfFileName: string): Promise<void> => {
+    const blob = await createPdfBlob();
     triggerBlobDownload(blob, pdfFileName);
   };
 
