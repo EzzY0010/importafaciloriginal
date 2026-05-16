@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity } from "lucide-react";
+import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,97 +15,214 @@ const LandingPage = () => {
     }
   }, [user, hasPaid, isAdmin, navigate]);
 
-  const scrollToDeliverables = () => {
-    document.getElementById("deliverables-section")?.scrollIntoView({ behavior: "smooth" });
+  const scrollToManifesto = () => {
+    document.getElementById("manifesto-section")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const deliverables = [
     {
       icon: <Brain className="w-6 h-6" />,
-      title: "IA Especialista em Importação",
-      desc: "Nossa inteligência faz o raio-x completo do produto por foto. Analisa se é Original, detalha o material, estima o peso para frete e identifica Collabs.",
+      title: "🧠 IA Especialista em Importação",
+      desc: (
+        <>
+          <span className="font-bold text-hero-foreground">Chega de cair em golpes ou comprar réplicas baratas.</span> Nossa inteligência artificial faz um <span className="font-semibold text-hero-foreground">raio-x completo do produto através de uma foto</span>. Ela analisa a originalidade, detalha o material, estima o peso para o frete e identifica Collabs exclusivas para você <span className="font-semibold text-gold">errar zero vezes</span>.
+        </>
+      ),
     },
     {
       icon: <Globe className="w-6 h-6" />,
-      title: "Busca Global Copia e Cola",
-      desc: "Tradução técnica de palavras-chave para você encontrar os melhores produtos nos nossos fornecedores ao redor do mundo.",
+      title: "🌐 Busca Global Copia e Cola",
+      desc: (
+        <>
+          <span className="font-bold text-hero-foreground">O idioma não é mais uma barreira.</span> Tenha acesso à tradução técnica de palavras-chave para encontrar os <span className="font-semibold text-hero-foreground">produtos mais lucrativos e escondidos</span> direto nos nossos fornecedores ao redor do mundo.
+        </>
+      ),
     },
     {
       icon: <Calculator className="w-6 h-6" />,
-      title: "Calculadora Pro",
-      desc: "Sistema completo para cálculo de drop, frete e estimativas de alfândega com moedas em tempo real.",
+      title: "🧮 Calculadora Pro",
+      desc: (
+        <>
+          <span className="font-bold text-hero-foreground">Previsibilidade é o segredo do lucro.</span> Um sistema completo para cálculo de Drop, frete e estimativas reais de alfândega com <span className="font-semibold text-hero-foreground">conversão de moedas em tempo real</span>. Saiba exatamente a sua margem antes de gastar um único centavo.
+        </>
+      ),
+    },
+    {
+      icon: <Gem className="w-6 h-6" />,
+      title: "💎 Mais de 7 Fontes de Garimpo",
+      desc: (
+        <>
+          <span className="font-bold text-hero-foreground">Não fique preso apenas a roupas.</span> Te damos o caminho das pedras com <span className="font-semibold text-gold">mais de 7 fontes secretas de garimpo</span> para você encontrar os itens mais desejados e exclusivos do mercado global.
+        </>
+      ),
     },
     {
       icon: <Headset className="w-6 h-6" />,
-      title: "Suporte VIP",
-      desc: "Acesso direto comigo para tirar dúvidas em até 24h-48h.",
+      title: "🎧 Suporte VIP & Grupo de Elite",
+      desc: (
+        <>
+          <span className="font-bold text-hero-foreground">Você nunca estará sozinho.</span> Tenha acesso direto comigo e com nossa equipe para tirar qualquer dúvida em até <span className="font-semibold text-hero-foreground">24h-48h</span>, além de fazer networking com outros importadores no nosso <span className="font-semibold text-gold">grupo exclusivo do WhatsApp</span>.
+        </>
+      ),
     },
-    {
-      icon: <Infinity className="w-6 h-6" />,
-      title: "Acesso Vitalício",
-      desc: "Pagamento único, sem mensalidades.",
-    },
+  ];
+
+  const offerItems = [
+    "Ecossistema Completo (EUA, China e Europa)",
+    "IA Especialista + Calculadora Pro + Busca Global",
+    "7 Fontes Secretas de Garimpo",
+    "Grupo no WhatsApp + Suporte VIP",
   ];
 
   return (
     <div translate="no" className="bg-hero text-hero-foreground">
-      {/* ── Hero Section ── */}
-      <section className="h-screen flex flex-col items-center justify-start pt-[15vh] sm:pt-[18vh] px-6 text-center relative snap-start">
-        {/* Wolf watermark */}
-        <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none">
-          <img src={wolfLogo} alt="" className="w-[60vw] sm:w-[40vw] max-w-[500px] opacity-[0.08] select-none" />
-        </div>
+      {/* Wolf watermark - fixed across all sections */}
+      <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none">
+        <img src={wolfLogo} alt="" className="w-[60vw] sm:w-[40vw] max-w-[500px] opacity-[0.08] select-none" />
+      </div>
 
-        <div className="max-w-4xl mx-auto space-y-6 relative z-10">
+      {/* ── 1. Hero / Dobra Principal ── */}
+      <section className="min-h-screen flex flex-col items-center justify-center px-6 text-center relative z-10 py-16 snap-start">
+        <div className="max-w-4xl mx-auto space-y-6">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
-            Bem-vindo ao{" "}
-            <span className="text-gold">ImportaFácil</span>
+            Bem-vindo ao <span className="text-gold">ImportaFácil</span>
+            <span className="block mt-3 text-2xl sm:text-3xl lg:text-4xl">
+              A <span className="text-gold">Estrutura de Elite</span> para Dominar o Mundo das Importações
+            </span>
           </h1>
-          <p className="text-lg sm:text-xl font-semibold text-hero-foreground/80">
-            Seu guia mais completo sobre importações
-          </p>
-          <p className="text-base sm:text-lg leading-relaxed text-hero-foreground/70 max-w-3xl mx-auto">
-            Domine as importações nos{" "}
-            <span className="text-hero-foreground font-semibold">Estados Unidos, China</span> e em toda a{" "}
-            <span className="text-hero-foreground font-semibold">Europa</span> com uma estrutura de elite baseada na mentalidade de lucro de{" "}
+          <p className="text-base sm:text-lg leading-relaxed text-hero-foreground/80 max-w-3xl mx-auto">
+            <span className="font-bold text-hero-foreground">Não compre cursos picados.</span> Descubra o guia mais completo sobre importações que une{" "}
+            <span className="text-hero-foreground font-semibold">Estados Unidos, China e Europa</span> em um só ecossistema, desenhado sob a mentalidade de lucro de{" "}
             <span className="text-gold font-semibold">Jordan Belfort</span>, o Lobo de Wall Street.
           </p>
 
-          <button onClick={scrollToDeliverables} className="mx-auto block animate-bounce text-gold/60 hover:text-gold transition-colors mt-8" aria-label="Rolar para baixo">
+          <div className="pt-4">
+            <Button
+              onClick={() => navigate("/login")}
+              className="h-auto py-4 px-8 text-base sm:text-lg font-bold rounded-2xl bg-gold text-gold-foreground hover:bg-gold/90 shadow-[0_0_30px_hsl(43_80%_55%_/_0.3)] hover:shadow-[0_0_40px_hsl(43_80%_55%_/_0.45)] transition-all duration-300 whitespace-normal animate-pulse-glow"
+            >
+              👉 EU QUERO MEU ACESSO VITALÍCIO
+            </Button>
+          </div>
+
+          <button onClick={scrollToManifesto} className="mx-auto block animate-bounce text-gold/60 hover:text-gold transition-colors mt-8" aria-label="Rolar para baixo">
             <ChevronDown className="w-8 h-8" />
           </button>
         </div>
       </section>
 
-      {/* ── O Que Entregamos ── */}
-      <section id="deliverables-section" className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-10 snap-start">
+      {/* ── 2. O Manifesto do Lobo ── */}
+      <section id="manifesto-section" className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+        <div className="max-w-3xl mx-auto w-full space-y-5">
+          <div className="text-center mb-6">
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">O Manifesto do Lobo</p>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              A <span className="text-gold">Mentalidade de Lucro</span>
+            </h2>
+          </div>
+          <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
+            O sucesso pertence a quem prefere <span className="font-bold text-hero-foreground">praticidade e facilidade</span>, em vez de ficar colecionando vários cursos baratos que não saem do lugar.
+          </p>
+          <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
+            <span className="font-bold text-gold">Jordan Belfort</span>, o verdadeiro Lobo de Wall Street, não construiu seu império aceitando métodos incompletos ou ferramentas pela metade. Ele trabalhava de forma inteligente para chegar onde queria muito mais rápido — e você também pode, <span className="font-semibold text-hero-foreground">centralizando o seu conhecimento sobre importação</span>.
+          </p>
+          <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
+            A maioria dos "gurus" por aí tenta te vender o conhecimento em partes: um curso só para Europa, outro só para Estados Unidos, outro só para China. <span className="font-bold text-hero-foreground">Isso não é estratégia, é perda de tempo e de dinheiro.</span>
+          </p>
+          <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
+            O <span className="font-bold text-gold">ImportaFácil</span> nasceu sob essa mesma premissa: <span className="font-semibold text-hero-foreground">centralizar o poder</span>. Nós criamos um ecossistema completo onde você domina os <span className="font-semibold text-hero-foreground">três maiores polos de importação do mundo</span> de forma cirúrgica, sem precisar de mais nenhum outro treinamento.
+          </p>
+        </div>
+      </section>
+
+      {/* ── 3. O Problema do Mercado ── */}
+      <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+        <div className="max-w-3xl mx-auto w-full space-y-6">
+          <div className="text-center mb-4">
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">A Quebra de Objeção</p>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              O Problema do <span className="text-gold">Mercado</span>
+            </h2>
+          </div>
+          <div className="p-5 sm:p-6 rounded-2xl bg-destructive/10 border border-destructive/30">
+            <h3 className="font-bold text-base sm:text-lg mb-2 text-hero-foreground">❌ O erro comum</h3>
+            <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
+              Gastar <span className="font-bold">centenas de reais</span> comprando 3 ou 4 cursos diferentes para tentar aprender a importar de lugares diferentes.
+            </p>
+          </div>
+          <div className="p-5 sm:p-6 rounded-2xl bg-gold/10 border border-gold/30">
+            <h3 className="font-bold text-base sm:text-lg mb-2 text-gold">✅ A nossa solução</h3>
+            <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
+              Uma <span className="font-bold text-hero-foreground">plataforma única, do básico ao avançado</span>. Você aprende a encontrar, validar e lucrar com produtos do mundo inteiro, com <span className="font-semibold text-hero-foreground">ferramentas automatizadas</span> que aceleram o seu resultado.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 4. O Que Entregamos ── */}
+      <section id="deliverables-section" className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
         <div className="max-w-3xl mx-auto w-full">
-          <h2 className="text-xl sm:text-2xl font-bold text-center mb-8">
-            O Que <span className="text-gold">Entregamos</span>
-          </h2>
+          <div className="text-center mb-8">
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Os Pilares do Seu Sucesso</p>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              O Que <span className="text-gold">Entregamos</span>
+            </h2>
+          </div>
           <div className="space-y-3">
             {deliverables.map((item, i) => (
-              <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-hero-foreground/5 border border-hero-foreground/10">
+              <div key={i} className="flex items-start gap-4 p-4 sm:p-5 rounded-xl bg-hero-foreground/5 border border-hero-foreground/10 hover:border-gold/30 transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center text-gold shrink-0">
                   {item.icon}
                 </div>
                 <div>
-                  <h3 className="text-base font-bold mb-0.5">{item.title}</h3>
-                  <p className="text-xs sm:text-sm text-hero-foreground/60 leading-relaxed">{item.desc}</p>
+                  <h3 className="text-sm sm:text-base font-bold mb-1.5">{item.title}</h3>
+                  <p className="text-xs sm:text-sm text-hero-foreground/75 leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* CTA Button */}
-          <div className="pt-8 text-center space-y-4">
+      {/* ── 5. Oferta Irrecusável ── */}
+      <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+        <div className="max-w-2xl mx-auto w-full space-y-6 text-center">
+          <div>
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Ancoragem de Valor</p>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              Oferta <span className="text-gold">Irrecusável</span>
+            </h2>
+          </div>
+          <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
+            Você <span className="font-bold text-hero-foreground">não vai pagar uma assinatura mensal</span> para ter acesso a tudo isso. Nós acreditamos na <span className="font-semibold text-gold">liberdade de escala</span>.
+          </p>
+
+          <div className="p-5 sm:p-6 rounded-2xl bg-hero-foreground/5 border border-gold/30 text-left space-y-3">
+            {offerItems.map((item, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <Check className="w-5 h-5 text-gold shrink-0 mt-0.5" />
+                <span className="text-sm sm:text-base text-hero-foreground/90 font-medium">{item}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-6 rounded-2xl bg-gold/10 border-2 border-gold/40 space-y-2">
+            <div className="flex items-center justify-center gap-2 text-gold">
+              <Infinity className="w-6 h-6" />
+              <h3 className="text-xl sm:text-2xl font-extrabold tracking-wide">ACESSO VITALÍCIO</h3>
+            </div>
+            <p className="text-sm sm:text-base text-hero-foreground/85 font-semibold">
+              Pagamento único. <span className="text-hero-foreground">Sem mensalidades.</span> Sem taxas escondidas.
+            </p>
+          </div>
+
+          <div className="pt-2">
             <Button
               onClick={() => navigate("/login")}
-              className="h-14 px-8 text-base sm:text-lg font-bold rounded-2xl bg-gold text-gold-foreground hover:bg-gold/90 shadow-[0_0_30px_hsl(43_80%_55%_/_0.3)] hover:shadow-[0_0_40px_hsl(43_80%_55%_/_0.45)] transition-all duration-300"
+              className="h-auto py-4 px-8 text-base sm:text-lg font-extrabold rounded-2xl bg-gold text-gold-foreground hover:bg-gold/90 shadow-[0_0_30px_hsl(43_80%_55%_/_0.3)] hover:shadow-[0_0_40px_hsl(43_80%_55%_/_0.45)] transition-all duration-300 whitespace-normal animate-pulse-glow"
             >
-              EU QUERO MEU ACESSO VITALÍCIO
+              🎯 QUERO MEU ACESSO VITALÍCIO AGORA
             </Button>
-
           </div>
         </div>
       </section>
