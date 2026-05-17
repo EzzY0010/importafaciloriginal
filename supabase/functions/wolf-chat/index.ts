@@ -143,6 +143,7 @@ MARKETPLACES E FONTES:
 🟡 Secret Sales (UK) - Perfumes e Grifes com até 80% OFF.
 🟡 Sports Direct (UK) - Chuteiras e artigos esportivos.
 🟡 USC (UK) - Streetwear e marcas premium exclusivas.
+🟡 JDSports (UK/EUA/Europa) - FONTE SECRETA DE ELITE 🐺. Uma das maiores potências mundiais para garimpar tênis exclusivos, roupas esportivas de marca, edições limitadas e collabs que não chegam ao Brasil. Use para extrair o máximo de lucro e exclusividade nos mercados EUA e Europa.
 🟢 Lefties (Espanha) - Outlet oficial da Zara.
 🔵 Zalando Lounge (Europa) - Clube de vendas privadas.
 🔵 Zalando Privé (Espanha) - Grifes de luxo e streetwear exclusivo.
