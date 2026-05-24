@@ -15,6 +15,8 @@ import IPBlacklist from "@/components/admin/IPBlacklist";
 
 const AdminPanel = () => {
   const { user, isAdmin, loading } = useAuth();
+  const ADMIN_DEVICE_MANAGER_EMAIL = "administradorezzy00@gmail.com";
+  const canManageDeviceLimit = user?.email === ADMIN_DEVICE_MANAGER_EMAIL;
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
@@ -93,6 +95,26 @@ const AdminPanel = () => {
     }
   };
 
+  const incrementDeviceLimit = async (profileId: string, currentLimit: number) => {
+    const newLimit = (currentLimit || 1) + 1;
+    const supabase = await getSupabaseClient();
+    if (!supabase) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ max_logins: newLimit })
+      .eq("id", profileId);
+
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `Limite de dispositivos atualizado para ${newLimit}` });
+      setProfiles((prev) =>
+        prev.map((p) => (p.id === profileId ? { ...p, max_logins: newLimit } : p))
+      );
+    }
+  };
+
   if (loading || (!isAdmin && isBackendConfigured)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -143,6 +165,8 @@ const AdminPanel = () => {
                   loading={loadingProfiles}
                   onToggleBan={toggleBan}
                   onTogglePayment={togglePayment}
+                  onIncrementDeviceLimit={incrementDeviceLimit}
+                  canManageDeviceLimit={canManageDeviceLimit}
                 />
               </>
             )}
@@ -153,6 +177,8 @@ const AdminPanel = () => {
                 loading={loadingProfiles}
                 onToggleBan={toggleBan}
                 onTogglePayment={togglePayment}
+                onIncrementDeviceLimit={incrementDeviceLimit}
+                canManageDeviceLimit={canManageDeviceLimit}
               />
             )}
 
