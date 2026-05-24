@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, Ban, ShieldCheck, Monitor, Globe } from "lucide-react";
+import { Ban, ShieldCheck, Monitor, Globe, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,6 +21,7 @@ export interface UserProfile {
   last_longitude: number | null;
   last_user_agent: string | null;
   created_at: string;
+  max_logins?: number | null;
 }
 
 interface UsersTableProps {
@@ -28,9 +29,11 @@ interface UsersTableProps {
   loading: boolean;
   onToggleBan: (id: string, currentApproved: boolean | null) => void;
   onTogglePayment: (id: string, currentPaid: boolean | null) => void;
+  onIncrementDeviceLimit?: (id: string, currentLimit: number) => void;
+  canManageDeviceLimit?: boolean;
 }
 
-const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment }: UsersTableProps) => {
+const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncrementDeviceLimit, canManageDeviceLimit }: UsersTableProps) => {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -135,6 +138,17 @@ const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment }: UsersTa
                         >
                           {p.has_paid ? "Remover Pgto" : "Ativar Pgto"}
                         </Button>
+                        {canManageDeviceLimit && onIncrementDeviceLimit && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-7 text-xs gap-1 bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+                            onClick={() => onIncrementDeviceLimit(p.id, p.max_logins ?? 1)}
+                            title={`Limite atual: ${p.max_logins ?? 1}`}
+                          >
+                            <Plus className="w-3 h-3" /> +1 Disp ({p.max_logins ?? 1})
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
