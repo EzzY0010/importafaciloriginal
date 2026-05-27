@@ -10,19 +10,21 @@ interface Rates {
   EUR: number;
   CNY: number;
   BRL: number;
+  GBP: number;
 }
 
 const CURRENCIES = [
   { key: 'EUR' as const, symbol: '€', flag: '🇪🇺', label: 'Euro' },
   { key: 'USD' as const, symbol: '$', flag: '🇺🇸', label: 'Dólar' },
+  { key: 'GBP' as const, symbol: '£', flag: '🇬🇧', label: 'Libra' },
   { key: 'CNY' as const, symbol: '¥', flag: '🇨🇳', label: 'Yuan' },
   { key: 'BRL' as const, symbol: 'R$', flag: '🇧🇷', label: 'Real' },
 ];
 
 const CurrencyConverter: React.FC = () => {
-  const [rates, setRates] = useState<Rates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80 });
+  const [rates, setRates] = useState<Rates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80, GBP: 0.79 });
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [values, setValues] = useState<Record<string, string>>({ EUR: '', USD: '', CNY: '', BRL: '' });
+  const [values, setValues] = useState<Record<string, string>>({ EUR: '', USD: '', GBP: '', CNY: '', BRL: '' });
   const [activeCurrency, setActiveCurrency] = useState<string | null>(null);
 
   const fetchRates = useCallback(async () => {
@@ -34,6 +36,7 @@ const CurrencyConverter: React.FC = () => {
         EUR: data.rates.EUR,
         CNY: data.rates.CNY,
         BRL: data.rates.BRL,
+        GBP: data.rates.GBP,
       });
       setLastUpdate(new Date());
     } catch (error) {
@@ -43,7 +46,7 @@ const CurrencyConverter: React.FC = () => {
 
   useEffect(() => {
     fetchRates();
-    const interval = setInterval(fetchRates, 10000);
+    const interval = setInterval(fetchRates, 4000);
     return () => clearInterval(interval);
   }, [fetchRates]);
 
@@ -52,7 +55,7 @@ const CurrencyConverter: React.FC = () => {
     const numValue = parseFloat(rawValue);
 
     if (!rawValue || isNaN(numValue)) {
-      setValues({ EUR: '', USD: '', CNY: '', BRL: '' });
+      setValues({ EUR: '', USD: '', GBP: '', CNY: '', BRL: '' });
       return;
     }
 
@@ -88,6 +91,7 @@ const CurrencyConverter: React.FC = () => {
         <div className="flex gap-2 flex-wrap">
           <Badge variant="outline" className="text-xs font-mono">🇺🇸 1 USD = R$ {rates.BRL.toFixed(2)}</Badge>
           <Badge variant="outline" className="text-xs font-mono">🇪🇺 1 EUR = R$ {(rates.BRL / rates.EUR).toFixed(2)}</Badge>
+          <Badge variant="outline" className="text-xs font-mono">🇬🇧 1 GBP = R$ {(rates.BRL / rates.GBP).toFixed(2)}</Badge>
           <Badge variant="outline" className="text-xs font-mono">🇨🇳 1 CNY = R$ {(rates.BRL / rates.CNY).toFixed(2)}</Badge>
         </div>
 
