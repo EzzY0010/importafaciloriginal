@@ -503,7 +503,7 @@ const AdvancedPricingCalculator: React.FC = () => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.text(
-      `Data: ${now.toLocaleDateString('pt-BR')}  |  USD R$ ${rates.BRL.toFixed(2)}  |  EUR R$ ${eurToBrl.toFixed(2)}  |  CNY R$ ${cnyToBrl.toFixed(2)}`,
+      `Data: ${now.toLocaleDateString('pt-BR')}  |  USD R$ ${rates.BRL.toFixed(2)}  |  EUR R$ ${eurToBrl.toFixed(2)}  |  GBP R$ ${gbpToBrl.toFixed(2)}  |  CNY R$ ${cnyToBrl.toFixed(2)}`,
       40,
       52,
     );
@@ -626,7 +626,7 @@ const AdvancedPricingCalculator: React.FC = () => {
               spacing: { after: 300 },
               children: [
                 new TextRun({
-                  text: `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`,
+                  text: `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 GBP = R$ ${gbpToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`,
                   size: 18,
                   font: 'Arial',
                   color: '666666',
