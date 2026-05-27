@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from 'sonner';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
 
-type Currency = 'USD' | 'EUR' | 'CNY';
+type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 type ExportType = 'pdf' | 'docx';
 
@@ -94,6 +94,7 @@ interface ExchangeRates {
   EUR: number;
   CNY: number;
   BRL: number;
+  GBP: number;
 }
 
 interface ProductItem {
@@ -111,6 +112,7 @@ interface ProductItem {
 const CURRENCY_CONFIG = {
   USD: { symbol: '$', flag: '🇺🇸', label: 'Dólar' },
   EUR: { symbol: '€', flag: '🇪🇺', label: 'Euro' },
+  GBP: { symbol: '£', flag: '🇬🇧', label: 'Libra' },
   CNY: { symbol: '¥', flag: '🇨🇳', label: 'Yuan' },
 };
 
@@ -233,7 +235,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [filename, setFilename] = useState('');
   const [exportType, setExportType] = useState<ExportType>('pdf');
-  const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80 });
+  const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80, GBP: 0.79 });
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [totalShipping, setTotalShipping] = useState<string>('');
   const [shippingCurrency, setShippingCurrency] = useState<Currency>('USD');
@@ -251,7 +253,8 @@ const AdvancedPricingCalculator: React.FC = () => {
         USD: 1,
         EUR: data.rates.EUR,
         CNY: data.rates.CNY,
-        BRL: data.rates.BRL
+        BRL: data.rates.BRL,
+        GBP: data.rates.GBP,
       });
       setLastUpdate(new Date());
     } catch (error) {
@@ -395,6 +398,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   const usdToBrl = rates.BRL;
   const eurToBrl = rates.BRL / rates.EUR;
   const cnyToBrl = rates.BRL / rates.CNY;
+  const gbpToBrl = rates.BRL / rates.GBP;
 
   // Cálculos para cada item
   const calculateItemCosts = (item: ProductItem) => {
@@ -499,7 +503,7 @@ const AdvancedPricingCalculator: React.FC = () => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.text(
-      `Data: ${now.toLocaleDateString('pt-BR')}  |  USD R$ ${rates.BRL.toFixed(2)}  |  EUR R$ ${eurToBrl.toFixed(2)}  |  CNY R$ ${cnyToBrl.toFixed(2)}`,
+      `Data: ${now.toLocaleDateString('pt-BR')}  |  USD R$ ${rates.BRL.toFixed(2)}  |  EUR R$ ${eurToBrl.toFixed(2)}  |  GBP R$ ${gbpToBrl.toFixed(2)}  |  CNY R$ ${cnyToBrl.toFixed(2)}`,
       40,
       52,
     );
@@ -622,7 +626,7 @@ const AdvancedPricingCalculator: React.FC = () => {
               spacing: { after: 300 },
               children: [
                 new TextRun({
-                  text: `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`,
+                  text: `Data: ${now.toLocaleDateString('pt-BR')}  |  1 USD = R$ ${rates.BRL.toFixed(2)}  |  1 EUR = R$ ${eurToBrl.toFixed(2)}  |  1 GBP = R$ ${gbpToBrl.toFixed(2)}  |  1 CNY = R$ ${cnyToBrl.toFixed(2)}`,
                   size: 18,
                   font: 'Arial',
                   color: '666666',
@@ -783,6 +787,9 @@ const AdvancedPricingCalculator: React.FC = () => {
           </Badge>
           <Badge variant="outline" className="text-xs font-mono">
             🇪🇺 1 EUR = R$ {eurToBrl.toFixed(2)}
+          </Badge>
+          <Badge variant="outline" className="text-xs font-mono">
+            🇬🇧 1 GBP = R$ {gbpToBrl.toFixed(2)}
           </Badge>
           <Badge variant="outline" className="text-xs font-mono">
             🇨🇳 1 CNY = R$ {cnyToBrl.toFixed(2)}
