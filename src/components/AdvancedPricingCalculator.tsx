@@ -789,6 +789,9 @@ const AdvancedPricingCalculator: React.FC = () => {
             🇪🇺 1 EUR = R$ {eurToBrl.toFixed(2)}
           </Badge>
           <Badge variant="outline" className="text-xs font-mono">
+            🇬🇧 1 GBP = R$ {gbpToBrl.toFixed(2)}
+          </Badge>
+          <Badge variant="outline" className="text-xs font-mono">
             🇨🇳 1 CNY = R$ {cnyToBrl.toFixed(2)}
           </Badge>
         </div>
