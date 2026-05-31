@@ -1,6 +1,15 @@
-import { Ban, ShieldCheck, Monitor, Globe, Plus } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Ban, ShieldCheck, Monitor, Globe, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -34,6 +43,34 @@ interface UsersTableProps {
 }
 
 const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncrementDeviceLimit, canManageDeviceLimit }: UsersTableProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activityFilter, setActivityFilter] = useState("all");
+  const [planFilter, setPlanFilter] = useState("all");
+
+  const filteredProfiles = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
+    return profiles.filter((p) => {
+      const matchesSearch =
+        !query ||
+        (p.full_name?.toLowerCase().includes(query) ?? false) ||
+        (p.email?.toLowerCase().includes(query) ?? false);
+
+      const isBanned = p.device_approved === false;
+      const isActive = p.device_approved === true;
+
+      let matchesActivity = true;
+      if (activityFilter === "active") matchesActivity = isActive;
+      else if (activityFilter === "inactive") matchesActivity = p.device_approved === null;
+      else if (activityFilter === "banned") matchesActivity = isBanned;
+
+      let matchesPlan = true;
+      if (planFilter === "paid") matchesPlan = p.has_paid === true;
+      else if (planFilter === "free") matchesPlan = p.has_paid !== true;
+
+      return matchesSearch && matchesActivity && matchesPlan;
+    });
+  }, [profiles, searchQuery, activityFilter, planFilter]);
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -47,10 +84,49 @@ const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncreme
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <Monitor className="w-5 h-5 text-primary" />
-          Todos os Usuários ({profiles.length})
+          Todos os Usuários ({filteredProfiles.length})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
+        <div className="p-4 space-y-3 border-b border-border">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Pesquisar por nome ou e-mail..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2">
+            <Select value={activityFilter} onValueChange={setActivityFilter}>
+              <SelectTrigger className="w-[170px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Status de Atividade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="active">Ativos</SelectItem>
+                <SelectItem value="inactive">Não Ativos</SelectItem>
+                <SelectItem value="banned">Banidos</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={planFilter} onValueChange={setPlanFilter}>
+              <SelectTrigger className="w-[160px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Status de Plano" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="paid">Pagantes</SelectItem>
+                <SelectItem value="free">Não Pagantes</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -65,7 +141,7 @@ const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncreme
               </TableRow>
             </TableHeader>
             <TableBody>
-              {profiles.map((p) => {
+              {filteredProfiles.map((p) => {
                 const isBanned = p.device_approved === false;
                 return (
                   <TableRow key={p.id} className={`border-border ${isBanned ? "bg-destructive/5" : ""}`}>
@@ -154,6 +230,13 @@ const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncreme
                   </TableRow>
                 );
               })}
+              {filteredProfiles.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-sm">
+                    Nenhum usuário encontrado com os filtros selecionados.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
