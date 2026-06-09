@@ -8,12 +8,22 @@ const OnboardingTutorial: React.FC = () => {
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
 
-    // Aguarda um tick para garantir que os elementos com data-tour já foram montados
-    const timer = setTimeout(() => {
+    // Aguarda até que todos os elementos com data-tour estejam no DOM.
+    // Em iOS / desktop com hidratação mais lenta, 400ms pode não ser suficiente.
+    const startTour = () => {
+      const requiredSelectors = ['[data-tour="whatsapp"]', '[data-tour="ai"]', '[data-tour="calculator"]'];
+      const allFound = requiredSelectors.every((sel) => document.querySelector(sel));
+
+      if (!allFound) {
+        // Se ainda não renderizou, tenta novamente em 300ms (máx 10 tentativas ≈ 3s)
+        return false;
+      }
+
       const driverObj = driver({
         showProgress: true,
         allowClose: false,
-        overlayOpacity: 0.7,
+        overlayOpacity: 0.75,
+        smoothScroll: false,
         nextBtnText: 'Próximo',
         prevBtnText: 'Voltar',
         doneBtnText: 'Concluir e Começar',
@@ -71,9 +81,24 @@ const OnboardingTutorial: React.FC = () => {
       });
 
       driverObj.drive();
-    }, 400);
+      return true;
+    };
 
-    return () => clearTimeout(timer);
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const tryStart = () => {
+      if (startTour()) return;
+      attempts++;
+      if (attempts < maxAttempts) {
+        setTimeout(tryStart, 300);
+      }
+    };
+
+    // Delay inicial maior para garantir hidratação em todos os dispositivos
+    const initialTimer = setTimeout(tryStart, 600);
+
+    return () => clearTimeout(initialTimer);
   }, []);
 
   return null;
