@@ -314,13 +314,14 @@ const WolfChat: React.FC = () => {
     });
   };
 
-  const handleStrategySelect = (strategy: 'europe' | 'usa' | 'china') => {
-    const strategyMessages = {
-      europe: 'Quero usar a estratégia Europa - me explica como comprar na Vinted e Wallapop e enviar para a Redirect Europa',
-      usa: 'Quero usar a estratégia EUA - me explica como comprar em outlets e eBay e enviar para a WeZip4U ou Viajabox',
-      china: 'Quero usar a estratégia China - me explica como comprar no Xianyu e 1688, usando a CSSBuy como agente'
+  const handleStrategySelect = (strategy: 'usa' | 'europe' | 'uk' | 'china') => {
+    const strategyMessages: Record<typeof strategy, string> = {
+      usa: 'Quero usar a estratégia EUA — me explica passo a passo como comprar em Amazon, eBay, StockX e outlets oficiais (Tommy, Ralph Lauren, Nike) usando uma redirecionadora em estado tax-free (Delaware/Oregon).',
+      europe: 'Quero usar a estratégia Europa — me explica como garimpar na Vinted, Wallapop e Vestiaire e consolidar na Espanha com a Redirect Europa para enviar ao Brasil.',
+      uk: 'Quero usar a estratégia Reino Unido — me explica como comprar em END. Clothing, Flannels, ASOS UK e eBay UK e enviar direto do UK ao Brasil via forward2me UK ou UK Postbox, evitando as taxas pós-Brexit.',
+      china: 'Quero usar a estratégia China — me explica como comprar em Yupoo, 1688 e Taobao usando agentes como CSSBuy, Superbuy ou Sugargoo, com QC, consolidação e linhas de envio seguras.',
     };
-    
+
     setInput(strategyMessages[strategy]);
   };
 
