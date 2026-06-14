@@ -78,9 +78,7 @@ const Signup = () => {
         </div>
         
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mb-4 shadow-medium">
-            <ShoppingBag className="w-8 h-8 text-primary-foreground" strokeWidth={2.5} />
-          </div>
+          <img src={wolfLogo} alt="ImportaFácil" className="w-20 h-20 rounded-2xl mb-4 shadow-medium" />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             {t('appName')}
           </h1>
