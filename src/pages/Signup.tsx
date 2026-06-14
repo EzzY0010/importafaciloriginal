@@ -56,7 +56,7 @@ const Signup = () => {
     if (error) {
       toast({
         title: t('error'),
-        description: error.message,
+        description: translateAuthError(error.message),
         variant: "destructive",
       });
     } else {
