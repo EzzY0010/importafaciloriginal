@@ -10,6 +10,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import LanguageSelector from "@/components/LanguageSelector";
 import { backendKey, backendUrl, getSupabaseClient } from "@/lib/backend";
+import { translateAuthError } from "@/lib/authErrors";
 
 // Generate a simple device fingerprint from browser properties
 const generateFingerprint = (): string => {
@@ -63,7 +64,7 @@ const Login = () => {
     if (error) {
       toast({
         title: t('error'),
-        description: error.message,
+        description: translateAuthError(error.message),
         variant: "destructive",
       });
       setIsLoading(false);
@@ -162,7 +163,7 @@ const Login = () => {
     });
 
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: translateAuthError(error.message), variant: "destructive" });
     } else {
       toast({ title: "E-mail enviado!", description: "Verifique sua caixa de entrada para redefinir a senha." });
       setShowForgotPassword(false);
