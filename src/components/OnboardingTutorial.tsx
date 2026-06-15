@@ -4,10 +4,12 @@ import 'driver.js/dist/driver.css';
 
 const STORAGE_KEY = 'has_seen_tutorial';
 
+export const startOnboardingTutorial = () => {
+  window.dispatchEvent(new CustomEvent('start-onboarding-tutorial'));
+};
+
 const OnboardingTutorial: React.FC = () => {
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY)) return;
-
     // Aguarda até que todos os elementos com data-tour estejam no DOM.
     // Em iOS / desktop com hidratação mais lenta, 400ms pode não ser suficiente.
     const startTour = () => {
@@ -84,21 +86,30 @@ const OnboardingTutorial: React.FC = () => {
       return true;
     };
 
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    const tryStart = () => {
-      if (startTour()) return;
-      attempts++;
-      if (attempts < maxAttempts) {
-        setTimeout(tryStart, 300);
-      }
+    const launchWithRetry = () => {
+      let attempts = 0;
+      const maxAttempts = 20;
+      const tryStart = () => {
+        if (startTour()) return;
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(tryStart, 300);
+        }
+      };
+      setTimeout(tryStart, 600);
     };
 
-    // Delay inicial maior para garantir hidratação em todos os dispositivos
-    const initialTimer = setTimeout(tryStart, 600);
+    // Auto-start on first visit (per device, since localStorage is per-device)
+    const autoStart = !localStorage.getItem(STORAGE_KEY);
+    if (autoStart) launchWithRetry();
 
-    return () => clearTimeout(initialTimer);
+    // Manual replay trigger — funciona em Android, iOS e desktop
+    const handleManualStart = () => {
+      localStorage.removeItem(STORAGE_KEY);
+      launchWithRetry();
+    };
+    window.addEventListener('start-onboarding-tutorial', handleManualStart);
+    return () => window.removeEventListener('start-onboarding-tutorial', handleManualStart);
   }, []);
 
   return null;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft } from "lucide-react";
+import { LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft, HelpCircle } from "lucide-react";
 import wolfPaymentLogo from "@/assets/wolf-payment-logo.png";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import WolfChat from "@/components/WolfChat";
 import AdvancedPricingCalculator from "@/components/AdvancedPricingCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import PaymentButton from "@/components/PaymentButton";
-import OnboardingTutorial from "@/components/OnboardingTutorial";
+import OnboardingTutorial, { startOnboardingTutorial } from "@/components/OnboardingTutorial";
 
 const Dashboard = () => {
   const { user, isAdmin, hasPaid, signOut, loading, refreshPaymentStatus } = useAuth();
@@ -99,6 +99,16 @@ const Dashboard = () => {
                   <span className="hidden sm:inline">Admin</span>
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => startOnboardingTutorial()}
+                className="gap-1 text-primary-foreground hover:bg-primary-foreground/10 text-xs font-medium"
+                title="Ver tutorial"
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">Tutorial</span>
+              </Button>
               <a
                 href="https://chat.whatsapp.com/IBxNhd45sfF6lNCKIxpe7N"
                 target="_blank"
