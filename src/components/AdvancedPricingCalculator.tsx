@@ -14,6 +14,17 @@ type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 type ExportType = 'pdf' | 'docx';
 
+// Auto-camuflagem: gera descrição genérica e sem marca para alfândega
+const getOptimizedDescription = (name: string): string => {
+  const n = (name || '').toLowerCase();
+  if (!n.trim()) return '';
+  if (n.includes('conjunto')) return 'Conjunto para esporte unissex';
+  if (n.includes('tênis') || n.includes('tenis') || n.includes('sneaker')) return 'Calçado esportivo para uso diário';
+  if (n.includes('moletom')) return 'Agasalho de frio em algodão/poliéster';
+  if (n.includes('relógio') || n.includes('relogio')) return 'Relógio digital de pulso casual';
+  return 'Artigo de vestuário de uso geral';
+};
+
 interface SaveAsModalProps {
   exportType: ExportType;
   filename: string;
