@@ -14,14 +14,64 @@ type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 type ExportType = 'pdf' | 'docx';
 
-// Auto-camuflagem: gera descrição genérica e sem marca para alfândega
+// Auto-camuflagem: gera descrição técnica detalhada e sem marca para alfândega
 const getOptimizedDescription = (name: string): string => {
-  const n = (name || '').toLowerCase();
+  const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (!n.trim()) return '';
-  if (n.includes('conjunto')) return 'Conjunto para esporte unissex';
-  if (n.includes('tênis') || n.includes('tenis') || n.includes('sneaker')) return 'Calçado esportivo para uso diário';
-  if (n.includes('moletom')) return 'Agasalho de frio em algodão/poliéster';
-  if (n.includes('relógio') || n.includes('relogio')) return 'Relógio digital de pulso casual';
+
+  // Boné / Cap
+  if (n.includes('bone') || n.includes('cap') || n.includes('chapeu') || n.includes('gorro')) {
+    return 'Cobertura de cabeça tipo boné em sarja de algodão, unissex';
+  }
+
+  // Camiseta / Polo / T-shirt / Regata
+  if (
+    n.includes('camiseta') || n.includes('t-shirt') || n.includes('tshirt') ||
+    n.includes('polo') || n.includes('regata') || n.includes('camisa casual')
+  ) {
+    return 'Camiseta de manga curta em malha de algodão casual';
+  }
+
+  // Calça / Bermuda / Short
+  if (n.includes('calca') || n.includes('bermuda') || n.includes('short')) {
+    return 'Peça de vestuário inferior em tecido sintético ou algodão';
+  }
+
+  // Conjunto
+  if (n.includes('conjunto')) {
+    return 'Conjunto de vestuário esportivo (blusa e calça/bermuda) em poliéster';
+  }
+
+  // Casaco / Moletom / Hoodie / Jaqueta / Jacket
+  if (
+    n.includes('casaco') || n.includes('moletom') || n.includes('hoodie') ||
+    n.includes('jaqueta') || n.includes('jacket') || n.includes('agasalho')
+  ) {
+    return 'Casaco de frio tipo agasalho com capuz em algodão';
+  }
+
+  // Tênis / Sneaker / Sapato / Bota
+  if (
+    n.includes('tenis') || n.includes('sneaker') || n.includes('sapato') || n.includes('bota')
+  ) {
+    return 'Calçado esportivo com solado de borracha para uso diário';
+  }
+
+  // Relógio
+  if (n.includes('relogio') || n.includes('watch')) {
+    return 'Relógio digital de pulso casual';
+  }
+
+  // Bolsa / Mochila
+  if (n.includes('bolsa') || n.includes('mochila') || n.includes('bag')) {
+    return 'Bolsa de uso pessoal em material sintético';
+  }
+
+  // Óculos
+  if (n.includes('oculos')) {
+    return 'Óculos de armação flexível para uso casual';
+  }
+
   return 'Artigo de vestuário de uso geral';
 };
 
