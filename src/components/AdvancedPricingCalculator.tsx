@@ -368,7 +368,6 @@ const AdvancedPricingCalculator: React.FC = () => {
 
   // Auto-preencher declaração quando adiciona preço de custo
   const handleCostPriceChange = (id: string, value: string) => {
-    // no-op marker
     setItems(prev => prev.map(item => {
       if (item.id !== id) return item;
       
