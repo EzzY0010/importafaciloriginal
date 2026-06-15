@@ -14,6 +14,17 @@ type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 type ExportType = 'pdf' | 'docx';
 
+// Auto-camuflagem: gera descrição genérica e sem marca para alfândega
+const getOptimizedDescription = (name: string): string => {
+  const n = (name || '').toLowerCase();
+  if (!n.trim()) return '';
+  if (n.includes('conjunto')) return 'Conjunto para esporte unissex';
+  if (n.includes('tênis') || n.includes('tenis') || n.includes('sneaker')) return 'Calçado esportivo para uso diário';
+  if (n.includes('moletom')) return 'Agasalho de frio em algodão/poliéster';
+  if (n.includes('relógio') || n.includes('relogio')) return 'Relógio digital de pulso casual';
+  return 'Artigo de vestuário de uso geral';
+};
+
 interface SaveAsModalProps {
   exportType: ExportType;
   filename: string;
@@ -991,6 +1002,26 @@ const AdvancedPricingCalculator: React.FC = () => {
                       className="h-8 text-sm"
                     />
                   </div>
+                </div>
+
+                {/* Descrição Otimizada (Auto-Camuflagem para Alfândega) */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                    <span>Descrição Otimizada (Alfândega)</span>
+                    <Badge
+                      variant="outline"
+                      className="h-4 px-1.5 text-[10px] font-semibold bg-blue-500/10 text-blue-600 border-blue-500/30"
+                    >
+                      Auto
+                    </Badge>
+                  </Label>
+                  <Input
+                    type="text"
+                    readOnly
+                    placeholder="Ex: Vestuário de uso diário"
+                    value={getOptimizedDescription(item.name)}
+                    className="h-8 text-sm bg-blue-500/5 border-blue-500/20 text-blue-700 dark:text-blue-300 cursor-default"
+                  />
                 </div>
 
                 {hasData && (
