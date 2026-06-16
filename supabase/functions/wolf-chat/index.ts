@@ -153,6 +153,7 @@ REDIRECIONADORAS (Logística):
 🟢 WeZip4U - EUA com suporte em português
 🟢 Zip4Me - EUA, focada em iniciantes
 🟢 USCloser - Utah, otimizada para experts
+🟢 ViajaBox - EUA com suporte em português via WhatsApp, popular entre brasileiros
 🔵 Redirect Europa - Espanha
 🔴 CSSBuy - Agente China
 🟡 ForwardVia (UK) - Mais barata do Reino Unido

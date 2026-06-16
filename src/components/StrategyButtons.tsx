@@ -36,6 +36,7 @@ const StrategyButtons: React.FC<StrategyButtonsProps> = ({ onSelect }) => {
       redirectors: [
         { name: 'Zip4Me', support: 'pt-br', note: 'Suporte humanizado em português via WhatsApp — referência para quem está começando.' },
         { name: 'USCloser', support: 'pt-br', note: 'Atendimento em PT-BR no WhatsApp. Armazém em Utah (sem sales tax), ideal para operações em escala.' },
+        { name: 'ViajaBox', support: 'pt-br', note: 'Suporte em português via WhatsApp e e-mail. Uma das mais populares entre brasileiros, com seguro e fotos do pacote inclusos.' },
         { name: 'Shipito', support: 'en', note: 'Suporte estritamente em inglês via chat. Player consolidado, opera há décadas.' },
         { name: 'MyUS', support: 'en', note: 'Suporte em inglês. Modelo de assinatura com tarifas competitivas em grandes volumes.' },
         { name: 'Stackry', support: 'en', note: 'Armazém em New Hampshire (sem sales tax). Atendimento em inglês via chat e e-mail.' },
