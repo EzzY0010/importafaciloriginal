@@ -19,42 +19,59 @@ const getOptimizedDescription = (name: string): string => {
   const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (!n.trim()) return '';
 
-  // Boné / Cap
-  if (n.includes('bone') || n.includes('cap') || n.includes('chapeu') || n.includes('gorro')) {
+  // Boné / Cap / Gorro
+  if (n.includes('bone') || n.includes('cap') || n.includes('gorro')) {
     return 'Boné casual de algodão';
   }
 
-  // Camiseta / Polo / T-shirt / Regata
-  if (
-    n.includes('camiseta') || n.includes('t-shirt') || n.includes('tshirt') ||
-    n.includes('polo') || n.includes('regata') || n.includes('camisa casual')
-  ) {
-    return 'Camiseta casual de algodão';
+  // Camiseta / T-shirt / Shirt
+  if (n.includes('camiseta') || n.includes('t-shirt') || n.includes('tshirt') || n.includes('shirt')) {
+    return 'Camiseta de algodão casual';
   }
 
-  // Calça / Bermuda / Short
-  if (n.includes('calca') || n.includes('bermuda') || n.includes('short')) {
-    return 'Calça casual de algodão ou poliéster';
+  // Camisa social
+  if (n.includes('camisa')) {
+    return 'Camisa social de fibra mista';
+  }
+
+  // Jaqueta / Corta-vento / Puffer
+  if (n.includes('jaqueta') || n.includes('corta vento') || n.includes('corta-vento') || n.includes('puffer')) {
+    return 'Jaqueta casual corta-vento';
+  }
+
+  // Bermuda / Short
+  if (n.includes('bermuda') || n.includes('short')) {
+    return 'Bermuda casual de tactel';
+  }
+
+  // Calça / Jeans
+  if (n.includes('calca') || n.includes('jeans')) {
+    return 'Calça comprida de algodão';
+  }
+
+  // Moletom / Hoodie / Casaco / Blusa
+  if (n.includes('moletom') || n.includes('hoodie') || n.includes('casaco') || n.includes('blusa')) {
+    return 'Moletom de algodão com capuz';
+  }
+
+  // Tênis / Sapato
+  if (n.includes('tenis') || n.includes('sapato')) {
+    return 'Tênis casual esportivo';
+  }
+
+  // Meia
+  if (n.includes('meia')) {
+    return 'Meias de algodão (pacote)';
+  }
+
+  // Cueca / Boxer
+  if (n.includes('cueca') || n.includes('boxer')) {
+    return 'Peças íntimas masculinas';
   }
 
   // Conjunto
   if (n.includes('conjunto')) {
     return 'Conjunto esportivo de poliéster';
-  }
-
-  // Casaco / Moletom / Hoodie / Jaqueta / Jacket
-  if (
-    n.includes('casaco') || n.includes('moletom') || n.includes('hoodie') ||
-    n.includes('jaqueta') || n.includes('jacket') || n.includes('agasalho')
-  ) {
-    return 'Moletom de algodão com capuz';
-  }
-
-  // Tênis / Sneaker / Sapato / Bota
-  if (
-    n.includes('tenis') || n.includes('sneaker') || n.includes('sapato') || n.includes('bota')
-  ) {
-    return 'Tênis esportivo casual';
   }
 
   // Relógio
@@ -72,7 +89,7 @@ const getOptimizedDescription = (name: string): string => {
     return 'Óculos de armação flexível';
   }
 
-  return 'Artigo de vestuário de uso geral';
+  return 'Vestuário casual de algodão';
 };
 
 interface SaveAsModalProps {
