@@ -21,7 +21,7 @@ const getOptimizedDescription = (name: string): string => {
 
   // Boné / Cap
   if (n.includes('bone') || n.includes('cap') || n.includes('chapeu') || n.includes('gorro')) {
-    return 'Cobertura de cabeça tipo boné em sarja de algodão, unissex';
+    return 'Boné casual de algodão';
   }
 
   // Camiseta / Polo / T-shirt / Regata
@@ -29,17 +29,17 @@ const getOptimizedDescription = (name: string): string => {
     n.includes('camiseta') || n.includes('t-shirt') || n.includes('tshirt') ||
     n.includes('polo') || n.includes('regata') || n.includes('camisa casual')
   ) {
-    return 'Camiseta de manga curta em malha de algodão casual';
+    return 'Camiseta casual de algodão';
   }
 
   // Calça / Bermuda / Short
   if (n.includes('calca') || n.includes('bermuda') || n.includes('short')) {
-    return 'Peça de vestuário inferior em tecido sintético ou algodão';
+    return 'Calça casual de algodão ou poliéster';
   }
 
   // Conjunto
   if (n.includes('conjunto')) {
-    return 'Conjunto de vestuário esportivo (blusa e calça/bermuda) em poliéster';
+    return 'Conjunto esportivo de poliéster';
   }
 
   // Casaco / Moletom / Hoodie / Jaqueta / Jacket
@@ -47,29 +47,29 @@ const getOptimizedDescription = (name: string): string => {
     n.includes('casaco') || n.includes('moletom') || n.includes('hoodie') ||
     n.includes('jaqueta') || n.includes('jacket') || n.includes('agasalho')
   ) {
-    return 'Casaco de frio tipo agasalho com capuz em algodão';
+    return 'Moletom de algodão com capuz';
   }
 
   // Tênis / Sneaker / Sapato / Bota
   if (
     n.includes('tenis') || n.includes('sneaker') || n.includes('sapato') || n.includes('bota')
   ) {
-    return 'Calçado esportivo com solado de borracha para uso diário';
+    return 'Tênis esportivo casual';
   }
 
   // Relógio
   if (n.includes('relogio') || n.includes('watch')) {
-    return 'Relógio digital de pulso casual';
+    return 'Relógio de pulso casual';
   }
 
   // Bolsa / Mochila
   if (n.includes('bolsa') || n.includes('mochila') || n.includes('bag')) {
-    return 'Bolsa de uso pessoal em material sintético';
+    return 'Bolsa casual de material sintético';
   }
 
   // Óculos
   if (n.includes('oculos')) {
-    return 'Óculos de armação flexível para uso casual';
+    return 'Óculos de armação flexível';
   }
 
   return 'Artigo de vestuário de uso geral';
