@@ -8,12 +8,16 @@ export const startOnboardingTutorial = () => {
   window.dispatchEvent(new CustomEvent('start-onboarding-tutorial'));
 };
 
+const setTab = (tab: 'chat' | 'calculator') => {
+  window.dispatchEvent(new CustomEvent('tutorial-set-tab', { detail: tab }));
+};
+
 const OnboardingTutorial: React.FC = () => {
   useEffect(() => {
     // Aguarda até que todos os elementos com data-tour estejam no DOM.
     // Em iOS / desktop com hidratação mais lenta, 400ms pode não ser suficiente.
     const startTour = () => {
-      const requiredSelectors = ['[data-tour="whatsapp"]', '[data-tour="ai"]', '[data-tour="calculator"]'];
+      const requiredSelectors = ['[data-tour="whatsapp"]', '[data-tour="ai"]', '[data-tour="calculator"]', '[data-tour="topbar"]'];
       const allFound = requiredSelectors.every((sel) => document.querySelector(sel));
 
       if (!allFound) {
@@ -23,60 +27,69 @@ const OnboardingTutorial: React.FC = () => {
 
       const driverObj = driver({
         showProgress: true,
-        allowClose: false,
+        allowClose: true,
         overlayOpacity: 0.75,
         smoothScroll: false,
-        nextBtnText: 'Próximo',
+        nextBtnText: 'Avançar',
         prevBtnText: 'Voltar',
-        doneBtnText: 'Concluir e Começar',
+        doneBtnText: 'Finalizar Tour',
         progressText: '{{current}} de {{total}}',
+        showButtons: ['next', 'previous', 'close'],
+        disableActiveInteraction: true,
         onDestroyed: () => {
           localStorage.setItem(STORAGE_KEY, 'true');
+          setTab('chat');
         },
         steps: [
           {
             popover: {
-              title: 'Seja bem-vindo ao ImportaFacil! 🚀',
+              title: 'Bem-vindo ao ImportaFacil! 🚀',
               description:
-                'Preparamos um tour rápido de 40 segundos para te mostrar como extrair o máximo de lucro da nossa plataforma e acessar nossos benefícios. Vamos lá?',
+                'Vamos fazer um tour rápido para você conhecer todas as nossas ferramentas de importação.',
               nextBtnText: 'Começar Tour',
             },
+            onHighlightStarted: () => setTab('chat'),
+          },
+          {
+            element: '[data-tour="ai"]',
+            popover: {
+              title: 'Lobo das Importações 🤖',
+              description:
+                'Este é o Lobo das Importações! Aqui você pode enviar a foto de qualquer produto para receber uma análise completa (marca, peso, composição e dicas de revenda) ou digitar um valor em moeda estrangeira para conversão direta.',
+              side: 'bottom',
+              align: 'center',
+            },
+            onHighlightStarted: () => setTab('chat'),
+          },
+          {
+            element: '[data-tour="calculator"]',
+            popover: {
+              title: 'Calculadora de Importação 🧮',
+              description:
+                'Ao clicar aqui, você acessa a nossa Calculadora. Use-a para simular custos, taxas alfandegárias e margem de lucro dos seus produtos importados de forma simples!',
+              side: 'bottom',
+              align: 'center',
+            },
+            onHighlightStarted: () => setTab('calculator'),
           },
           {
             element: '[data-tour="whatsapp"]',
             popover: {
-              title: 'Nossa Comunidade e Suporte Vitalício! 💬',
+              title: 'Suporte no WhatsApp 💬',
               description:
-                'Clicando aqui neste ícone do WhatsApp, você entra direto no nosso Grupo de Network exclusivo! Lá você pode interagir com outros membros e, além disso, dentro do grupo você tem acesso direto ao meu contato. Meu suporte para você é 24 horas por dia e 100% vitalício — precisando de qualquer coisa, é só me chamar!',
+                'Precisa de ajuda humana? Clique no ícone do WhatsApp no topo para falar diretamente com o nosso suporte administrativo a qualquer momento.',
               side: 'bottom',
               align: 'end',
             },
           },
           {
-            element: '[data-tour="ai"]',
+            element: '[data-tour="topbar"]',
             popover: {
-              title: 'Sua Mentora de Importação 🤖',
+              title: 'Idioma e Perfil ⚙️',
               description:
-                'Aqui você tem uma IA avançada e exclusiva, treinada para te ensinar do zero ao avançado. Pode perguntar qualquer coisa para ela: como encontrar os melhores produtos, preencher declarações corretamente, técnicas de vendas, negociação com fornecedores e muito mais. Use sem moderação!',
+                'Aqui no topo você pode alternar o idioma do sistema entre Português e Inglês, ver o seu nível de acesso e gerenciar sua conta.',
               side: 'bottom',
-              align: 'center',
-            },
-          },
-          {
-            element: '[data-tour="calculator"]',
-            popover: {
-              title: 'Calculadora de Custos Automática 🧮',
-              description:
-                'Chega de quebrar a cabeça com planilhas! Nessa aba, o sistema trabalha de forma 100% automática. Você só precisa preencher os preços e os números na tela; a calculadora faz todo o resto do cálculo de margem e custos para você num piscar de olhos.',
-              side: 'bottom',
-              align: 'center',
-            },
-          },
-          {
-            popover: {
-              title: '⚠️ Atenção: Regra de Segurança',
-              description:
-                'Para a segurança dos seus dados, seu acesso é restrito a apenas 1 dispositivo por vez. Se você for usar no computador, lembre-se de fechar a aba no celular antes (e vice-versa) para evitar bloqueios temporários na conta.',
+              align: 'end',
             },
           },
         ],
