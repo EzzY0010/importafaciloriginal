@@ -46,6 +46,15 @@ const Dashboard = () => {
     }
   }, [searchParams, t]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tab = (e as CustomEvent).detail as string;
+      if (tab === 'chat' || tab === 'calculator') setActiveTab(tab);
+    };
+    window.addEventListener('tutorial-set-tab', handler);
+    return () => window.removeEventListener('tutorial-set-tab', handler);
+  }, []);
+
   const handleLogout = async () => {
     await signOut();
     navigate("/login");
@@ -87,7 +96,7 @@ const Dashboard = () => {
             </div>
             
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div data-tour="topbar" className="flex items-center gap-3">
               {isAdmin && (
                 <Button
                   variant="ghost"
