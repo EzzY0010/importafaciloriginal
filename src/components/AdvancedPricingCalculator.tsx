@@ -844,7 +844,7 @@ const AdvancedPricingCalculator: React.FC = () => {
 
   return (
 
-    <Card className="w-full max-w-2xl" translate="no">
+    <Card data-tour="calc-root" className="w-full max-w-2xl" translate="no">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
@@ -898,7 +898,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         )}
 
         {/* Total Shipping with Currency Selector */}
-        <div className="p-3 bg-muted/50 rounded-xl space-y-2">
+        <div data-tour="calc-inputs" className="p-3 bg-muted/50 rounded-xl space-y-2">
           <Label className="flex items-center gap-2 text-sm font-medium">
             <Package className="h-4 w-4 text-accent" />
             Frete Total Internacional
@@ -1126,7 +1126,7 @@ const AdvancedPricingCalculator: React.FC = () => {
 
         {/* Total Summary */}
         {totalResults.totalCost > 0 && (
-          <div className="p-4 bg-accent/10 rounded-xl border border-accent/20 space-y-3">
+          <div data-tour="calc-results" className="p-4 bg-accent/10 rounded-xl border border-accent/20 space-y-3">
             <h4 className="font-semibold text-sm flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-accent" />
               Resumo Total
