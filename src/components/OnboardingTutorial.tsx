@@ -17,7 +17,16 @@ const OnboardingTutorial: React.FC = () => {
     // Aguarda até que todos os elementos com data-tour estejam no DOM.
     // Em iOS / desktop com hidratação mais lenta, 400ms pode não ser suficiente.
     const startTour = () => {
-      const requiredSelectors = ['[data-tour="whatsapp"]', '[data-tour="ai"]', '[data-tour="calculator"]', '[data-tour="topbar"]'];
+      const requiredSelectors = [
+        '[data-tour="whatsapp"]',
+        '[data-tour="ai"]',
+        '[data-tour="calculator"]',
+        '[data-tour="topbar"]',
+        '[data-tour="chat-area"]',
+        '[data-tour="chat-image"]',
+        '[data-tour="chat-input"]',
+        '[data-tour="chat-send"]',
+      ];
       const allFound = requiredSelectors.every((sel) => document.querySelector(sel));
 
       if (!allFound) {
@@ -51,13 +60,57 @@ const OnboardingTutorial: React.FC = () => {
             onHighlightStarted: () => setTab('chat'),
           },
           {
-            element: '[data-tour="ai"]',
+            element: '[data-tour="chat-area"]',
             popover: {
               title: 'Lobo das Importações 🤖',
               description:
-                'Este é o Lobo das Importações! Aqui você pode enviar a foto de qualquer produto para receber uma análise completa (marca, peso, composição e dicas de revenda) ou digitar um valor em moeda estrangeira para conversão direta.',
-              side: 'bottom',
+                'Este é o Lobo das Importações, sua IA especializada para análise completa de produtos e conversão de moedas.',
+              side: 'left',
               align: 'center',
+            },
+            onHighlightStarted: () => setTab('chat'),
+          },
+          {
+            element: '[data-tour="chat-area"]',
+            popover: {
+              title: 'Exemplos de comandos 💡',
+              description:
+                "Você pode dar comandos diretos para a IA! Experimente perguntar coisas como: 'Qual é o peso médio desse produto?', 'Como eu acho fornecedores para estas peças no exterior?', 'Qual a melhor estratégia de revenda para esse item?' ou pedir dicas de precificação.",
+              side: 'left',
+              align: 'center',
+            },
+            onHighlightStarted: () => setTab('chat'),
+          },
+          {
+            element: '[data-tour="chat-image"]',
+            popover: {
+              title: 'Envie uma foto 📸',
+              description:
+                'Clique aqui para enviar a foto de um produto. A IA lerá a imagem e trará na hora a Ficha Técnica com marca, peso estimado, composição e insights de mercado.',
+              side: 'top',
+              align: 'start',
+            },
+            onHighlightStarted: () => setTab('chat'),
+          },
+          {
+            element: '[data-tour="chat-input"]',
+            popover: {
+              title: 'Campo de texto e moeda 💬',
+              description:
+                "Aqui você digita suas dúvidas ou insere diretamente um valor em moeda estrangeira (ex: '$50' ou '50 USD') para que a IA faça a conversão direta e te dê o valor convertido.",
+              side: 'top',
+              align: 'center',
+            },
+            onHighlightStarted: () => setTab('chat'),
+          },
+          {
+            element: '[data-tour="chat-send"]',
+            popover: {
+              title: 'Botão Enviar 🚀',
+              description:
+                'Clique aqui para enviar sua mensagem ou imagem e receber a resposta do Lobo.',
+              side: 'top',
+              align: 'end',
             },
             onHighlightStarted: () => setTab('chat'),
           },
@@ -66,8 +119,41 @@ const OnboardingTutorial: React.FC = () => {
             popover: {
               title: 'Calculadora de Importação 🧮',
               description:
-                'Ao clicar aqui, você acessa a nossa Calculadora. Use-a para simular custos, taxas alfandegárias e margem de lucro dos seus produtos importados de forma simples!',
+                'Agora vamos para a Calculadora. Clique nesta aba (ou avance) para simular custos reais, taxas alfandegárias e margem de lucro.',
               side: 'bottom',
+              align: 'center',
+            },
+            onHighlightStarted: () => setTab('calculator'),
+          },
+          {
+            element: '[data-tour="calc-root"]',
+            popover: {
+              title: 'Visão geral da Calculadora 📊',
+              description:
+                'Esta é a sua ferramenta matemática para simular custos reais de importação antes de fechar qualquer negócio.',
+              side: 'left',
+              align: 'start',
+            },
+            onHighlightStarted: () => setTab('calculator'),
+          },
+          {
+            element: '[data-tour="calc-inputs"]',
+            popover: {
+              title: 'Campos de entrada 📝',
+              description:
+                'Preencha cada campo com atenção: valor do produto, frete internacional estimado, declaração e margem desejada. Quanto mais precisos os dados, mais real será o custo final calculado.',
+              side: 'bottom',
+              align: 'start',
+            },
+            onHighlightStarted: () => setTab('calculator'),
+          },
+          {
+            element: '[data-tour="calc-results"]',
+            popover: {
+              title: 'Resultado e margem 💰',
+              description:
+                'A calculadora atualiza automaticamente o Investimento, Faturamento e Lucro Total. Use a margem projetada para decidir se vale a pena importar o produto.',
+              side: 'top',
               align: 'center',
             },
             onHighlightStarted: () => setTab('calculator'),
@@ -77,17 +163,18 @@ const OnboardingTutorial: React.FC = () => {
             popover: {
               title: 'Suporte no WhatsApp 💬',
               description:
-                'Precisa de ajuda humana? Clique no ícone do WhatsApp no topo para falar diretamente com o nosso suporte administrativo a qualquer momento.',
+                'Precisa de suporte humano? Este ícone destaca o nosso canal direto com o suporte administrativo (não se preocupe, não vamos clicar nele agora).',
               side: 'bottom',
               align: 'end',
             },
+            onHighlightStarted: () => setTab('chat'),
           },
           {
             element: '[data-tour="topbar"]',
             popover: {
               title: 'Idioma e Perfil ⚙️',
               description:
-                'Aqui no topo você pode alternar o idioma do sistema entre Português e Inglês, ver o seu nível de acesso e gerenciar sua conta.',
+                'Por aqui você altera o idioma de preferência do sistema (PT / EN) e acompanha o status e o nível da sua conta de forma rápida.',
               side: 'bottom',
               align: 'end',
             },
