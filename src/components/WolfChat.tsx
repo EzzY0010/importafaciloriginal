@@ -516,7 +516,7 @@ const WolfChat: React.FC = () => {
       </Card>
 
       {/* Chat Area */}
-      <Card className="flex-1 flex flex-col border border-border rounded-2xl shadow-card overflow-hidden relative">
+      <Card data-tour="chat-area" className="flex-1 flex flex-col border border-border rounded-2xl shadow-card overflow-hidden relative">
         {/* Wolf watermark background */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <div 
@@ -608,6 +608,7 @@ const WolfChat: React.FC = () => {
               className="hidden"
             />
             <Button 
+              data-tour="chat-image"
               variant="outline" 
               size="icon" 
               onClick={() => fileInputRef.current?.click()}
@@ -616,6 +617,7 @@ const WolfChat: React.FC = () => {
               <ImagePlus className="h-4 w-4" />
             </Button>
             <Input
+              data-tour="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Envie uma foto para análise ou pergunte algo..."
@@ -624,6 +626,7 @@ const WolfChat: React.FC = () => {
               className="flex-1 rounded-xl border-border focus-visible:ring-primary"
             />
             <Button 
+              data-tour="chat-send"
               onClick={sendMessage} 
               disabled={isLoading}
               className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl px-5 shadow-soft"
