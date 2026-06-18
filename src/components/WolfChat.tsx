@@ -112,6 +112,26 @@ const hasProductAnalysis = (content: string): boolean => {
   return indicators.some(indicator => content.includes(indicator));
 };
 
+// Render inline formatting (**bold**) within a plain text segment
+const renderInline = (text: string, keyPrefix: string): React.ReactNode[] => {
+  const out: React.ReactNode[] = [];
+  const re = /\*\*([^*]+)\*\*/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let i = 0;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.substring(last, m.index));
+    out.push(
+      <strong key={`${keyPrefix}-b-${i++}`} className="font-bold text-foreground">
+        {m[1]}
+      </strong>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(text.substring(last));
+  return out;
+};
+
 // Parse markdown links to clickable elements
 const renderMessageContent = (content: string) => {
   const garimpoProducts = parseGarimpoResults(content);
@@ -149,7 +169,7 @@ const renderMessageContent = (content: string) => {
 
   while ((match = linkRegex.exec(content)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(content.substring(lastIndex, match.index));
+      parts.push(...renderInline(content.substring(lastIndex, match.index), `pre-${match.index}`));
     }
     parts.push(
       <a
@@ -166,10 +186,10 @@ const renderMessageContent = (content: string) => {
   }
 
   if (lastIndex < content.length) {
-    parts.push(content.substring(lastIndex));
+    parts.push(...renderInline(content.substring(lastIndex), `tail-${lastIndex}`));
   }
 
-  return parts.length > 0 ? parts : content;
+  return parts.length > 0 ? parts : renderInline(content, 'all');
 };
 
 const WolfChat: React.FC = () => {
