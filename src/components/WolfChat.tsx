@@ -112,6 +112,26 @@ const hasProductAnalysis = (content: string): boolean => {
   return indicators.some(indicator => content.includes(indicator));
 };
 
+// Render inline formatting (**bold**) within a plain text segment
+const renderInline = (text: string, keyPrefix: string): React.ReactNode[] => {
+  const out: React.ReactNode[] = [];
+  const re = /\*\*([^*]+)\*\*/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let i = 0;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.substring(last, m.index));
+    out.push(
+      <strong key={`${keyPrefix}-b-${i++}`} className="font-bold text-foreground">
+        {m[1]}
+      </strong>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(text.substring(last));
+  return out;
+};
+
 // Parse markdown links to clickable elements
 const renderMessageContent = (content: string) => {
   const garimpoProducts = parseGarimpoResults(content);
@@ -149,7 +169,7 @@ const renderMessageContent = (content: string) => {
 
   while ((match = linkRegex.exec(content)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(content.substring(lastIndex, match.index));
+      parts.push(...renderInline(content.substring(lastIndex, match.index), `pre-${match.index}`));
     }
     parts.push(
       <a
@@ -166,10 +186,10 @@ const renderMessageContent = (content: string) => {
   }
 
   if (lastIndex < content.length) {
-    parts.push(content.substring(lastIndex));
+    parts.push(...renderInline(content.substring(lastIndex), `tail-${lastIndex}`));
   }
 
-  return parts.length > 0 ? parts : content;
+  return parts.length > 0 ? parts : renderInline(content, 'all');
 };
 
 const WolfChat: React.FC = () => {
@@ -325,8 +345,9 @@ const WolfChat: React.FC = () => {
     setInput(strategyMessages[strategy]);
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() && !imagePreview) return;
+  const sendMessage = async (overrideText?: string) => {
+    const messageText = (typeof overrideText === 'string' ? overrideText : input);
+    if (!messageText.trim() && !imagePreview) return;
     if (!user) {
       toast({ title: 'Erro', description: 'Você precisa estar logado', variant: 'destructive' });
       return;
@@ -340,7 +361,7 @@ const WolfChat: React.FC = () => {
 
     const userMessage: Message = {
       role: 'user',
-      content: input,
+      content: messageText,
       image_url: imagePreview || undefined
     };
 
@@ -350,10 +371,10 @@ const WolfChat: React.FC = () => {
     setIsLoading(true);
     setShowStrategies(false);
 
-    await saveMessage(convId, 'user', input, imagePreview || undefined);
+    await saveMessage(convId, 'user', messageText, imagePreview || undefined);
 
-    if (messages.length === 0 && input.trim()) {
-      const title = input.substring(0, 50) + (input.length > 50 ? '...' : '');
+    if (messages.length === 0 && messageText.trim()) {
+      const title = messageText.substring(0, 50) + (messageText.length > 50 ? '...' : '');
       const client = await getSupabase();
       if (client) {
         await client.from('conversations').update({ title }).eq('id', convId);
@@ -364,10 +385,10 @@ const WolfChat: React.FC = () => {
     try {
       const finalContent = imagePreview 
         ? [
-            { type: 'text', text: input || 'Analise esta imagem de produto para importação - MODO PERÍCIA' },
+            { type: 'text', text: messageText || 'Analise esta imagem de produto para importação - MODO PERÍCIA' },
             { type: 'image_url', image_url: { url: imagePreview } }
           ]
-        : input;
+        : messageText;
 
       const response = await fetch(`${backendUrl}/functions/v1/wolf-chat`, {
         method: 'POST',
@@ -599,6 +620,24 @@ const WolfChat: React.FC = () => {
 
         {/* Input Area */}
         <div className="p-4 border-t border-border bg-card relative z-[1000]">
+          {/* Quick Reply Pills */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {[
+              'Como achar peças? 🔍',
+              'Qual o peso de um tênis? 👟',
+              'Dicas de revenda 📈',
+            ].map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => !isLoading && sendMessage(q)}
+                disabled={isLoading}
+                className="text-xs px-3 py-1.5 rounded-full border border-accent/40 bg-accent/10 text-accent hover:bg-accent/20 hover:border-accent transition-all disabled:opacity-50"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
           <div className="flex gap-3">
             <input
               type="file"
@@ -627,7 +666,7 @@ const WolfChat: React.FC = () => {
             />
             <Button 
               data-tour="chat-send"
-              onClick={sendMessage} 
+              onClick={() => sendMessage()} 
               disabled={isLoading}
               className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl px-5 shadow-soft"
             >
