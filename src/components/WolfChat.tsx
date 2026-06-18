@@ -15,6 +15,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   image_url?: string;
+  image_urls?: string[];
 }
 
 interface Conversation {
