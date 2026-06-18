@@ -225,6 +225,16 @@ const WolfChat: React.FC = () => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Rotate loading phrases every 2s while loading
+  useEffect(() => {
+    if (!isLoading) return;
+    setLoadingPhraseIndex(0);
+    const interval = setInterval(() => {
+      setLoadingPhraseIndex((i) => (i + 1) % LOADING_PHRASES.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
   // Mostrar estratégias quando detectar análise de produto
   useEffect(() => {
     const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
