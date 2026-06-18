@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { isBackendConfigured } from "@/lib/backend";
+import AppResilience from "@/components/AppResilience";
 
 const LandingPage = React.lazy(() => import("./pages/LandingPage"));
 const Login = React.lazy(() => import("./pages/Login"));
@@ -106,6 +107,7 @@ const App = () => (
     <LanguageProvider>
       <AuthProvider>
         <TooltipProvider>
+          <AppResilience />
           <Toaster />
           <Sonner />
           <BrowserRouter>
