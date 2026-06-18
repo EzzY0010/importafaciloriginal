@@ -199,7 +199,15 @@ const WolfChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+  const MAX_IMAGES = 5;
+  const LOADING_PHRASES = [
+    'O Lobo está analisando as imagens... 🐺',
+    'Descobrindo o peso médio de fábrica... 📦',
+    'Analisando componentes e marca... 🔍',
+    'Avaliando o mercado e potencial de lucro... 📈',
+  ];
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
