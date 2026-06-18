@@ -14,6 +14,7 @@ import AdvancedPricingCalculator from "@/components/AdvancedPricingCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import PaymentButton from "@/components/PaymentButton";
 import OnboardingTutorial, { startOnboardingTutorial } from "@/components/OnboardingTutorial";
+import { getSavedActiveTab, saveActiveTab } from "@/components/AppResilience";
 
 const Dashboard = () => {
   const { user, isAdmin, hasPaid, signOut, loading, refreshPaymentStatus } = useAuth();
@@ -21,7 +22,11 @@ const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState("chat");
+  const [activeTab, setActiveTab] = useState<string>(() => getSavedActiveTab() || "chat");
+
+  useEffect(() => {
+    saveActiveTab(activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     if (!loading && !user) {
