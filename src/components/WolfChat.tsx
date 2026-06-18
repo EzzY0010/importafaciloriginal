@@ -345,8 +345,9 @@ const WolfChat: React.FC = () => {
     setInput(strategyMessages[strategy]);
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() && !imagePreview) return;
+  const sendMessage = async (overrideText?: string) => {
+    const messageText = (typeof overrideText === 'string' ? overrideText : input);
+    if (!messageText.trim() && !imagePreview) return;
     if (!user) {
       toast({ title: 'Erro', description: 'Você precisa estar logado', variant: 'destructive' });
       return;
@@ -360,7 +361,7 @@ const WolfChat: React.FC = () => {
 
     const userMessage: Message = {
       role: 'user',
-      content: input,
+      content: messageText,
       image_url: imagePreview || undefined
     };
 
@@ -370,10 +371,10 @@ const WolfChat: React.FC = () => {
     setIsLoading(true);
     setShowStrategies(false);
 
-    await saveMessage(convId, 'user', input, imagePreview || undefined);
+    await saveMessage(convId, 'user', messageText, imagePreview || undefined);
 
-    if (messages.length === 0 && input.trim()) {
-      const title = input.substring(0, 50) + (input.length > 50 ? '...' : '');
+    if (messages.length === 0 && messageText.trim()) {
+      const title = messageText.substring(0, 50) + (messageText.length > 50 ? '...' : '');
       const client = await getSupabase();
       if (client) {
         await client.from('conversations').update({ title }).eq('id', convId);
@@ -384,10 +385,10 @@ const WolfChat: React.FC = () => {
     try {
       const finalContent = imagePreview 
         ? [
-            { type: 'text', text: input || 'Analise esta imagem de produto para importação - MODO PERÍCIA' },
+            { type: 'text', text: messageText || 'Analise esta imagem de produto para importação - MODO PERÍCIA' },
             { type: 'image_url', image_url: { url: imagePreview } }
           ]
-        : input;
+        : messageText;
 
       const response = await fetch(`${backendUrl}/functions/v1/wolf-chat`, {
         method: 'POST',
@@ -647,7 +648,7 @@ const WolfChat: React.FC = () => {
             />
             <Button 
               data-tour="chat-send"
-              onClick={sendMessage} 
+              onClick={() => sendMessage()} 
               disabled={isLoading}
               className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl px-5 shadow-soft"
             >
