@@ -620,6 +620,24 @@ const WolfChat: React.FC = () => {
 
         {/* Input Area */}
         <div className="p-4 border-t border-border bg-card relative z-[1000]">
+          {/* Quick Reply Pills */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {[
+              'Como achar peças? 🔍',
+              'Qual o peso de um tênis? 👟',
+              'Dicas de revenda 📈',
+            ].map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => !isLoading && sendMessage(q)}
+                disabled={isLoading}
+                className="text-xs px-3 py-1.5 rounded-full border border-accent/40 bg-accent/10 text-accent hover:bg-accent/20 hover:border-accent transition-all disabled:opacity-50"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
           <div className="flex gap-3">
             <input
               type="file"
