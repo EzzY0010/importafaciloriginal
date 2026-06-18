@@ -594,20 +594,31 @@ const WolfChat: React.FC = () => {
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/40 transition-colors relative z-[1]">
           <div className="p-4 space-y-4 min-h-full">
             {messages.length === 0 && (
-              <div className="text-center text-muted-foreground py-8 px-4">
-                <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🐺</span>
+              <div className="py-6 px-4 max-w-2xl mx-auto">
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <span className="text-3xl">🐺</span>
+                  </div>
+                  <p className="text-lg font-bold text-foreground">Olá! Eu sou o Lobo das Importações</p>
                 </div>
-                <p className="text-lg font-medium text-foreground">Olá! Eu sou o Lobo das Importações!</p>
-                <p className="text-sm mt-2 max-w-sm mx-auto">
-                  Envie uma foto de um produto e eu faço a análise completa: marca, peso, composição e dicas de revenda!
-                </p>
-                <p className="text-xs mt-4 text-muted-foreground/70">
-                  📸 Dica: Envie uma foto para receber a Ficha Técnica do produto
-                </p>
-                <p className="text-xs mt-2 text-muted-foreground/70">
-                  💵 Digite um valor em moeda estrangeira para conversão direta
-                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-white dark:bg-white/95 rounded-2xl p-4 shadow-sm border border-border/40">
+                    <h3 className="font-bold text-[hsl(0,0%,15%)] text-base mb-2">
+                      Identificar Produto e Se Dá Lucro <span className="text-xl">🔍</span>
+                    </h3>
+                    <p className="text-sm text-[hsl(0,0%,30%)] leading-relaxed">
+                      Envie fotos de qualquer item para que eu analise a marca, descubra o peso médio de fábrica, traga os componentes essenciais e te diga se realmente vale a pena importar para revender com boa margem.
+                    </p>
+                  </div>
+                  <div className="bg-white dark:bg-white/95 rounded-2xl p-4 shadow-sm border border-border/40">
+                    <h3 className="font-bold text-[hsl(0,0%,15%)] text-base mb-2">
+                      Onde Encontrar e Como Buscar <span className="text-xl">📈</span>
+                    </h3>
+                    <p className="text-sm text-[hsl(0,0%,30%)] leading-relaxed">
+                      Pergunte-me sobre estratégias de mercado! Posso te ensinar a encontrar os melhores fornecedores no exterior para peças específicas, dar dicas de como buscar produtos e traçar planos de revenda pro seu nicho.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
             {messages.map((msg, i) => (
@@ -617,15 +628,35 @@ const WolfChat: React.FC = () => {
                     ? 'bg-[hsl(220,60%,25%)] text-white rounded-2xl rounded-br-md' 
                     : 'bg-[hsl(0,0%,95%)] text-[hsl(0,0%,15%)] rounded-2xl rounded-bl-md'
                 }`}>
-                  {msg.image_url && (
+                  {msg.image_urls && msg.image_urls.length > 0 ? (
+                    <div className={`grid gap-2 mb-3 ${msg.image_urls.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                      {msg.image_urls.map((url, idx) => (
+                        <img key={idx} src={url} alt={`Uploaded ${idx + 1}`} className="max-w-full rounded-xl max-h-48 object-contain" />
+                      ))}
+                    </div>
+                  ) : msg.image_url ? (
                     <img src={msg.image_url} alt="Uploaded" className="max-w-full rounded-xl mb-3 max-h-48 object-contain" />
-                  )}
+                  ) : null}
                   <div className="whitespace-pre-wrap text-sm leading-relaxed break-words" style={{ wordBreak: 'break-word' }}>
                     {renderMessageContent(msg.content)}
                   </div>
                 </div>
               </div>
             ))}
+
+            {/* Loading bubble with rotating phrases */}
+            {isLoading && (
+              <div className="flex justify-start animate-fade-in mb-3">
+                <div className="max-w-[85%] md:max-w-[80%] p-4 shadow-sm bg-[hsl(0,0%,95%)] text-[hsl(0,0%,15%)] rounded-2xl rounded-bl-md">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-4 w-4 animate-spin text-accent flex-shrink-0" />
+                    <span key={loadingPhraseIndex} className="text-sm font-medium animate-fade-in">
+                      {LOADING_PHRASES[loadingPhraseIndex]}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Strategy Buttons - Show after product analysis */}
             {showStrategies && !isLoading && (
@@ -638,19 +669,24 @@ const WolfChat: React.FC = () => {
           </div>
         </div>
 
-        {/* Image Preview */}
-        {imagePreview && (
-          <div className="px-4 pb-2">
-            <div className="relative inline-block">
-              <img src={imagePreview} alt="Preview" className="h-20 rounded-xl border border-border" />
-              <Button
-                variant="destructive"
-                size="icon"
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                onClick={() => setImagePreview(null)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
+        {/* Image Previews */}
+        {imagePreviews.length > 0 && (
+          <div className="px-4 pb-2 flex flex-wrap gap-2">
+            {imagePreviews.map((src, idx) => (
+              <div key={idx} className="relative inline-block">
+                <img src={src} alt={`Preview ${idx + 1}`} className="h-20 w-20 object-cover rounded-xl border border-border" />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                  onClick={() => removeImagePreview(idx)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+            <div className="self-center text-xs text-muted-foreground ml-1">
+              {imagePreviews.length}/{MAX_IMAGES}
             </div>
           </div>
         )}
@@ -661,13 +697,19 @@ const WolfChat: React.FC = () => {
           <div className="flex flex-wrap gap-2 mb-3">
             {[
               'Como achar peças? 🔍',
-              'Qual o peso de um tênis? 👟',
+              'Qual o peso do produto? 📦',
               'Dicas de revenda 📈',
             ].map((q) => (
               <button
                 key={q}
                 type="button"
-                onClick={() => !isLoading && sendMessage(q)}
+                onClick={() => {
+                  if (isLoading) return;
+                  const msg = q === 'Qual o peso do produto? 📦'
+                    ? 'Qual é o peso médio de um produto para importação? Se precisar, me pergunte qual produto eu tenho em mente ou me dê uma estimativa com base em categorias comuns (roupas, tênis, bonés, eletrônicos, etc.).'
+                    : q;
+                  sendMessage(msg);
+                }}
                 disabled={isLoading}
                 className="text-xs px-3 py-1.5 rounded-full border border-accent/40 bg-accent/10 text-accent hover:bg-accent/20 hover:border-accent transition-all disabled:opacity-50"
               >
@@ -679,6 +721,7 @@ const WolfChat: React.FC = () => {
             <input
               type="file"
               accept="image/*"
+              multiple
               ref={fileInputRef}
               onChange={handleImageUpload}
               className="hidden"
