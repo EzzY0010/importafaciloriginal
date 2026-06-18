@@ -179,6 +179,27 @@ const OnboardingTutorial: React.FC = () => {
               align: 'end',
             },
           },
+          {
+            popover: {
+              title: 'Aviso Importante: Como acessar as Fontes e Redirecionadoras 🌐',
+              description: `
+                <div style="display:flex;flex-direction:column;gap:14px;font-size:14px;line-height:1.5;">
+                  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;">
+                    <div style="font-weight:700;margin-bottom:4px;">📋 A lista de nomes já está com você</div>
+                    <div style="color:#475569;">Dentro da nossa plataforma, você tem acesso aos nomes das melhores fontes de produtos e das empresas redirecionadoras mais seguras do mercado.</div>
+                  </div>
+                  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;">
+                    <div style="font-weight:700;margin-bottom:4px;">🔍 Copie o nome e jogue no Google</div>
+                    <div style="color:#475569;">O nosso site funciona estritamente como sua ferramenta de cálculo e análise, por isso <strong>não fornecemos links clicáveis</strong>. Para acessar qualquer fornecedor ou redirecionadora da lista, basta copiar o nome, abrir o Google no seu navegador e pesquisar por ele.</div>
+                  </div>
+                  <div style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);color:#fff;border-radius:12px;padding:12px 14px;font-weight:600;">
+                    Simples assim! Use a lista para saber em quem confiar, o Google para acessar os sites, e o Lobo com a Calculadora para validar seus lucros.
+                  </div>
+                </div>
+              `,
+              doneBtnText: 'Entendi, vamos começar! 🚀',
+            },
+          },
         ],
       });
 
