@@ -321,14 +321,30 @@ const WolfChat: React.FC = () => {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const remaining = MAX_IMAGES - imagePreviews.length;
+    if (remaining <= 0) {
+      toast({ title: 'Limite atingido', description: `Máximo de ${MAX_IMAGES} fotos por envio.`, variant: 'destructive' });
+      return;
+    }
+    const selected = files.slice(0, remaining);
+    if (files.length > remaining) {
+      toast({ title: 'Limite de fotos', description: `Apenas ${remaining} foto(s) adicionada(s). Máximo ${MAX_IMAGES}.` });
+    }
+    selected.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        setImagePreviews((prev) => (prev.length >= MAX_IMAGES ? prev : [...prev, reader.result as string]));
       };
       reader.readAsDataURL(file);
-    }
+    });
+    // Reset input so selecting the same file again still fires onChange
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeImagePreview = (index: number) => {
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string, imageUrl?: string) => {
@@ -356,7 +372,7 @@ const WolfChat: React.FC = () => {
 
   const sendMessage = async (overrideText?: string) => {
     const messageText = (typeof overrideText === 'string' ? overrideText : input);
-    if (!messageText.trim() && !imagePreview) return;
+    if (!messageText.trim() && imagePreviews.length === 0) return;
     if (!user) {
       toast({ title: 'Erro', description: 'Você precisa estar logado', variant: 'destructive' });
       return;
@@ -368,19 +384,21 @@ const WolfChat: React.FC = () => {
       if (!convId) return;
     }
 
+    const currentImages = [...imagePreviews];
     const userMessage: Message = {
       role: 'user',
       content: messageText,
-      image_url: imagePreview || undefined
+      image_url: currentImages[0],
+      image_urls: currentImages.length > 0 ? currentImages : undefined,
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setImagePreview(null);
+    setImagePreviews([]);
     setIsLoading(true);
     setShowStrategies(false);
 
-    await saveMessage(convId, 'user', messageText, imagePreview || undefined);
+    await saveMessage(convId, 'user', messageText, currentImages[0]);
 
     if (messages.length === 0 && messageText.trim()) {
       const title = messageText.substring(0, 50) + (messageText.length > 50 ? '...' : '');
@@ -392,10 +410,10 @@ const WolfChat: React.FC = () => {
     }
 
     try {
-      const finalContent = imagePreview 
+      const finalContent = currentImages.length > 0
         ? [
-            { type: 'text', text: messageText || 'Analise esta imagem de produto para importação - MODO PERÍCIA' },
-            { type: 'image_url', image_url: { url: imagePreview } }
+            { type: 'text', text: messageText || 'Analise esta(s) imagem(ns) de produto para importação - MODO PERÍCIA' },
+            ...currentImages.map((url) => ({ type: 'image_url', image_url: { url } })),
           ]
         : messageText;
 
