@@ -266,6 +266,22 @@ const AdvancedPricingCalculator: React.FC = () => {
   ]);
   const [camouflagedItems, setCamouflagedItems] = useState<Set<string>>(new Set());
   const [brandWarning, setBrandWarning] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<Array<{
+    id: string;
+    savedAt: number;
+    label: string;
+    items: ProductItem[];
+    totalShipping: string;
+    shippingCurrency: Currency;
+    totalCost: number;
+    totalProfit: number;
+  }>>(() => {
+    try {
+      const raw = localStorage.getItem('importafacil:calc-history');
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
 
   const fetchRates = useCallback(async () => {
     try {
