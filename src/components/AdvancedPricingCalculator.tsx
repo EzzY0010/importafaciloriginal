@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText, FileSpreadsheet, CheckCircle, FileDown, Eye } from 'lucide-react';
+import { Copy, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
@@ -14,82 +15,25 @@ type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 type ExportType = 'pdf' | 'docx';
 
-// Auto-camuflagem: gera descrição técnica detalhada e sem marca para alfândega
+// Descrição alfandegária 100% dinâmica baseada no título do produto.
+// Mapeia por palavras-chave em 3 categorias:
+//  - Eletrônicos/tecnologia → termo técnico de comunicação
+//  - Vestuário/calçado → termo têxtil casual
+//  - Outros → descrição genérica de uso pessoal/utilidade doméstica com o nome
+const ELECTRONICS_KW = ['celular','iphone','smartphone','fone','headphone','headset','earbud','airpod','smartwatch','watch','relogio','relógio','tablet','ipad','notebook','laptop','camera','câmera','console','playstation','xbox','nintendo','eletronico','eletrônico','tv','monitor','drone','carregador','cabo','mouse','teclado','speaker','caixa de som'];
+const CLOTHING_KW = ['tenis','tênis','sapato','sneaker','bota','chinelo','sandalia','sandália','moletom','hoodie','camiseta','t-shirt','tshirt','camisa','polo','regata','jaqueta','casaco','blusa','bermuda','short','calca','calça','jeans','bone','boné','cap','meia','cueca','boxer','conjunto','vestido','saia','calcinha','sutia','sutiã'];
+
 const getOptimizedDescription = (name: string): string => {
-  const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  if (!n.trim()) return '';
-
-  // Boné / Cap / Gorro
-  if (n.includes('bone') || n.includes('cap') || n.includes('gorro')) {
-    return 'Boné casual de algodão';
+  const raw = (name || '').trim();
+  if (!raw) return '';
+  const n = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (ELECTRONICS_KW.some((k) => n.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))) {
+    return 'Dispositivo eletrônico de comunicação e acessórios';
   }
-
-  // Camiseta / T-shirt / Shirt
-  if (n.includes('camiseta') || n.includes('t-shirt') || n.includes('tshirt') || n.includes('shirt')) {
-    return 'Camiseta de algodão casual';
+  if (CLOTHING_KW.some((k) => n.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))) {
+    return 'Vestuário casual de algodão e fibras sintéticas';
   }
-
-  // Camisa social
-  if (n.includes('camisa')) {
-    return 'Camisa social de fibra mista';
-  }
-
-  // Jaqueta / Corta-vento / Puffer
-  if (n.includes('jaqueta') || n.includes('corta vento') || n.includes('corta-vento') || n.includes('puffer')) {
-    return 'Jaqueta casual corta-vento';
-  }
-
-  // Bermuda / Short
-  if (n.includes('bermuda') || n.includes('short')) {
-    return 'Bermuda casual de tactel';
-  }
-
-  // Calça / Jeans
-  if (n.includes('calca') || n.includes('jeans')) {
-    return 'Calça comprida de algodão';
-  }
-
-  // Moletom / Hoodie / Casaco / Blusa
-  if (n.includes('moletom') || n.includes('hoodie') || n.includes('casaco') || n.includes('blusa')) {
-    return 'Moletom de algodão com capuz';
-  }
-
-  // Tênis / Sapato
-  if (n.includes('tenis') || n.includes('sapato')) {
-    return 'Tênis casual esportivo';
-  }
-
-  // Meia
-  if (n.includes('meia')) {
-    return 'Meias de algodão (pacote)';
-  }
-
-  // Cueca / Boxer
-  if (n.includes('cueca') || n.includes('boxer')) {
-    return 'Peças íntimas masculinas';
-  }
-
-  // Conjunto
-  if (n.includes('conjunto')) {
-    return 'Conjunto esportivo de poliéster';
-  }
-
-  // Relógio
-  if (n.includes('relogio') || n.includes('watch')) {
-    return 'Relógio de pulso casual';
-  }
-
-  // Bolsa / Mochila
-  if (n.includes('bolsa') || n.includes('mochila') || n.includes('bag')) {
-    return 'Bolsa casual de material sintético';
-  }
-
-  // Óculos
-  if (n.includes('oculos')) {
-    return 'Óculos de armação flexível';
-  }
-
-  return 'Vestuário casual de algodão';
+  return `Item de uso pessoal/utilidade doméstica - ${raw}`;
 };
 
 interface SaveAsModalProps {
