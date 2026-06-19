@@ -802,6 +802,91 @@ const AdvancedPricingCalculator: React.FC = () => {
     }
   };
 
+  // ============================================================
+  // Análise de Risco do Lobo + Cópia de resumo + Histórico
+  // ============================================================
+  const riskAnalysis = useMemo(() => {
+    const totalDeclUSD = totalDeclaration;
+    const totalKg = totalWeight / 1000;
+    if (activeItems.length === 0) return null;
+    const isLow = totalDeclUSD < 50 && totalKg < 2;
+    if (isLow) {
+      return {
+        level: 'low' as const,
+        title: 'Risco Baixo — Caminho Livre 🐺',
+        message: 'Sua declaração está abaixo de $50 e o pacote leve. A chance de retenção na alfândega é pequena.',
+        tip: 'Dica de ouro: consolide várias peças em UMA caixa só na sua redirecionadora pra diluir o frete por item e manter o peso controlado.',
+      };
+    }
+    return {
+      level: 'high' as const,
+      title: 'Alerta do Lobo — Atenção na Fiscalização ⚠️',
+      message: 'Pacotes com mais de $50 declarados ou acima de 2kg chamam mais atenção na fiscalização.',
+      tip: 'Use redirecionadoras pra FRACIONAR o envio em 2 ou 3 caixas menores — reduz drasticamente o risco de bloqueio.',
+    };
+  }, [totalDeclaration, totalWeight, activeItems.length]);
+
+  // Auto-save últimas 5 simulações no LocalStorage (debounce 1.5s)
+  useEffect(() => {
+    if (totalResults.totalCost <= 0) return;
+    const t = setTimeout(() => {
+      const firstName = items.find((i) => i.name.trim())?.name?.trim() || 'Simulação';
+      const snap = {
+        id: Date.now().toString(),
+        savedAt: Date.now(),
+        label: firstName.substring(0, 40),
+        items,
+        totalShipping,
+        shippingCurrency,
+        totalCost: totalResults.totalCost,
+        totalProfit: totalResults.totalProfit,
+      };
+      setHistory((prev) => {
+        // Evita duplicado consecutivo idêntico
+        if (prev[0] && JSON.stringify(prev[0].items) === JSON.stringify(items) && prev[0].totalShipping === totalShipping) {
+          return prev;
+        }
+        const next = [snap, ...prev].slice(0, 5);
+        try { localStorage.setItem('importafacil:calc-history', JSON.stringify(next)); } catch {}
+        return next;
+      });
+    }, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, totalShipping, shippingCurrency, totalResults.totalCost]);
+
+  const restoreSimulation = (snapId: string) => {
+    const snap = history.find((h) => h.id === snapId);
+    if (!snap) return;
+    setItems(snap.items);
+    setTotalShipping(snap.totalShipping);
+    setShippingCurrency(snap.shippingCurrency);
+    toast.success('Simulação restaurada!', { description: snap.label });
+  };
+
+  const handleCopyResumo = async () => {
+    const firstItem = items.find((i) => parseFloat(i.costPrice) > 0);
+    const productName = firstItem?.name?.trim() || 'Itens importados';
+    const text =
+      `*ImportaFácil - Resumo do Cálculo* 🐺\n\n` +
+      `📦 *Produto:* ${productName}\n` +
+      `💰 *Investimento:* R$ ${totalResults.totalCost.toFixed(2)}\n` +
+      `💵 *Faturamento:* R$ ${totalResults.totalSelling.toFixed(2)}\n` +
+      `📈 *Lucro Real:* R$ ${totalResults.totalProfit.toFixed(2)}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Resumo copiado!');
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); toast.success('Resumo copiado!'); } catch { toast.error('Não foi possível copiar'); }
+      document.body.removeChild(ta);
+    }
+  };
+
   return (
 
     <Card data-tour="calc-root" className="w-full max-w-2xl" translate="no">
