@@ -1236,6 +1236,48 @@ const AdvancedPricingCalculator: React.FC = () => {
                 <FileSpreadsheet className="h-4 w-4" />
                 Exportar Word
               </Button>
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 border-accent/30 text-accent hover:bg-accent/10"
+                onClick={handleCopyResumo}
+                disabled={activeItems.length === 0}
+              >
+                <Copy className="h-4 w-4" />
+                Copiar Resumo em Texto 📋
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Análise de Risco do Lobo */}
+        {riskAnalysis && (
+          <div
+            className={`rounded-2xl p-4 border-2 shadow-md ${
+              riskAnalysis.level === 'low'
+                ? 'bg-[hsl(220,55%,12%)] border-emerald-400/40'
+                : 'bg-[hsl(220,55%,12%)] border-amber-400/50'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-xl">🐺</span>
+              <h4 className={`text-sm font-bold tracking-wide text-center ${
+                riskAnalysis.level === 'low' ? 'text-emerald-300' : 'text-amber-300'
+              }`}>
+                Análise de Risco do Lobo
+              </h4>
+            </div>
+            <p className="text-sm text-white/90 text-center leading-relaxed mb-3">
+              {riskAnalysis.title}
+            </p>
+            <p className="text-xs text-white/70 text-center leading-relaxed mb-3">
+              {riskAnalysis.message}
+            </p>
+            <div className={`rounded-xl px-3 py-2 text-xs leading-relaxed text-center ${
+              riskAnalysis.level === 'low'
+                ? 'bg-emerald-500/15 text-emerald-200 border border-emerald-400/30'
+                : 'bg-amber-500/15 text-amber-200 border border-amber-400/30'
+            }`}>
+              <strong>💡 Dica:</strong> {riskAnalysis.tip}
             </div>
           </div>
         )}
@@ -1257,6 +1299,48 @@ const AdvancedPricingCalculator: React.FC = () => {
             <strong className="text-foreground">💡 Dica:</strong> Use a estratégia de consolidar várias peças na sua redirecionadora para baixar o frete unitário
           </p>
         </div>
+
+        {/* Histórico de Simulações */}
+        {history.length > 0 && (
+          <div className="rounded-xl border border-border bg-card/40">
+            <button
+              type="button"
+              onClick={() => setHistoryOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <History className="h-3.5 w-3.5" />
+                📋 Últimas Simulações ({history.length})
+              </span>
+              {historyOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </button>
+            {historyOpen && (
+              <div className="px-2 pb-2 space-y-1 animate-fade-in">
+                {history.map((h) => (
+                  <button
+                    key={h.id}
+                    type="button"
+                    onClick={() => restoreSimulation(h.id)}
+                    className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-muted/40 hover:bg-accent/10 hover:border-accent/40 border border-transparent transition-all text-left"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-foreground truncate">{h.label}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(h.savedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-[10px] text-muted-foreground">Lucro</p>
+                      <p className={`text-xs font-bold ${h.totalProfit >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                        R$ {h.totalProfit.toFixed(2)}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
