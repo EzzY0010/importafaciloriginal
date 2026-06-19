@@ -16,6 +16,7 @@ const AppResilience: React.FC = () => {
   useEffect(() => {
     let resumedAt = 0;
     let reloading = false;
+    let serverErrorShown = false;
 
     const softReload = () => {
       if (reloading) return;
@@ -25,6 +26,39 @@ const AppResilience: React.FC = () => {
       } catch {}
       // Stay on the same route — just reload data/state.
       window.location.reload();
+    };
+
+    // Show a friendly themed overlay when a 500 happens after inactivity,
+    // then auto-redirect to "/" after 3 seconds. Silent / non-intrusive.
+    const showServerErrorOverlay = () => {
+      if (serverErrorShown) return;
+      serverErrorShown = true;
+
+      const overlay = document.createElement('div');
+      overlay.id = 'if-server-error-overlay';
+      overlay.setAttribute('role', 'alertdialog');
+      overlay.style.cssText = [
+        'position:fixed','inset:0','z-index:2147483647',
+        'display:flex','align-items:center','justify-content:center',
+        'background:rgba(8,15,30,0.85)','backdrop-filter:blur(6px)',
+        'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif',
+        'padding:24px','animation:ifFade .25s ease-out',
+      ].join(';');
+
+      overlay.innerHTML = `
+        <style>@keyframes ifFade{from{opacity:0}to{opacity:1}}@keyframes ifSpin{to{transform:rotate(360deg)}}</style>
+        <div style="max-width:380px;width:100%;background:linear-gradient(180deg,#0f1d3a 0%,#0b1530 100%);border:1px solid rgba(212,175,55,0.35);border-radius:20px;padding:28px 24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);color:#fff;">
+          <div style="width:48px;height:48px;border:3px solid rgba(212,175,55,.25);border-top-color:#D4AF37;border-radius:50%;margin:0 auto 16px;animation:ifSpin 1s linear infinite;"></div>
+          <h2 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#fff;">Sua sessão expirou por inatividade</h2>
+          <p style="margin:0 0 20px;font-size:14px;color:rgba(255,255,255,.75);line-height:1.5;">Reconectando você ao ImportaFácil...</p>
+          <button id="if-reload-btn" style="background:#D4AF37;color:#0b1530;border:none;border-radius:12px;padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(212,175,55,.35);">Recarregar App</button>
+        </div>`;
+
+      document.body.appendChild(overlay);
+      const btn = overlay.querySelector('#if-reload-btn') as HTMLButtonElement | null;
+      const goHome = () => { window.location.href = '/'; };
+      btn?.addEventListener('click', goHome);
+      setTimeout(goHome, 3000);
     };
 
     const refreshSession = async () => {
@@ -69,6 +103,14 @@ const AppResilience: React.FC = () => {
             if (url && /supabase\.co|\/auth\/v1|\/rest\/v1|\/functions\/v1/.test(url)) {
               console.warn('[Resilience] post-resume', res.status, 'detected — recovering');
               softReload();
+            }
+          }
+          // Critical: any 500 from our backend = show friendly overlay + auto-redirect.
+          if (res.status >= 500 && res.status < 600) {
+            const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+            if (url && /supabase\.co|\/auth\/v1|\/rest\/v1|\/functions\/v1/.test(url)) {
+              console.warn('[Resilience] server', res.status, 'detected — showing recovery UI');
+              showServerErrorOverlay();
             }
           }
           return res;

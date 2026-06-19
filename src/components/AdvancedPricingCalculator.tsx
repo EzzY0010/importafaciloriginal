@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText, FileSpreadsheet, CheckCircle, FileDown, Eye } from 'lucide-react';
+import { Copy, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
@@ -14,82 +15,25 @@ type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 type ExportType = 'pdf' | 'docx';
 
-// Auto-camuflagem: gera descrição técnica detalhada e sem marca para alfândega
+// Descrição alfandegária 100% dinâmica baseada no título do produto.
+// Mapeia por palavras-chave em 3 categorias:
+//  - Eletrônicos/tecnologia → termo técnico de comunicação
+//  - Vestuário/calçado → termo têxtil casual
+//  - Outros → descrição genérica de uso pessoal/utilidade doméstica com o nome
+const ELECTRONICS_KW = ['celular','iphone','smartphone','fone','headphone','headset','earbud','airpod','smartwatch','watch','relogio','relógio','tablet','ipad','notebook','laptop','camera','câmera','console','playstation','xbox','nintendo','eletronico','eletrônico','tv','monitor','drone','carregador','cabo','mouse','teclado','speaker','caixa de som'];
+const CLOTHING_KW = ['tenis','tênis','sapato','sneaker','bota','chinelo','sandalia','sandália','moletom','hoodie','camiseta','t-shirt','tshirt','camisa','polo','regata','jaqueta','casaco','blusa','bermuda','short','calca','calça','jeans','bone','boné','cap','meia','cueca','boxer','conjunto','vestido','saia','calcinha','sutia','sutiã'];
+
 const getOptimizedDescription = (name: string): string => {
-  const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  if (!n.trim()) return '';
-
-  // Boné / Cap / Gorro
-  if (n.includes('bone') || n.includes('cap') || n.includes('gorro')) {
-    return 'Boné casual de algodão';
+  const raw = (name || '').trim();
+  if (!raw) return '';
+  const n = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (ELECTRONICS_KW.some((k) => n.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))) {
+    return 'Dispositivo eletrônico de comunicação e acessórios';
   }
-
-  // Camiseta / T-shirt / Shirt
-  if (n.includes('camiseta') || n.includes('t-shirt') || n.includes('tshirt') || n.includes('shirt')) {
-    return 'Camiseta de algodão casual';
+  if (CLOTHING_KW.some((k) => n.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))) {
+    return 'Vestuário casual de algodão e fibras sintéticas';
   }
-
-  // Camisa social
-  if (n.includes('camisa')) {
-    return 'Camisa social de fibra mista';
-  }
-
-  // Jaqueta / Corta-vento / Puffer
-  if (n.includes('jaqueta') || n.includes('corta vento') || n.includes('corta-vento') || n.includes('puffer')) {
-    return 'Jaqueta casual corta-vento';
-  }
-
-  // Bermuda / Short
-  if (n.includes('bermuda') || n.includes('short')) {
-    return 'Bermuda casual de tactel';
-  }
-
-  // Calça / Jeans
-  if (n.includes('calca') || n.includes('jeans')) {
-    return 'Calça comprida de algodão';
-  }
-
-  // Moletom / Hoodie / Casaco / Blusa
-  if (n.includes('moletom') || n.includes('hoodie') || n.includes('casaco') || n.includes('blusa')) {
-    return 'Moletom de algodão com capuz';
-  }
-
-  // Tênis / Sapato
-  if (n.includes('tenis') || n.includes('sapato')) {
-    return 'Tênis casual esportivo';
-  }
-
-  // Meia
-  if (n.includes('meia')) {
-    return 'Meias de algodão (pacote)';
-  }
-
-  // Cueca / Boxer
-  if (n.includes('cueca') || n.includes('boxer')) {
-    return 'Peças íntimas masculinas';
-  }
-
-  // Conjunto
-  if (n.includes('conjunto')) {
-    return 'Conjunto esportivo de poliéster';
-  }
-
-  // Relógio
-  if (n.includes('relogio') || n.includes('watch')) {
-    return 'Relógio de pulso casual';
-  }
-
-  // Bolsa / Mochila
-  if (n.includes('bolsa') || n.includes('mochila') || n.includes('bag')) {
-    return 'Bolsa casual de material sintético';
-  }
-
-  // Óculos
-  if (n.includes('oculos')) {
-    return 'Óculos de armação flexível';
-  }
-
-  return 'Vestuário casual de algodão';
+  return `Item de uso pessoal/utilidade doméstica - ${raw}`;
 };
 
 interface SaveAsModalProps {
@@ -322,6 +266,22 @@ const AdvancedPricingCalculator: React.FC = () => {
   ]);
   const [camouflagedItems, setCamouflagedItems] = useState<Set<string>>(new Set());
   const [brandWarning, setBrandWarning] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<Array<{
+    id: string;
+    savedAt: number;
+    label: string;
+    items: ProductItem[];
+    totalShipping: string;
+    shippingCurrency: Currency;
+    totalCost: number;
+    totalProfit: number;
+  }>>(() => {
+    try {
+      const raw = localStorage.getItem('importafacil:calc-history');
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
 
   const fetchRates = useCallback(async () => {
     try {
@@ -842,6 +802,91 @@ const AdvancedPricingCalculator: React.FC = () => {
     }
   };
 
+  // ============================================================
+  // Análise de Risco do Lobo + Cópia de resumo + Histórico
+  // ============================================================
+  const riskAnalysis = useMemo(() => {
+    const totalDeclUSD = totalDeclaration;
+    const totalKg = totalWeight / 1000;
+    if (activeItems.length === 0) return null;
+    const isLow = totalDeclUSD < 50 && totalKg < 2;
+    if (isLow) {
+      return {
+        level: 'low' as const,
+        title: 'Risco Baixo — Caminho Livre 🐺',
+        message: 'Sua declaração está abaixo de $50 e o pacote leve. A chance de retenção na alfândega é pequena.',
+        tip: 'Dica de ouro: consolide várias peças em UMA caixa só na sua redirecionadora pra diluir o frete por item e manter o peso controlado.',
+      };
+    }
+    return {
+      level: 'high' as const,
+      title: 'Alerta do Lobo — Atenção na Fiscalização ⚠️',
+      message: 'Pacotes com mais de $50 declarados ou acima de 2kg chamam mais atenção na fiscalização.',
+      tip: 'Use redirecionadoras pra FRACIONAR o envio em 2 ou 3 caixas menores — reduz drasticamente o risco de bloqueio.',
+    };
+  }, [totalDeclaration, totalWeight, activeItems.length]);
+
+  // Auto-save últimas 5 simulações no LocalStorage (debounce 1.5s)
+  useEffect(() => {
+    if (totalResults.totalCost <= 0) return;
+    const t = setTimeout(() => {
+      const firstName = items.find((i) => i.name.trim())?.name?.trim() || 'Simulação';
+      const snap = {
+        id: Date.now().toString(),
+        savedAt: Date.now(),
+        label: firstName.substring(0, 40),
+        items,
+        totalShipping,
+        shippingCurrency,
+        totalCost: totalResults.totalCost,
+        totalProfit: totalResults.totalProfit,
+      };
+      setHistory((prev) => {
+        // Evita duplicado consecutivo idêntico
+        if (prev[0] && JSON.stringify(prev[0].items) === JSON.stringify(items) && prev[0].totalShipping === totalShipping) {
+          return prev;
+        }
+        const next = [snap, ...prev].slice(0, 5);
+        try { localStorage.setItem('importafacil:calc-history', JSON.stringify(next)); } catch {}
+        return next;
+      });
+    }, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, totalShipping, shippingCurrency, totalResults.totalCost]);
+
+  const restoreSimulation = (snapId: string) => {
+    const snap = history.find((h) => h.id === snapId);
+    if (!snap) return;
+    setItems(snap.items);
+    setTotalShipping(snap.totalShipping);
+    setShippingCurrency(snap.shippingCurrency);
+    toast.success('Simulação restaurada!', { description: snap.label });
+  };
+
+  const handleCopyResumo = async () => {
+    const firstItem = items.find((i) => parseFloat(i.costPrice) > 0);
+    const productName = firstItem?.name?.trim() || 'Itens importados';
+    const text =
+      `*ImportaFácil - Resumo do Cálculo* 🐺\n\n` +
+      `📦 *Produto:* ${productName}\n` +
+      `💰 *Investimento:* R$ ${totalResults.totalCost.toFixed(2)}\n` +
+      `💵 *Faturamento:* R$ ${totalResults.totalSelling.toFixed(2)}\n` +
+      `📈 *Lucro Real:* R$ ${totalResults.totalProfit.toFixed(2)}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Resumo copiado!');
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); toast.success('Resumo copiado!'); } catch { toast.error('Não foi possível copiar'); }
+      document.body.removeChild(ta);
+    }
+  };
+
   return (
 
     <Card data-tour="calc-root" className="w-full max-w-2xl" translate="no">
@@ -1191,6 +1236,48 @@ const AdvancedPricingCalculator: React.FC = () => {
                 <FileSpreadsheet className="h-4 w-4" />
                 Exportar Word
               </Button>
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 border-accent/30 text-accent hover:bg-accent/10"
+                onClick={handleCopyResumo}
+                disabled={activeItems.length === 0}
+              >
+                <Copy className="h-4 w-4" />
+                Copiar Resumo em Texto 📋
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Análise de Risco do Lobo */}
+        {riskAnalysis && (
+          <div
+            className={`rounded-2xl p-4 border-2 shadow-md ${
+              riskAnalysis.level === 'low'
+                ? 'bg-[hsl(220,55%,12%)] border-emerald-400/40'
+                : 'bg-[hsl(220,55%,12%)] border-amber-400/50'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-xl">🐺</span>
+              <h4 className={`text-sm font-bold tracking-wide text-center ${
+                riskAnalysis.level === 'low' ? 'text-emerald-300' : 'text-amber-300'
+              }`}>
+                Análise de Risco do Lobo
+              </h4>
+            </div>
+            <p className="text-sm text-white/90 text-center leading-relaxed mb-3">
+              {riskAnalysis.title}
+            </p>
+            <p className="text-xs text-white/70 text-center leading-relaxed mb-3">
+              {riskAnalysis.message}
+            </p>
+            <div className={`rounded-xl px-3 py-2 text-xs leading-relaxed text-center ${
+              riskAnalysis.level === 'low'
+                ? 'bg-emerald-500/15 text-emerald-200 border border-emerald-400/30'
+                : 'bg-amber-500/15 text-amber-200 border border-amber-400/30'
+            }`}>
+              <strong>💡 Dica:</strong> {riskAnalysis.tip}
             </div>
           </div>
         )}
@@ -1212,6 +1299,48 @@ const AdvancedPricingCalculator: React.FC = () => {
             <strong className="text-foreground">💡 Dica:</strong> Use a estratégia de consolidar várias peças na sua redirecionadora para baixar o frete unitário
           </p>
         </div>
+
+        {/* Histórico de Simulações */}
+        {history.length > 0 && (
+          <div className="rounded-xl border border-border bg-card/40">
+            <button
+              type="button"
+              onClick={() => setHistoryOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <History className="h-3.5 w-3.5" />
+                📋 Últimas Simulações ({history.length})
+              </span>
+              {historyOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </button>
+            {historyOpen && (
+              <div className="px-2 pb-2 space-y-1 animate-fade-in">
+                {history.map((h) => (
+                  <button
+                    key={h.id}
+                    type="button"
+                    onClick={() => restoreSimulation(h.id)}
+                    className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-muted/40 hover:bg-accent/10 hover:border-accent/40 border border-transparent transition-all text-left"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-foreground truncate">{h.label}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(h.savedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-[10px] text-muted-foreground">Lucro</p>
+                      <p className={`text-xs font-bold ${h.totalProfit >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                        R$ {h.totalProfit.toFixed(2)}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
