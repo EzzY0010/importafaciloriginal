@@ -754,7 +754,6 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const handlePreviewPdf = async () => {
-    // placeholder anchor for inserted helpers below
     if (generatingPDF || activeItems.length === 0) return;
 
     setGeneratingPDF(true);
