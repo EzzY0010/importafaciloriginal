@@ -1,132 +1,67 @@
 
-# Plano de Implementacao ImportaFacil
+# Plano — Foco no Sistema do Lobo (Import Wolf)
 
-## 1. Criar Player Spotify Flutuante
+Vou aplicar apenas as melhorias relacionadas ao chat do Lobo agora. As demais (calculadora, login/recuperação de senha, lazy loading global) ficam para etapas seguintes.
 
-**Arquivo novo:** `src/components/SpotifyPlayer.tsx`
-
-Criar um widget de audio flutuante que simula o Spotify tocando em segundo plano:
-- Posicao fixa no rodape (bottom: 0, left: 0, right: 0)
-- z-index: 10 (abaixo da barra de busca)
-- Design minimalista com controles: play/pause, skip, barra de progresso
-- Estado de reproducao simulado com timer
-- Estilo visual alinhado com a identidade ImportaFacil (cores azul petroleo e laranja)
-- Icone de minimizar/expandir para nao atrapalhar a navegacao
-
-**Integracao:** Adicionar o componente no `Dashboard.tsx` como elemento fixo no rodape.
-
----
-
-## 2. Correcao de UI e z-index
-
-**Arquivo:** `src/components/WolfChat.tsx`
-
-Ajustes de layering:
-- Input area (barra de digitacao): adicionar `z-index: 1000` via classe `z-[1000]`
-- Container de mensagens: adicionar `padding-bottom: 120px` para evitar sobreposicao pelo player
-
-**Arquivo:** `src/pages/Dashboard.tsx`
-
-- Adicionar `pb-32` (padding-bottom: 8rem / 128px) no main content quando player estiver visivel
-- Garantir que o header mantenha `z-50` (ja configurado)
-
----
-
-## 3. Ativacao do Garimpo via Foto
-
-**Arquivo:** `src/components/WolfChat.tsx`
-
-Melhorar o fluxo de upload de imagem:
-- Quando usuario enviar foto + comandos de garimpo, acionar automaticamente o modo garimpo
-- Adicionar indicador visual de "Modo Garimpo Ativo" quando detectado
-- Botao de atalho para ativar modo garimpo apos enviar imagem
+## 1. Estabilidade da chamada à IA (Edge Function `wolf-chat`)
 
 **Arquivo:** `supabase/functions/wolf-chat/index.ts`
 
-Aprimorar a logica de extracao de keywords:
-- Quando houver imagem na conversa E comando de garimpo, forcar a IA a analisar a imagem primeiro
-- Extrair palavras-chave especificas do modelo (ex: "Lacoste 5-panel azul" vs "Lacoste Heritage bege")
-- Usar modelo Vision para diferenciar variacoes de produtos
+- Adicionar `console.error` detalhado com status HTTP, corpo da resposta e tipo de erro (401 / 429 / 402 / 500 / timeout) do AI Gateway, para diagnóstico via logs.
+- Envelopar a chamada `fetch` ao gateway com `AbortController` e timeout de **15s** para não deixar a requisição pendurada.
+- Retornar códigos e mensagens específicas ao frontend:
+  - `429` → "rate_limit"
+  - `402` → "quota_exhausted"
+  - `408` (timeout) → "timeout"
+  - `401/403` → "auth_error"
+  - `>=500` → "upstream_error"
 
----
+## 2. Frontend do Chat (`src/components/WolfChat.tsx`)
 
-## 4. Correcao de Links e Renderizacao Real-Time
+### 2a. Tratamento de erros amigável e fallback do input
+- No `catch` do `sendMessage`, ler `response.status` e exibir a mensagem específica:
+  - Global/500/timeout: **"O sistema de Inteligência Artificial está temporariamente instável. Estamos reconectando..."**
+  - 429: "Muitas requisições. Aguarde alguns segundos e tente novamente."
+  - 402: "Cota de IA esgotada. Contate o suporte."
+- Adicionar `console.error` completo (status, statusText, body) para inspeção no DevTools.
+- Garantir `setIsLoading(false)` no `finally` (já existe — validar) e não bloquear o input.
+- Remover a bolha vazia do assistente se a chamada falhar antes do primeiro chunk.
 
-**Arquivo:** `src/components/WolfChat.tsx`
+### 2b. Loading dinâmico — texto vs imagem
+- Substituir o array fixo `LOADING_PHRASES` por dois conjuntos:
+  - **Texto:** `["Buscando informações... 🐺", "O Lobo está digitando...", "Consultando o mercado... 📈"]`
+  - **Imagem:** `["Analisando a imagem... 📸", "Descobrindo o peso médio de fábrica... 📦", "Analisando componentes e marca... 🔍"]`
+- Escolher o conjunto no momento do envio com base em `currentImages.length > 0`, guardado em estado (`loadingMode: 'text' | 'image'`).
 
-Criar componente de exibicao de resultados do garimpo:
-- Detectar quando mensagem contem resultados de garimpo (links Vinted/eBay)
-- Renderizar como cards visuais com:
-  - Imagem do produto (se disponivel)
-  - Preco atualizado em destaque
-  - Link direto clicavel (abre em nova aba)
-  - Badge do pais de origem
-- Layout em grid responsivo (2 colunas mobile, 3-4 desktop)
+### 2c. Streaming (já ativo)
+- O endpoint já retorna `text/event-stream` e o front já processa via `TextDecoder`. Vou apenas confirmar/blindar o parsing e manter comportamento; nada de UI muda.
 
-**Arquivo:** `supabase/functions/vinted-scraper/index.ts`
+## 3. Ajuste do System Prompt — CTA para Calculadora
 
-Melhorar extracao de dados:
-- Extrair URL da imagem dos produtos
-- Garantir que todos os links sejam validos e completos
-- Adicionar fallback quando Firecrawl nao retornar imagens
+**Arquivo:** `supabase/functions/wolf-chat/index.ts` (constante `SYSTEM_PROMPT`)
 
----
+Adicionar uma nova seção obrigatória de encerramento:
 
-## 5. Novos Canais: Yupoo e 1688
+```
+🧮 CHAMADA OBRIGATÓRIA PARA A CALCULADORA (CTA)
+- Sempre que a resposta envolver produto, peso, frete, taxação, margem
+  ou viabilidade de importação, encerre com UMA frase curta e natural
+  convidando o usuário a usar a Calculadora do site.
+- Exemplos: 
+  "Agora joga esses valores na nossa Calculadora aqui do lado para
+   ver o seu lucro líquido real! 🐺"
+  "Mapeou o produto? Abre a nossa Calculadora e simule os custos para
+   não ter surpresas na alfândega. 🐺"
+- Não repita CTA em conversas puramente logísticas (rastreio) nem em
+  saudações.
+```
 
-**Arquivo:** `src/components/WolfChat.tsx`
+Nenhuma outra regra de formatação/perícia é alterada.
 
-Adicionar toggles de fonte de busca:
-- Toggle "Yupoo" - focado em replicas de alta qualidade (catalogos)
-- Toggle "1688" - focado em utensilios e eletronicos
-- Armazenar preferencias do usuario no estado local
+## Fora do escopo desta etapa
 
-**Arquivo:** `supabase/functions/wolf-chat/index.ts`
+- Alerta de saúde da margem e botão "Limpar campos" na Calculadora.
+- Lazy loading global de imagens/scripts.
+- Correção "Escique" → "Esqueci" e envio real do e-mail de recuperação.
 
-Atualizar SYSTEM_PROMPT:
-- Remover descricao fixa do 1688 do topo
-- Adicionar logica para IA Jordan dar insights dinamicos apenas quando usuario buscar itens relevantes
-- Incluir links Yupoo e 1688 nas sugestoes de compra
-
-Criar mapeamento de canais:
-- Yupoo: replicas, roupas de marca, acessorios de luxo
-- 1688: eletronicos, utensilios domesticos, ferramentas, itens gerais
-
----
-
-## 6. Ajuste de Preco: R$12 para R$30
-
-**Arquivo:** `src/components/PaymentButton.tsx`
-
-- Alterar linha 77: `R$ 12,00` para `R$ 30,00`
-- Atualizar descricao se necessario
-
-**Arquivo:** `supabase/functions/mercadopago-create-preference/index.ts`
-
-- Linha 51: `amount: 12.00` para `amount: 30.00`
-- Linha 63: `unit_price: 12.00` para `unit_price: 30.00`
-
----
-
-## Arquivos a serem criados/modificados
-
-| Acao | Arquivo |
-|------|---------|
-| CRIAR | `src/components/SpotifyPlayer.tsx` |
-| MODIFICAR | `src/components/WolfChat.tsx` |
-| MODIFICAR | `src/pages/Dashboard.tsx` |
-| MODIFICAR | `src/components/PaymentButton.tsx` |
-| MODIFICAR | `supabase/functions/wolf-chat/index.ts` |
-| MODIFICAR | `supabase/functions/mercadopago-create-preference/index.ts` |
-| MODIFICAR | `supabase/functions/vinted-scraper/index.ts` |
-
----
-
-## Ordem de Implementacao
-
-1. Ajuste de preco (rapido, sem dependencias)
-2. Player Spotify + correcoes de z-index
-3. Melhorias no garimpo via foto
-4. Cards de resultados real-time
-5. Toggles Yupoo e 1688
-6. Testes e deploy das edge functions
+Aplico esses itens em rodadas seguintes assim que este ajuste for aprovado.
