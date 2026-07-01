@@ -201,13 +201,19 @@ const WolfChat: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+  const [loadingMode, setLoadingMode] = useState<'text' | 'image'>('text');
   const MAX_IMAGES = 5;
-  const LOADING_PHRASES = [
-    'O Lobo está analisando as imagens... 🐺',
+  const LOADING_PHRASES_TEXT = [
+    'Buscando informações... 🐺',
+    'O Lobo está digitando...',
+    'Consultando o mercado... 📈',
+  ];
+  const LOADING_PHRASES_IMAGE = [
+    'Analisando a imagem... 📸',
     'Descobrindo o peso médio de fábrica... 📦',
     'Analisando componentes e marca... 🔍',
-    'Avaliando o mercado e potencial de lucro... 📈',
   ];
+  const LOADING_PHRASES = loadingMode === 'image' ? LOADING_PHRASES_IMAGE : LOADING_PHRASES_TEXT;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -405,6 +411,7 @@ const WolfChat: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setImagePreviews([]);
+    setLoadingMode(currentImages.length > 0 ? 'image' : 'text');
     setIsLoading(true);
     setShowStrategies(false);
 
@@ -441,7 +448,17 @@ const WolfChat: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        let errPayload: any = null;
+        try { errPayload = await response.json(); } catch { /* ignore */ }
+        console.error('wolf-chat request failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errPayload,
+        });
+        const err = new Error(errPayload?.message || 'Failed to get response');
+        (err as any).status = response.status;
+        (err as any).code = errPayload?.error;
+        throw err;
       }
 
       const reader = response.body?.getReader();
@@ -507,11 +524,36 @@ const WolfChat: React.FC = () => {
 
       await saveMessage(convId, 'assistant', assistantMessage);
 
-    } catch (error) {
-      console.error('Error:', error);
-      toast({ title: 'Erro', description: 'Falha ao enviar mensagem', variant: 'destructive' });
-      setMessages(prev => prev.slice(0, -1));
+    } catch (error: any) {
+      console.error('wolf-chat error (client):', {
+        name: error?.name,
+        message: error?.message,
+        status: error?.status,
+        code: error?.code,
+      });
+
+      const status = error?.status;
+      const code = error?.code;
+      let description = 'O sistema de Inteligência Artificial está temporariamente instável. Estamos reconectando...';
+      if (status === 429 || code === 'rate_limit') {
+        description = 'Muitas requisições. Aguarde alguns segundos e tente novamente.';
+      } else if (status === 402 || code === 'quota_exhausted') {
+        description = 'Cota de IA esgotada. Contate o suporte.';
+      } else if (status === 408 || code === 'timeout') {
+        description = 'A IA demorou demais para responder. Tente novamente.';
+      }
+
+      toast({ title: 'IA instável', description, variant: 'destructive' });
+      // Remover a bolha vazia do assistente, se foi adicionada
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last && last.role === 'assistant' && !last.content) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
     } finally {
+      // Garantir que o input seja liberado imediatamente em qualquer cenário
       setIsLoading(false);
     }
   };
