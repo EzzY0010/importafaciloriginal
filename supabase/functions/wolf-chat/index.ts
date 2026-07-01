@@ -234,6 +234,30 @@ Exemplos de tradução:
 
 Bora que o jogo é esse 🐺`;
 
+const CTA_CALCULATOR_APPENDIX = `
+
+═══════════════════════════════════════════════════════════════
+🧮 CHAMADA OBRIGATÓRIA PARA A CALCULADORA (CTA)
+═══════════════════════════════════════════════════════════════
+SEMPRE que a resposta envolver produto, peso, frete, taxação, margem,
+viabilidade de importação ou análise de lucro, ENCERRE a mensagem com
+UMA frase curta, natural e direta convidando o usuário a usar a
+Calculadora do próprio site.
+
+Exemplos de encerramento válidos:
+• "Agora joga esses valores na nossa Calculadora aqui do lado para ver o seu lucro líquido real! 🐺"
+• "Mapeou o produto? Abre a nossa Calculadora e simule os custos para não ter surpresas na alfândega. 🐺"
+• "Bora validar os números? Solta esses dados na Calculadora e confere sua margem real. 🐺"
+
+Regras:
+✅ Use UMA frase apenas (não repita várias CTAs)
+✅ Varie o texto para não soar robótico
+❌ NÃO inclua CTA em respostas puramente de rastreio logístico
+❌ NÃO inclua CTA em saudações ou respostas de 1 linha sem contexto de produto
+`;
+
+const FULL_SYSTEM_PROMPT = SYSTEM_PROMPT + CTA_CALCULATOR_APPENDIX;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -278,43 +302,80 @@ serve(async (req) => {
 
     // Build messages array
     const apiMessages = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: FULL_SYSTEM_PROMPT },
       ...conversationHistory,
       ...messages
     ];
 
-    // Call Lovable AI Gateway
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: apiMessages,
-        stream: true,
-      }),
-    });
+    // Call Lovable AI Gateway with 15s timeout via AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    let response: Response;
+    try {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: apiMessages,
+          stream: true,
+        }),
+        signal: controller.signal,
+      });
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      const isAbort = (fetchErr as Error)?.name === 'AbortError';
+      console.error('AI gateway fetch failed:', {
+        name: (fetchErr as Error)?.name,
+        message: (fetchErr as Error)?.message,
+        timeout: isAbort,
+      });
+      return new Response(
+        JSON.stringify({
+          error: isAbort ? 'timeout' : 'network_error',
+          message: isAbort
+            ? 'A IA demorou demais para responder (timeout de 15s).'
+            : 'Falha de rede ao conectar com a IA.',
+        }),
+        {
+          status: isAbort ? 408 : 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-          status: 429,
+      console.error('AI gateway error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
+
+      const errorMap: Record<number, { code: string; message: string }> = {
+        401: { code: 'auth_error', message: 'Chave da IA inválida ou não autorizada.' },
+        403: { code: 'auth_error', message: 'Acesso negado pela IA.' },
+        402: { code: 'quota_exhausted', message: 'Cota de IA esgotada. Contate o suporte.' },
+        429: { code: 'rate_limit', message: 'Muitas requisições. Aguarde alguns segundos.' },
+      };
+
+      const mapped = errorMap[response.status] ?? {
+        code: 'upstream_error',
+        message: 'O sistema de IA está temporariamente instável.',
+      };
+
+      return new Response(
+        JSON.stringify({ error: mapped.code, message: mapped.message, status: response.status }),
+        {
+          status: response.status >= 500 ? 502 : response.status,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required" }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      throw new Error(`AI gateway error: ${response.status}`);
+        },
+      );
     }
 
     return new Response(response.body, {
@@ -322,11 +383,18 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('wolf-chat error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    console.error('wolf-chat error:', {
+      name: (error as Error)?.name,
+      message: (error as Error)?.message,
+      stack: (error as Error)?.stack,
     });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(
+      JSON.stringify({ error: 'internal_error', message: errorMessage }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
