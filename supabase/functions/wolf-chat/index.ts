@@ -266,9 +266,9 @@ serve(async (req) => {
   try {
     const { messages, conversationId, userId } = await req.json();
     
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
+    if (!GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY is not configured');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -286,25 +286,44 @@ serve(async (req) => {
       
       if (existingMessages) {
         conversationHistory = existingMessages.map(msg => {
-          if (msg.image_url) {
-            return {
-              role: msg.role,
-              content: [
-                { type: 'text', text: msg.content },
-                { type: 'image_url', image_url: { url: msg.image_url } }
-              ]
-            };
-          }
-          return { role: msg.role, content: msg.content };
+          const text = msg.image_url
+            ? `${msg.content ?? ''}\n[Imagem enviada pelo usuário: ${msg.image_url}]`
+            : (msg.content ?? '');
+          return { role: msg.role, content: text };
         });
       }
     }
 
-    // Build messages array
+    // Groq (llama-3.1-8b-instant) is text-only. Flatten any multimodal
+    // content arrays coming from the client into a single text string.
+    const flattenContent = (content: unknown): string => {
+      if (typeof content === 'string') return content;
+      if (Array.isArray(content)) {
+        return content
+          .map((part: any) => {
+            if (typeof part === 'string') return part;
+            if (part?.type === 'text') return part.text ?? '';
+            if (part?.type === 'image_url') {
+              const url = part.image_url?.url ?? part.image_url ?? '';
+              return url ? `[Imagem enviada pelo usuário: ${url}]` : '';
+            }
+            return '';
+          })
+          .filter(Boolean)
+          .join('\n');
+      }
+      return '';
+    };
+
+    const normalizedIncoming = (messages ?? []).map((m: any) => ({
+      role: m.role,
+      content: flattenContent(m.content),
+    }));
+
     const apiMessages = [
       { role: 'system', content: FULL_SYSTEM_PROMPT },
       ...conversationHistory,
-      ...messages
+      ...normalizedIncoming,
     ];
 
     // Call Lovable AI Gateway with 15s timeout via AbortController
@@ -313,23 +332,24 @@ serve(async (req) => {
 
     let response: Response;
     try {
-      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: `Bearer ${GROQ_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "llama-3.1-8b-instant",
           messages: apiMessages,
           stream: true,
+          temperature: 0.7,
         }),
         signal: controller.signal,
       });
     } catch (fetchErr) {
       clearTimeout(timeoutId);
       const isAbort = (fetchErr as Error)?.name === 'AbortError';
-      console.error('AI gateway fetch failed:', {
+      console.error('Groq fetch failed:', {
         name: (fetchErr as Error)?.name,
         message: (fetchErr as Error)?.message,
         timeout: isAbort,
