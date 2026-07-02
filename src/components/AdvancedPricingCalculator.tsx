@@ -1225,6 +1225,28 @@ const AdvancedPricingCalculator: React.FC = () => {
               </div>
             </div>
 
+            {/* Alerta de Saúde da Margem */}
+            {totalResults.totalCost > 0 && (() => {
+              const marginPct = (totalResults.totalProfit / totalResults.totalCost) * 100;
+              let text = '';
+              let cls = '';
+              if (marginPct < 20) {
+                text = '⚠️ Margem apertada para revenda.';
+                cls = 'text-red-500';
+              } else if (marginPct <= 50) {
+                text = '👍 Boa margem de mercado.';
+                cls = 'text-blue-500 dark:text-blue-400';
+              } else {
+                text = '🔥 Lucro espetacular!';
+                cls = 'text-emerald-600 dark:text-emerald-400';
+              }
+              return (
+                <p className={`text-xs text-center font-medium ${cls} -mt-1`}>
+                  {text} <span className="opacity-60">({marginPct.toFixed(0)}%)</span>
+                </p>
+              );
+            })()}
+
             {/* Export Buttons */}
             <div className="flex flex-wrap gap-2 mt-2">
               <Button
