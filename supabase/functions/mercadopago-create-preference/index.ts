@@ -48,7 +48,7 @@ serve(async (req) => {
     await adminClient.from('payments').insert({
       user_id: user.id,
       external_reference: externalReference,
-      amount: 200.00,
+      amount: 350.00,
       status: 'pending'
     });
 
@@ -60,7 +60,7 @@ serve(async (req) => {
         description: 'Acesso completo ao ImportaFácil com IA e calculadora de importação',
         quantity: 1,
         currency_id: 'BRL',
-        unit_price: 200.00
+        unit_price: 350.00
       }],
       payer: {
         email: user.email
