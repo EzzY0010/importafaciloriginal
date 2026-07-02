@@ -985,16 +985,34 @@ const AdvancedPricingCalculator: React.FC = () => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">Itens ({items.length}/10)</Label>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={addItem}
-              disabled={items.length >= 10}
-              className="h-7 text-xs"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Adicionar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setItems([{ id: Date.now().toString(), name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD', weightCategory: 'medium', estimatedGrams: 300, weightLabel: '~300g' }]);
+                  setTotalShipping('');
+                  setCamouflagedItems(new Set());
+                  setBrandWarning(null);
+                  toast.success('Campos limpos', { description: 'Pronto pra uma nova simulação.' });
+                }}
+                className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                title="Limpar todos os campos"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Limpar campos
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addItem}
+                disabled={items.length >= 10}
+                className="h-7 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Adicionar
+              </Button>
+            </div>
           </div>
 
           {adjustedItems.map((item, index) => {
