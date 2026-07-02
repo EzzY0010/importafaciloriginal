@@ -326,10 +326,7 @@ serve(async (req) => {
       ...normalizedIncoming,
     ];
 
-    // Call Lovable AI Gateway with 15s timeout via AbortController
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
+    // Direct call to Groq — no artificial timeouts or throttling.
     let response: Response;
     try {
       response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -344,30 +341,17 @@ serve(async (req) => {
           stream: true,
           temperature: 0.7,
         }),
-        signal: controller.signal,
       });
     } catch (fetchErr) {
-      clearTimeout(timeoutId);
-      const isAbort = (fetchErr as Error)?.name === 'AbortError';
       console.error('Groq fetch failed:', {
         name: (fetchErr as Error)?.name,
         message: (fetchErr as Error)?.message,
-        timeout: isAbort,
       });
       return new Response(
-        JSON.stringify({
-          error: isAbort ? 'timeout' : 'network_error',
-          message: isAbort
-            ? 'A IA demorou demais para responder (timeout de 15s).'
-            : 'Falha de rede ao conectar com a IA.',
-        }),
-        {
-          status: isAbort ? 408 : 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        JSON.stringify({ error: 'network_error', message: 'Falha de rede ao conectar com a IA.' }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();

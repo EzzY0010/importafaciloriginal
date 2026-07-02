@@ -84,7 +84,11 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-center py-4 bg-muted rounded-lg">
-          <p className="text-lg font-bold" style={{ color: "#D4AF37" }}>🔥 Aproveite a oferta por tempo limitado</p>
+          <p className="text-sm font-semibold" style={{ color: "#D4AF37" }}>🔥 Oferta por tempo limitado</p>
+          <p className="text-4xl font-extrabold mt-1 text-foreground">
+            R$ 350<span className="text-lg align-top">,00</span>
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">Pagamento único · Acesso vitalício</p>
         </div>
         
         <div className="space-y-2 text-sm">
