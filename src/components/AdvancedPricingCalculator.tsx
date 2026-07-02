@@ -985,16 +985,34 @@ const AdvancedPricingCalculator: React.FC = () => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">Itens ({items.length}/10)</Label>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={addItem}
-              disabled={items.length >= 10}
-              className="h-7 text-xs"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Adicionar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setItems([{ id: Date.now().toString(), name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD', weightCategory: 'medium', estimatedGrams: 300, weightLabel: '~300g' }]);
+                  setTotalShipping('');
+                  setCamouflagedItems(new Set());
+                  setBrandWarning(null);
+                  toast.success('Campos limpos', { description: 'Pronto pra uma nova simulação.' });
+                }}
+                className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                title="Limpar todos os campos"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Limpar campos
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addItem}
+                disabled={items.length >= 10}
+                className="h-7 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Adicionar
+              </Button>
+            </div>
           </div>
 
           {adjustedItems.map((item, index) => {
@@ -1206,6 +1224,28 @@ const AdvancedPricingCalculator: React.FC = () => {
                 </p>
               </div>
             </div>
+
+            {/* Alerta de Saúde da Margem */}
+            {totalResults.totalCost > 0 && (() => {
+              const marginPct = (totalResults.totalProfit / totalResults.totalCost) * 100;
+              let text = '';
+              let cls = '';
+              if (marginPct < 20) {
+                text = '⚠️ Margem apertada para revenda.';
+                cls = 'text-red-500';
+              } else if (marginPct <= 50) {
+                text = '👍 Boa margem de mercado.';
+                cls = 'text-blue-500 dark:text-blue-400';
+              } else {
+                text = '🔥 Lucro espetacular!';
+                cls = 'text-emerald-600 dark:text-emerald-400';
+              }
+              return (
+                <p className={`text-xs text-center font-medium ${cls} -mt-1`}>
+                  {text} <span className="opacity-60">({marginPct.toFixed(0)}%)</span>
+                </p>
+              );
+            })()}
 
             {/* Export Buttons */}
             <div className="flex flex-wrap gap-2 mt-2">

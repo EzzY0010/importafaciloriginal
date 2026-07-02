@@ -159,13 +159,21 @@ const Login = () => {
     }
 
     const { error } = await client.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: "https://importafaciloriginal.lovable.app/reset-password",
+      redirectTo: `${window.location.origin}/reset-password`,
     });
 
     if (error) {
-      toast({ title: "Erro", description: translateAuthError(error.message), variant: "destructive" });
+      console.error('[resetPasswordForEmail] error:', error);
+      toast({
+        title: "Erro ao enviar e-mail",
+        description: `${translateAuthError(error.message)} ${error.message ? `(${error.message})` : ''}`.trim(),
+        variant: "destructive",
+      });
     } else {
-      toast({ title: "E-mail enviado!", description: "Verifique sua caixa de entrada para redefinir a senha." });
+      toast({
+        title: "E-mail enviado!",
+        description: "Verifique sua caixa de entrada (e a pasta de spam). O link chega em até 1 minuto.",
+      });
       setShowForgotPassword(false);
     }
     setResetLoading(false);
