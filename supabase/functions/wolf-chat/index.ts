@@ -285,17 +285,27 @@ serve(async (req) => {
         .order('created_at', { ascending: true });
       
       if (existingMessages) {
-        conversationHistory = existingMessages.map(msg => {
-          const text = msg.image_url
-            ? `${msg.content ?? ''}\n[Imagem enviada pelo usuário: ${msg.image_url}]`
-            : (msg.content ?? '');
-          return { role: msg.role, content: text };
-        });
+        conversationHistory = existingMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content ?? '',
+          _image_url: msg.image_url ?? null,
+        }));
       }
     }
 
-    // Groq (llama-3.1-8b-instant) is text-only. Flatten any multimodal
-    // content arrays coming from the client into a single text string.
+    // Detect if any incoming message contains an image (multimodal content).
+    const hasImageInContent = (content: unknown): boolean => {
+      if (Array.isArray(content)) {
+        return content.some((part: any) => part?.type === 'image_url');
+      }
+      return false;
+    };
+
+    const incomingHasImage = (messages ?? []).some((m: any) => hasImageInContent(m.content));
+    const historyHasImage = conversationHistory.some((m: any) => !!m._image_url);
+    const useVisionModel = incomingHasImage || historyHasImage;
+
+    // Text model flattener (for when no image is in play).
     const flattenContent = (content: unknown): string => {
       if (typeof content === 'string') return content;
       if (Array.isArray(content)) {
@@ -315,16 +325,67 @@ serve(async (req) => {
       return '';
     };
 
-    const normalizedIncoming = (messages ?? []).map((m: any) => ({
-      role: m.role,
-      content: flattenContent(m.content),
-    }));
+    let apiMessages: any[];
 
-    const apiMessages = [
-      { role: 'system', content: FULL_SYSTEM_PROMPT },
-      ...conversationHistory,
-      ...normalizedIncoming,
-    ];
+    if (useVisionModel) {
+      // Build multimodal payload in Groq vision format (image_url blocks).
+      const historyForVision = conversationHistory.map((m: any) => {
+        if (m._image_url && m.role === 'user') {
+          return {
+            role: m.role,
+            content: [
+              { type: 'text', text: m.content || '' },
+              { type: 'image_url', image_url: { url: m._image_url } },
+            ],
+          };
+        }
+        return { role: m.role, content: m.content };
+      });
+
+      const incomingForVision = (messages ?? []).map((m: any) => {
+        if (typeof m.content === 'string') {
+          return { role: m.role, content: m.content };
+        }
+        if (Array.isArray(m.content)) {
+          return {
+            role: m.role,
+            content: m.content.map((part: any) => {
+              if (part?.type === 'text') return { type: 'text', text: part.text ?? '' };
+              if (part?.type === 'image_url') {
+                const url = part.image_url?.url ?? part.image_url ?? '';
+                return { type: 'image_url', image_url: { url } };
+              }
+              return { type: 'text', text: '' };
+            }),
+          };
+        }
+        return { role: m.role, content: '' };
+      });
+
+      apiMessages = [
+        { role: 'system', content: FULL_SYSTEM_PROMPT },
+        ...historyForVision,
+        ...incomingForVision,
+      ];
+    } else {
+      const historyForText = conversationHistory.map((m: any) => ({
+        role: m.role,
+        content: m.content,
+      }));
+      const normalizedIncoming = (messages ?? []).map((m: any) => ({
+        role: m.role,
+        content: flattenContent(m.content),
+      }));
+      apiMessages = [
+        { role: 'system', content: FULL_SYSTEM_PROMPT },
+        ...historyForText,
+        ...normalizedIncoming,
+      ];
+    }
+
+    const model = useVisionModel
+      ? 'llama-3.2-11b-vision-preview'
+      : 'llama3-70b-8192';
 
     // Timeout de 60s — dá folga para respostas longas / análise de imagens
     const controller = new AbortController();
@@ -339,7 +400,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
+          model,
           messages: apiMessages,
           stream: true,
           temperature: 0.7,
