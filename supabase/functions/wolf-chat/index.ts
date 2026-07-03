@@ -326,7 +326,10 @@ serve(async (req) => {
       ...normalizedIncoming,
     ];
 
-    // Direct call to Groq — no artificial timeouts or throttling.
+    // Timeout de 60s — dá folga para respostas longas / análise de imagens
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
     let response: Response;
     try {
       response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -341,8 +344,16 @@ serve(async (req) => {
           stream: true,
           temperature: 0.7,
         }),
+        signal: controller.signal,
       });
     } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      if ((fetchErr as Error)?.name === 'AbortError') {
+        return new Response(
+          JSON.stringify({ error: 'timeout', message: 'A IA demorou mais de 60s para responder.' }),
+          { status: 408, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
       console.error('Groq fetch failed:', {
         name: (fetchErr as Error)?.name,
         message: (fetchErr as Error)?.message,
@@ -352,6 +363,8 @@ serve(async (req) => {
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+    // Streaming iniciado — libera o timer para não abortar durante os chunks
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();

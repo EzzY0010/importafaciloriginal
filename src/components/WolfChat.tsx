@@ -434,6 +434,10 @@ const WolfChat: React.FC = () => {
           ]
         : messageText;
 
+      // 60s timeout — imagens exigem mais tempo de processamento
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
       const response = await fetch(`${backendUrl}/functions/v1/wolf-chat`, {
         method: 'POST',
         headers: {
@@ -445,7 +449,8 @@ const WolfChat: React.FC = () => {
           conversationId: convId,
           userId: user.id
         }),
-      });
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
 
       if (!response.ok) {
         let errPayload: any = null;
@@ -534,16 +539,18 @@ const WolfChat: React.FC = () => {
 
       const status = error?.status;
       const code = error?.code;
-      let description = 'O sistema de Inteligência Artificial está temporariamente instável. Estamos reconectando...';
-      if (status === 429 || code === 'rate_limit') {
+      let title = 'Não consegui responder agora';
+      let description = 'Tente enviar novamente em instantes.';
+      if (error?.name === 'AbortError') {
+        title = 'A resposta demorou demais';
+        description = 'A IA levou mais de 60 segundos. Tente reenviar.';
+      } else if (status === 429 || code === 'rate_limit') {
         description = 'Muitas requisições. Aguarde alguns segundos e tente novamente.';
       } else if (status === 402 || code === 'quota_exhausted') {
         description = 'Cota de IA esgotada. Contate o suporte.';
-      } else if (status === 408 || code === 'timeout') {
-        description = 'A IA demorou demais para responder. Tente novamente.';
       }
 
-      toast({ title: 'IA instável', description, variant: 'destructive' });
+      toast({ title, description, variant: 'destructive' });
       // Remover a bolha vazia do assistente, se foi adicionada
       setMessages(prev => {
         const last = prev[prev.length - 1];
@@ -686,12 +693,16 @@ const WolfChat: React.FC = () => {
               </div>
             ))}
 
-            {/* Loading bubble with rotating phrases */}
-            {isLoading && (
+            {/* Loading bubble — visível apenas enquanto o Lobo "pensa" antes do primeiro chunk */}
+            {isLoading && (messages[messages.length - 1]?.role !== 'assistant' || !messages[messages.length - 1]?.content) && (
               <div className="flex justify-start animate-fade-in mb-3">
                 <div className="max-w-[85%] md:max-w-[80%] p-4 shadow-sm bg-[hsl(0,0%,95%)] text-[hsl(0,0%,15%)] rounded-2xl rounded-bl-md">
                   <div className="flex items-center gap-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-accent flex-shrink-0" />
+                    <span className="flex gap-1 flex-shrink-0" aria-hidden>
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </span>
                     <span key={loadingPhraseIndex} className="text-sm font-medium animate-fade-in">
                       {LOADING_PHRASES[loadingPhraseIndex]}
                     </span>
