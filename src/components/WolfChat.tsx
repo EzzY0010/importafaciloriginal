@@ -434,6 +434,10 @@ const WolfChat: React.FC = () => {
           ]
         : messageText;
 
+      // 60s timeout — imagens exigem mais tempo de processamento
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
       const response = await fetch(`${backendUrl}/functions/v1/wolf-chat`, {
         method: 'POST',
         headers: {
@@ -445,7 +449,8 @@ const WolfChat: React.FC = () => {
           conversationId: convId,
           userId: user.id
         }),
-      });
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
 
       if (!response.ok) {
         let errPayload: any = null;
@@ -534,16 +539,18 @@ const WolfChat: React.FC = () => {
 
       const status = error?.status;
       const code = error?.code;
-      let description = 'O sistema de Inteligência Artificial está temporariamente instável. Estamos reconectando...';
-      if (status === 429 || code === 'rate_limit') {
+      let title = 'Não consegui responder agora';
+      let description = 'Tente enviar novamente em instantes.';
+      if (error?.name === 'AbortError') {
+        title = 'A resposta demorou demais';
+        description = 'A IA levou mais de 60 segundos. Tente reenviar.';
+      } else if (status === 429 || code === 'rate_limit') {
         description = 'Muitas requisições. Aguarde alguns segundos e tente novamente.';
       } else if (status === 402 || code === 'quota_exhausted') {
         description = 'Cota de IA esgotada. Contate o suporte.';
-      } else if (status === 408 || code === 'timeout') {
-        description = 'A IA demorou demais para responder. Tente novamente.';
       }
 
-      toast({ title: 'IA instável', description, variant: 'destructive' });
+      toast({ title, description, variant: 'destructive' });
       // Remover a bolha vazia do assistente, se foi adicionada
       setMessages(prev => {
         const last = prev[prev.length - 1];
