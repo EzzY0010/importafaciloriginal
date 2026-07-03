@@ -693,12 +693,16 @@ const WolfChat: React.FC = () => {
               </div>
             ))}
 
-            {/* Loading bubble with rotating phrases */}
-            {isLoading && (
+            {/* Loading bubble — visível apenas enquanto o Lobo "pensa" antes do primeiro chunk */}
+            {isLoading && (messages[messages.length - 1]?.role !== 'assistant' || !messages[messages.length - 1]?.content) && (
               <div className="flex justify-start animate-fade-in mb-3">
                 <div className="max-w-[85%] md:max-w-[80%] p-4 shadow-sm bg-[hsl(0,0%,95%)] text-[hsl(0,0%,15%)] rounded-2xl rounded-bl-md">
                   <div className="flex items-center gap-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-accent flex-shrink-0" />
+                    <span className="flex gap-1 flex-shrink-0" aria-hidden>
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </span>
                     <span key={loadingPhraseIndex} className="text-sm font-medium animate-fade-in">
                       {LOADING_PHRASES[loadingPhraseIndex]}
                     </span>
