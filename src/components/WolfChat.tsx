@@ -337,19 +337,21 @@ const WolfChat: React.FC = () => {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const compressImage = (file: File, maxW = 800, maxH = 800, quality = 0.7): Promise<string> =>
+    const compressImage = (file: File, maxWidth = 600, quality = 0.5): Promise<string> =>
       new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
           const img = new Image();
           img.onload = () => {
-            let { width, height } = img;
-            if (width > height && width > maxW) { height = height * (maxW / width); width = maxW; }
-            else if (height >= width && height > maxH) { width = width * (maxH / height); height = maxH; }
+            const scale = Math.min(maxWidth / img.width, 1);
+            const width = Math.max(1, Math.round(img.width * scale));
+            const height = Math.max(1, Math.round(img.height * scale));
             const canvas = document.createElement('canvas');
             canvas.width = width; canvas.height = height;
             const ctx = canvas.getContext('2d');
             if (!ctx) return reject(new Error('Canvas indisponível'));
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
             ctx.drawImage(img, 0, 0, width, height);
             resolve(canvas.toDataURL('image/jpeg', quality));
           };
@@ -373,7 +375,7 @@ const WolfChat: React.FC = () => {
     }
     selected.forEach(async (file) => {
       try {
-        const compressed = await compressImage(file, 800, 800, 0.7);
+        const compressed = await compressImage(file, 600, 0.5);
         setImagePreviews((prev) => (prev.length >= MAX_IMAGES ? prev : [...prev, compressed]));
       } catch (err) {
         console.error('Erro ao comprimir imagem:', err);
@@ -459,9 +461,9 @@ const WolfChat: React.FC = () => {
           ]
         : messageText;
 
-      // 60s timeout — imagens exigem mais tempo de processamento
+      // 90s timeout — análises visuais podem demorar mais no plano gratuito da Groq
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
 
       const response = await fetch(`${backendUrl}/functions/v1/wolf-chat`, {
         method: 'POST',
@@ -567,12 +569,16 @@ const WolfChat: React.FC = () => {
       let title = 'Não consegui responder agora';
       let description = 'Tente enviar novamente em instantes.';
       if (error?.name === 'AbortError') {
-        title = 'A resposta demorou demais';
-        description = 'A IA levou mais de 60 segundos. Tente reenviar.';
+        title = 'A análise demorou demais';
+        description = 'A imagem levou mais de 90 segundos. Tente reenviar uma foto mais leve ou mais nítida.';
+      } else if (status === 413 || code === 'payload_too_large') {
+        description = 'A imagem ainda ficou pesada demais. Tente enviar um print recortado ou uma foto mais próxima do produto.';
       } else if (status === 429 || code === 'rate_limit') {
         description = 'Muitas requisições. Aguarde alguns segundos e tente novamente.';
       } else if (status === 402 || code === 'quota_exhausted') {
         description = 'Cota de IA esgotada. Contate o suporte.';
+      } else if (status === 400) {
+        description = error?.message || 'A IA recusou esta imagem. Tente reenviar em menor tamanho.';
       }
 
       toast({ title, description, variant: 'destructive' });
