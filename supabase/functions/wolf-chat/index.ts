@@ -297,7 +297,7 @@ serve(async (req) => {
       }
     }
 
-    // Detect if any incoming message contains an image (multimodal content).
+    // Detect and normalize multimodal content from the current request.
     const hasImageInContent = (content: unknown): boolean => {
       if (Array.isArray(content)) {
         return content.some((part: any) => part?.type === 'image_url');
@@ -305,9 +305,48 @@ serve(async (req) => {
       return false;
     };
 
+    const extractTextFromContent = (content: unknown): string => {
+      if (typeof content === 'string') return content;
+      if (Array.isArray(content)) {
+        return content
+          .map((part: any) => {
+            if (typeof part === 'string') return part;
+            if (part?.type === 'text') return part.text ?? '';
+            return '';
+          })
+          .filter(Boolean)
+          .join('\n')
+          .trim();
+      }
+      return '';
+    };
+
+    const extractImageUrlsFromContent = (content: unknown): string[] => {
+      if (!Array.isArray(content)) return [];
+      return content
+        .filter((part: any) => part?.type === 'image_url')
+        .map((part: any) => part.image_url?.url ?? part.image_url ?? '')
+        .filter((url: string) => typeof url === 'string' && url.length > 0);
+    };
+
     const incomingHasImage = (messages ?? []).some((m: any) => hasImageInContent(m.content));
-    const historyHasImage = conversationHistory.some((m: any) => !!m._image_url);
-    const useVisionModel = incomingHasImage || historyHasImage;
+    const incomingText = (messages ?? []).map((m: any) => extractTextFromContent(m.content)).join('\n').trim();
+    const incomingImageUrls = (messages ?? []).flatMap((m: any) => extractImageUrlsFromContent(m.content));
+
+    // The client saves the user's message before calling the function. Remove that
+    // last duplicate from history so image payloads are never sent twice to Groq.
+    const lastHistory = conversationHistory[conversationHistory.length - 1];
+    if (
+      lastHistory?.role === 'user' &&
+      incomingText &&
+      (lastHistory.content ?? '').trim() === incomingText
+    ) {
+      conversationHistory = conversationHistory.slice(0, -1);
+    }
+
+    // Only the current turn should trigger the vision model. Re-sending old base64
+    // images on later turns quickly blows Groq payload/token limits.
+    const useVisionModel = incomingHasImage;
 
     // Text model flattener (for when no image is in play).
     const flattenContent = (content: unknown): string => {
@@ -333,18 +372,12 @@ serve(async (req) => {
 
     if (useVisionModel) {
       // Build multimodal payload in Groq vision format (image_url blocks).
-      const historyForVision = conversationHistory.map((m: any) => {
-        if (m._image_url && m.role === 'user') {
-          return {
-            role: m.role,
-            content: [
-              { type: 'text', text: m.content || '' },
-              { type: 'image_url', image_url: { url: m._image_url } },
-            ],
-          };
-        }
-        return { role: m.role, content: m.content };
-      });
+      const historyForVision = conversationHistory.map((m: any) => ({
+        role: m.role,
+        content: m._image_url && m.role === 'user'
+          ? `${m.content || ''}\n[Imagem analisada anteriormente nesta conversa.]`.trim()
+          : m.content,
+      }));
 
       const incomingForVision = (messages ?? []).map((m: any) => {
         if (typeof m.content === 'string') {
@@ -388,12 +421,30 @@ serve(async (req) => {
     }
 
     const model = useVisionModel
-      ? 'llama-3.2-11b-vision-preview'
-      : 'llama3-70b-8192';
+      ? 'meta-llama/llama-4-scout-17b-16e-instruct'
+      : 'llama-3.3-70b-versatile';
 
-    // Timeout de 60s — dá folga para respostas longas / análise de imagens
+    const payload = {
+      model,
+      messages: apiMessages,
+      stream: true,
+      temperature: 0.7,
+    };
+
+    const requestBody = JSON.stringify(payload);
+    const approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
+
+    console.log('Groq request prepared:', {
+      model,
+      useVisionModel,
+      incomingImageCount: incomingImageUrls.length,
+      historyMessageCount: conversationHistory.length,
+      payloadKb: approximatePayloadKb,
+    });
+
+    // Timeout de 90s — dá folga para respostas longas / análise de imagens
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
 
     let response: Response;
     try {
@@ -403,25 +454,31 @@ serve(async (req) => {
           Authorization: `Bearer ${GROQ_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model,
-          messages: apiMessages,
-          stream: true,
-          temperature: 0.7,
-        }),
+        body: requestBody,
         signal: controller.signal,
       });
     } catch (fetchErr) {
       clearTimeout(timeoutId);
       if ((fetchErr as Error)?.name === 'AbortError') {
+        console.error('Groq request timed out:', {
+          model,
+          useVisionModel,
+          incomingImageCount: incomingImageUrls.length,
+          payloadKb: approximatePayloadKb,
+          timeoutMs: 90000,
+        });
         return new Response(
-          JSON.stringify({ error: 'timeout', message: 'A IA demorou mais de 60s para responder.' }),
+          JSON.stringify({ error: 'timeout', message: 'A análise da imagem demorou mais que o esperado. Tente reenviar uma foto mais leve ou mais nítida.' }),
           { status: 408, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
       console.error('Groq fetch failed:', {
         name: (fetchErr as Error)?.name,
         message: (fetchErr as Error)?.message,
+        model,
+        useVisionModel,
+        incomingImageCount: incomingImageUrls.length,
+        payloadKb: approximatePayloadKb,
       });
       return new Response(
         JSON.stringify({ error: 'network_error', message: 'Falha de rede ao conectar com a IA.' }),
@@ -433,22 +490,39 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
+      let providerCode = 'upstream_error';
+      let providerMessage = errorText;
+      try {
+        const parsed = JSON.parse(errorText);
+        providerCode = parsed?.error?.code || parsed?.error?.type || providerCode;
+        providerMessage = parsed?.error?.message || providerMessage;
+      } catch {
+        // Keep raw text for logs and fallback message.
+      }
+
       console.error('AI gateway error:', {
         status: response.status,
         statusText: response.statusText,
+        providerCode,
+        providerMessage,
         body: errorText,
+        model,
+        useVisionModel,
+        incomingImageCount: incomingImageUrls.length,
+        payloadKb: approximatePayloadKb,
       });
 
       const errorMap: Record<number, { code: string; message: string }> = {
         401: { code: 'auth_error', message: 'Chave da IA inválida ou não autorizada.' },
         403: { code: 'auth_error', message: 'Acesso negado pela IA.' },
         402: { code: 'quota_exhausted', message: 'Cota de IA esgotada. Contate o suporte.' },
+        413: { code: 'payload_too_large', message: 'A imagem ficou pesada demais para análise. Tente enviar um print recortado ou uma foto mais próxima do produto.' },
         429: { code: 'rate_limit', message: 'Muitas requisições. Aguarde alguns segundos.' },
       };
 
       const mapped = errorMap[response.status] ?? {
-        code: 'upstream_error',
-        message: 'O sistema de IA está temporariamente instável.',
+        code: providerCode,
+        message: providerMessage || 'A IA não conseguiu processar esta imagem agora.',
       };
 
       return new Response(
