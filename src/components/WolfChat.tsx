@@ -348,12 +348,14 @@ const WolfChat: React.FC = () => {
     if (files.length > remaining) {
       toast({ title: 'Limite de fotos', description: `Apenas ${remaining} foto(s) adicionada(s). Máximo ${MAX_IMAGES}.` });
     }
-    selected.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreviews((prev) => (prev.length >= MAX_IMAGES ? prev : [...prev, reader.result as string]));
-      };
-      reader.readAsDataURL(file);
+    selected.forEach(async (file) => {
+      try {
+        const compressed = await compressImage(file, 800, 800, 0.7);
+        setImagePreviews((prev) => (prev.length >= MAX_IMAGES ? prev : [...prev, compressed]));
+      } catch (err) {
+        console.error('Erro ao comprimir imagem:', err);
+        toast({ title: 'Erro na imagem', description: 'Não foi possível processar essa foto.', variant: 'destructive' });
+      }
     });
     // Reset input so selecting the same file again still fires onChange
     if (fileInputRef.current) fileInputRef.current.value = '';
