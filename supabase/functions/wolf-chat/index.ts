@@ -268,7 +268,11 @@ serve(async (req) => {
     
     const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
     if (!GROQ_API_KEY) {
-      throw new Error('GROQ_API_KEY is not configured');
+      console.error('GROQ_API_KEY ausente nas variáveis de ambiente do Supabase.');
+      return new Response(
+        JSON.stringify({ error: 'Configuração pendente: GROQ_API_KEY não encontrada nas variáveis de ambiente do Supabase' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
