@@ -337,6 +337,29 @@ const WolfChat: React.FC = () => {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const compressImage = (file: File, maxW = 800, maxH = 800, quality = 0.7): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            let { width, height } = img;
+            if (width > height && width > maxW) { height = height * (maxW / width); width = maxW; }
+            else if (height >= width && height > maxH) { width = width * (maxH / height); height = maxH; }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject(new Error('Canvas indisponível'));
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = reject;
+          img.src = ev.target?.result as string;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     const remaining = MAX_IMAGES - imagePreviews.length;
