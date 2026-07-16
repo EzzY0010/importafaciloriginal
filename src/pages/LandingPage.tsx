@@ -98,7 +98,7 @@ const LandingPage = () => {
 
           <div className="pt-4">
             <Button
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/cadastro")}
               className="h-auto py-4 px-8 text-base sm:text-lg font-bold rounded-2xl bg-gold text-gold-foreground hover:bg-gold/90 shadow-[0_0_30px_hsl(43_80%_55%_/_0.3)] hover:shadow-[0_0_40px_hsl(43_80%_55%_/_0.45)] transition-all duration-300 whitespace-normal animate-pulse-glow"
             >
               👉 EU QUERO MEU ACESSO VITALÍCIO
@@ -218,7 +218,7 @@ const LandingPage = () => {
 
           <div className="pt-2">
             <Button
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/cadastro")}
               className="h-auto py-4 px-8 text-base sm:text-lg font-extrabold rounded-2xl bg-gold text-gold-foreground hover:bg-gold/90 shadow-[0_0_30px_hsl(43_80%_55%_/_0.3)] hover:shadow-[0_0_40px_hsl(43_80%_55%_/_0.45)] transition-all duration-300 whitespace-normal animate-pulse-glow"
             >
               🎯 QUERO MEU ACESSO VITALÍCIO AGORA

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft, HelpCircle } from "lucide-react";
+import { LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft, HelpCircle, Package, Truck } from "lucide-react";
 import wolfPaymentLogo from "@/assets/wolf-payment-logo.png";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
@@ -151,6 +151,33 @@ const Dashboard = () => {
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-5xl mx-auto">
           {hasAccess ? (
+            <>
+            <div data-tour="quick-access" className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+              <button
+                onClick={() => navigate("/fontes?tab=sources")}
+                className="group flex items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:border-primary/50 hover:shadow-medium transition-all text-left"
+              >
+                <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <Package className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground text-sm">Fornecedores VIP</p>
+                  <p className="text-xs text-muted-foreground">20 fontes globais em um clique</p>
+                </div>
+              </button>
+              <button
+                onClick={() => navigate("/fontes?tab=logistics")}
+                className="group flex items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:border-primary/50 hover:shadow-medium transition-all text-left"
+              >
+                <div className="w-11 h-11 rounded-xl bg-accent/15 text-accent flex items-center justify-center flex-shrink-0 group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground text-sm">Redirecionamento</p>
+                  <p className="text-xs text-muted-foreground">8 redirecionadoras confiáveis</p>
+                </div>
+              </button>
+            </div>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {/* Styled Tabs */}
               <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6 bg-card border border-border p-1 rounded-2xl shadow-card">
@@ -183,6 +210,7 @@ const Dashboard = () => {
                 </div>
               </TabsContent>
             </Tabs>
+            </>
           ) : (
             <div className="card-premium max-w-lg mx-auto text-center animate-slide-up">
               <img src={wolfPaymentLogo} alt="ImportaFácil" className="w-24 h-24 rounded-2xl object-cover mx-auto mb-6" />

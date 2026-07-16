@@ -28,6 +28,19 @@ const Signup = () => {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("presignup_lead");
+      if (!raw) return;
+      const lead = JSON.parse(raw) as { fullName?: string; email?: string };
+      if (lead.fullName && !name) setName(lead.fullName);
+      if (lead.email && !email) setEmail(lead.email);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
