@@ -275,7 +275,7 @@ const Login = () => {
             <p className="text-center mt-6 text-sm text-muted-foreground">
               {t('noAccount')}{" "}
               <Link
-                to="/signup"
+                to="/cadastro"
                 className="text-primary hover:text-primary/80 font-semibold transition-colors"
               >
                 {t('signupNow')}
