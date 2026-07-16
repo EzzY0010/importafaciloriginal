@@ -19,6 +19,8 @@ const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 const AdminPanel = React.lazy(() => import("./pages/AdminPanel"));
+const PreSignup = React.lazy(() => import("./pages/PreSignup"));
+const Sources = React.lazy(() => import("./pages/Sources"));
 
 const queryClient = new QueryClient();
 
@@ -116,6 +118,8 @@ const App = () => (
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/cadastro" element={<PreSignup />} />
+                <Route path="/fontes" element={<Sources />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/admin" element={<AdminPanel />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
