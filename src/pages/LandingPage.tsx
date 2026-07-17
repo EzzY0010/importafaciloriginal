@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check } from "lucide-react";
+import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check, Crown } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import LeadCaptureInline from "@/components/LeadCaptureInline";
+import { PLANS } from "@/config/plans";
 
 const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
@@ -17,6 +19,20 @@ const LandingPage = () => {
 
   const scrollToManifesto = () => {
     document.getElementById("manifesto-section")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const scrollToPlans = () => {
+    document.getElementById("plans-section")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const goToPlan = (planId: string) => {
+    // If already logged in, go straight to dashboard payment area
+    if (user) {
+      navigate(`/dashboard?plan=${planId}`);
+      return;
+    }
+    sessionStorage.setItem("selected_plan", planId);
+    navigate("/signup");
   };
 
   const deliverables = [
@@ -96,13 +112,9 @@ const LandingPage = () => {
             <span className="text-gold font-semibold">Jordan Belfort</span>, o Lobo de Wall Street.
           </p>
 
+          {/* Inline lead capture form */}
           <div className="pt-4">
-            <Button
-              onClick={() => navigate("/cadastro")}
-              className="h-auto py-4 px-8 text-base sm:text-lg font-bold rounded-2xl bg-gold text-gold-foreground hover:bg-gold/90 shadow-[0_0_30px_hsl(43_80%_55%_/_0.3)] hover:shadow-[0_0_40px_hsl(43_80%_55%_/_0.45)] transition-all duration-300 whitespace-normal animate-pulse-glow"
-            >
-              👉 EU QUERO MEU ACESSO VITALÍCIO
-            </Button>
+            <LeadCaptureInline scrollToPlansId="plans-section" />
           </div>
 
           <button onClick={scrollToManifesto} className="mx-auto block animate-bounce text-gold/60 hover:text-gold transition-colors mt-8" aria-label="Rolar para baixo">
@@ -206,24 +218,72 @@ const LandingPage = () => {
             ))}
           </div>
 
-          <div className="p-6 rounded-2xl bg-gold/10 border-2 border-gold/40 space-y-2">
-            <div className="flex items-center justify-center gap-2 text-gold">
-              <Infinity className="w-6 h-6" />
-              <h3 className="text-xl sm:text-2xl font-extrabold tracking-wide">ACESSO VITALÍCIO</h3>
-            </div>
-            <p className="text-sm sm:text-base text-hero-foreground/85 font-semibold">
-              Pagamento único. <span className="text-hero-foreground">Sem mensalidades.</span> Sem taxas escondidas.
+          <div className="pt-2">
+            <Button
+              onClick={scrollToPlans}
+              className="h-auto py-4 px-8 text-base sm:text-lg font-extrabold rounded-2xl bg-gold text-gold-foreground hover:bg-gold/90 shadow-[0_0_30px_hsl(43_80%_55%_/_0.3)] hover:shadow-[0_0_40px_hsl(43_80%_55%_/_0.45)] transition-all duration-300 whitespace-normal animate-pulse-glow"
+            >
+              🎯 VER PLANOS E ESCOLHER O MEU
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. Planos de Pagamento ── */}
+      <section id="plans-section" className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+        <div className="max-w-5xl mx-auto w-full space-y-8">
+          <div className="text-center">
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Escolha seu plano</p>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              Planos <span className="text-gold">Sob Medida</span>
+            </h2>
+            <p className="text-sm sm:text-base text-hero-foreground/70 mt-2 max-w-2xl mx-auto">
+              Do teste inicial ao acesso definitivo. Quatro caminhos, um único ecossistema.
             </p>
           </div>
 
-          <div className="pt-2">
-            <Button
-              onClick={() => navigate("/cadastro")}
-              className="h-auto py-4 px-8 text-base sm:text-lg font-extrabold rounded-2xl bg-gold text-gold-foreground hover:bg-gold/90 shadow-[0_0_30px_hsl(43_80%_55%_/_0.3)] hover:shadow-[0_0_40px_hsl(43_80%_55%_/_0.45)] transition-all duration-300 whitespace-normal animate-pulse-glow"
-            >
-              🎯 QUERO MEU ACESSO VITALÍCIO AGORA
-            </Button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {PLANS.map((plan) => (
+              <div
+                key={plan.id}
+                className={`relative flex flex-col p-5 rounded-2xl border transition-all ${
+                  plan.highlight
+                    ? "bg-gold/10 border-gold/60 shadow-[0_0_40px_hsl(43_80%_55%_/_0.25)] scale-[1.02]"
+                    : "bg-hero-foreground/5 border-hero-foreground/15 hover:border-gold/40"
+                }`}
+              >
+                {plan.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-gold-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1">
+                    <Crown className="w-3 h-3" /> Mais escolhido
+                  </div>
+                )}
+                <h3 className="font-bold text-hero-foreground text-base mb-1">{plan.name}</h3>
+                <p className="text-xs text-hero-foreground/60 min-h-[32px]">{plan.description}</p>
+                <div className="my-4">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl sm:text-3xl font-extrabold text-gold">
+                      R$ {plan.price.toFixed(2).replace(".", ",")}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-hero-foreground/60">{plan.period}</span>
+                </div>
+                <Button
+                  onClick={() => goToPlan(plan.id)}
+                  className={`w-full h-11 font-bold ${
+                    plan.highlight
+                      ? "bg-gold text-gold-foreground hover:bg-gold/90"
+                      : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20"
+                  }`}
+                >
+                  {plan.highlight ? "🎯 Eu quero meu acesso vitalício" : "Escolher"}
+                </Button>
+              </div>
+            ))}
           </div>
+
+          <p className="text-center text-xs text-hero-foreground/60">
+            Pagamento seguro via Mercado Pago · Sem taxas escondidas
+          </p>
         </div>
       </section>
     </div>
