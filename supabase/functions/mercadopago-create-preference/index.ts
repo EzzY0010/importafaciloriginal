@@ -12,6 +12,20 @@ serve(async (req) => {
   }
 
   try {
+    const PLAN_PRICES: Record<string, { price: number; title: string }> = {
+      mensal: { price: 47.9, title: 'ImportaFácil - Plano Mensal' },
+      trimestral: { price: 97.9, title: 'ImportaFácil - Plano Trimestral' },
+      semestral: { price: 137.9, title: 'ImportaFácil - Plano Semestral' },
+      vitalicio: { price: 187.9, title: 'ImportaFácil - Acesso Vitalício' },
+    };
+
+    let planId = 'vitalicio';
+    try {
+      const body = await req.json();
+      if (body?.planId && PLAN_PRICES[body.planId]) planId = body.planId;
+    } catch { /* no body */ }
+    const plan = PLAN_PRICES[planId];
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -36,7 +50,7 @@ serve(async (req) => {
       });
     }
 
-    const externalReference = `${user.id}_${Date.now()}`;
+    const externalReference = `${user.id}_${planId}_${Date.now()}`;
     const origin = req.headers.get('origin') || 'https://lovable.dev';
 
     // Create payment record
@@ -48,19 +62,19 @@ serve(async (req) => {
     await adminClient.from('payments').insert({
       user_id: user.id,
       external_reference: externalReference,
-      amount: 350.00,
+      amount: plan.price,
       status: 'pending'
     });
 
     // Create Mercado Pago preference
     const preferenceData = {
       items: [{
-        id: 'importafacil-access',
-        title: 'ImportaFácil - Acesso Vitalício',
+        id: `importafacil-${planId}`,
+        title: plan.title,
         description: 'Acesso completo ao ImportaFácil com IA e calculadora de importação',
         quantity: 1,
         currency_id: 'BRL',
-        unit_price: 350.00
+        unit_price: plan.price
       }],
       payer: {
         email: user.email
