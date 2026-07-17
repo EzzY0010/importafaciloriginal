@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { LogOut, Crown, User, MessageSquare, Calculator, ArrowRightLeft, HelpCircle, Package, Truck } from "lucide-react";
+import { LogOut, Crown, User, MessageSquare, Calculator, HelpCircle, Package } from "lucide-react";
 import wolfPaymentLogo from "@/assets/wolf-payment-logo.png";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import CurrencyConverter from "@/components/CurrencyConverter";
 import PaymentButton from "@/components/PaymentButton";
 import OnboardingTutorial, { startOnboardingTutorial } from "@/components/OnboardingTutorial";
 import { getSavedActiveTab, saveActiveTab } from "@/components/AppResilience";
+import SourcesDialog from "@/components/SourcesDialog";
+import { PLANS, type PlanId } from "@/config/plans";
 
 const Dashboard = () => {
   const { user, isAdmin, hasPaid, signOut, loading, refreshPaymentStatus } = useAuth();
@@ -23,6 +25,12 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<string>(() => getSavedActiveTab() || "chat");
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>(() => {
+    const q = searchParams.get('plan') as PlanId | null;
+    if (q && PLANS.some((p) => p.id === q)) return q;
+    return 'vitalicio';
+  });
 
   useEffect(() => {
     saveActiveTab(activeTab);
@@ -59,6 +67,14 @@ const Dashboard = () => {
     window.addEventListener('tutorial-set-tab', handler);
     return () => window.removeEventListener('tutorial-set-tab', handler);
   }, []);
+
+  const handleTabChange = (value: string) => {
+    if (value === 'sources') {
+      setSourcesOpen(true);
+      return; // don't switch active tab
+    }
+    setActiveTab(value);
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -152,50 +168,33 @@ const Dashboard = () => {
         <div className="max-w-5xl mx-auto">
           {hasAccess ? (
             <>
-            <div data-tour="quick-access" className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-              <button
-                onClick={() => navigate("/fontes?tab=sources")}
-                className="group flex items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:border-primary/50 hover:shadow-medium transition-all text-left"
-              >
-                <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <Package className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground text-sm">Fornecedores VIP</p>
-                  <p className="text-xs text-muted-foreground">20 fontes globais em um clique</p>
-                </div>
-              </button>
-              <button
-                onClick={() => navigate("/fontes?tab=logistics")}
-                className="group flex items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:border-primary/50 hover:shadow-medium transition-all text-left"
-              >
-                <div className="w-11 h-11 rounded-xl bg-accent/15 text-accent flex items-center justify-center flex-shrink-0 group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
-                  <Truck className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground text-sm">Redirecionamento</p>
-                  <p className="text-xs text-muted-foreground">8 redirecionadoras confiáveis</p>
-                </div>
-              </button>
-            </div>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              {/* Styled Tabs */}
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6 bg-card border border-border p-1 rounded-2xl shadow-card">
+            <SourcesDialog open={sourcesOpen} onOpenChange={setSourcesOpen} />
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+              {/* 3-button top menu */}
+              <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-6 bg-card border border-border p-1 rounded-2xl shadow-card gap-1">
                 <TabsTrigger 
                   value="chat" 
                   data-tour="ai"
-                  className="gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-soft font-medium transition-all"
+                  className="gap-1.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-soft font-medium transition-all px-1.5 text-[11px] sm:text-sm"
                 >
-                  <MessageSquare className="w-4 h-4" />
-                  Import Wolf
+                  <MessageSquare className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Import Wolf</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="sources"
+                  data-tour="quick-access"
+                  className="gap-1.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-medium transition-all px-1.5 text-[11px] sm:text-sm"
+                >
+                  <Package className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Fornecedores</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="calculator" 
                   data-tour="calculator"
-                  className="gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-soft font-medium transition-all"
+                  className="gap-1.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-soft font-medium transition-all px-1.5 text-[11px] sm:text-sm"
                 >
-                  <Calculator className="w-4 h-4" />
-                  {t('calculatorTab')}
+                  <Calculator className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{t('calculatorTab')}</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -212,13 +211,44 @@ const Dashboard = () => {
             </Tabs>
             </>
           ) : (
-            <div className="card-premium max-w-lg mx-auto text-center animate-slide-up">
-              <img src={wolfPaymentLogo} alt="ImportaFácil" className="w-24 h-24 rounded-2xl object-cover mx-auto mb-6" />
-              <h2 className="text-2xl font-bold mb-3 text-foreground">{t('unlockAccess')}</h2>
-              <p className="text-muted-foreground mb-8 leading-relaxed">
-                {t('unlockDescription')}
-              </p>
-              <PaymentButton onPaymentSuccess={refreshPaymentStatus} />
+            <div className="max-w-4xl mx-auto animate-slide-up">
+              <div className="text-center mb-6">
+                <img src={wolfPaymentLogo} alt="ImportaFácil" className="w-20 h-20 rounded-2xl object-cover mx-auto mb-4" />
+                <h2 className="text-2xl font-bold mb-2 text-foreground">{t('unlockAccess')}</h2>
+                <p className="text-muted-foreground max-w-lg mx-auto">
+                  Escolha o plano que combina com o seu momento.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                {PLANS.map((plan) => (
+                  <button
+                    key={plan.id}
+                    onClick={() => setSelectedPlan(plan.id)}
+                    className={`relative text-left p-4 rounded-2xl border-2 transition-all ${
+                      selectedPlan === plan.id
+                        ? 'border-primary bg-primary/5 shadow-medium'
+                        : 'border-border bg-card hover:border-primary/40'
+                    }`}
+                  >
+                    {plan.highlight && (
+                      <span className="absolute -top-2 right-3 bg-accent text-accent-foreground text-[9px] font-bold uppercase px-2 py-0.5 rounded-full">
+                        Melhor oferta
+                      </span>
+                    )}
+                    <p className="text-xs text-muted-foreground">{plan.name}</p>
+                    <p className="text-xl font-extrabold text-foreground mt-1">
+                      R$ {plan.price.toFixed(2).replace('.', ',')}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{plan.period}</p>
+                  </button>
+                ))}
+              </div>
+              <div className="max-w-md mx-auto">
+                <PaymentButton
+                  onPaymentSuccess={refreshPaymentStatus}
+                  planId={selectedPlan}
+                />
+              </div>
             </div>
           )}
         </div>
