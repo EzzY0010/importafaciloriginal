@@ -4,14 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CreditCard, CheckCircle } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/backend';
+import { PLANS, getPlan, type PlanId } from '@/config/plans';
 
 interface PaymentButtonProps {
   onPaymentSuccess?: () => void;
+  planId?: PlanId;
+  compact?: boolean;
 }
 
-const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
+const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess, planId = 'vitalicio', compact = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const plan = getPlan(planId);
 
   const handlePayment = async () => {
     setIsLoading(true);
@@ -39,6 +43,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
       }
 
       const response = await client.functions.invoke('mercadopago-create-preference', {
+        body: { planId: plan.id },
         headers: {
           Authorization: `Bearer ${session.access_token}`
         }
@@ -71,24 +76,36 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess }) => {
     }
   };
 
+  if (compact) {
+    return (
+      <Button
+        onClick={handlePayment}
+        disabled={isLoading}
+        className="w-full font-bold gap-2"
+      >
+        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CreditCard className="w-4 h-4" /> Assinar {plan.name}</>}
+      </Button>
+    );
+  }
+
   return (
     <Card className="w-full max-w-md mx-auto bg-white text-foreground border-border">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl flex items-center justify-center gap-2 text-foreground">
           <CreditCard className="h-6 w-6" />
-          Liberar Acesso
+          {plan.name}
         </CardTitle>
         <CardDescription>
-          Pagamento único para acesso vitalício
+          {plan.description}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-center py-4 bg-muted rounded-lg">
           <p className="text-sm font-semibold" style={{ color: "#D4AF37" }}>🔥 Oferta por tempo limitado</p>
           <p className="text-4xl font-extrabold mt-1 text-foreground">
-            R$ 350<span className="text-lg align-top">,00</span>
+            R$ {plan.price.toFixed(2).replace('.', ',')}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Pagamento único · Acesso vitalício</p>
+          <p className="text-xs text-muted-foreground mt-1">{plan.period}</p>
         </div>
         
         <div className="space-y-2 text-sm">
