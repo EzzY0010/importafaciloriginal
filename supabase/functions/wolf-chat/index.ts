@@ -448,6 +448,11 @@ serve(async (req) => {
       console.error('Groq models list error:', (listErr as Error)?.message);
     }
 
+    // A conta Groq não expõe modelos de visão. Quando há imagem, usamos o
+    // Lovable AI Gateway (compatível com OpenAI/SSE) para a análise visual.
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const useGateway = useVisionModel && !!LOVABLE_API_KEY;
+
     const candidates = useVisionModel ? VISION_CANDIDATES : TEXT_CANDIDATES;
     // Ordena: preferidos que aparecem na lista da conta primeiro, depois os
     // demais modelos da conta que aparentam suportar visão, depois o resto.
@@ -459,12 +464,13 @@ serve(async (req) => {
       : availableModels.filter(
           (id) => /llama-3\.[13]|versatile|instant/i.test(id) && !preferred.includes(id),
         );
-    const modelQueue = [...preferred, ...discovered, ...candidates].filter(
-      (v, i, a) => a.indexOf(v) === i,
-    );
+    const modelQueue = useGateway
+      ? ['openai/gpt-5.6-sol']
+      : [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
 
     console.log('Groq model selection:', {
       useVisionModel,
+      useGateway,
       modelQueue,
       availableModels,
     });
@@ -498,15 +504,25 @@ serve(async (req) => {
           payloadKb: approximatePayloadKb,
         });
 
-        response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${GROQ_API_KEY}`,
-            "Content-Type": "application/json",
+        response = await fetch(
+          useGateway
+            ? "https://ai.gateway.lovable.dev/v1/chat/completions"
+            : "https://api.groq.com/openai/v1/chat/completions",
+          {
+            method: "POST",
+            headers: useGateway
+              ? {
+                  "Lovable-API-Key": LOVABLE_API_KEY!,
+                  "Content-Type": "application/json",
+                }
+              : {
+                  Authorization: `Bearer ${GROQ_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+            body: requestBody,
+            signal: controller.signal,
           },
-          body: requestBody,
-          signal: controller.signal,
-        });
+        );
 
         // Modelo removido/sem acesso → tenta o próximo da fila.
         if ((response.status === 404 || response.status === 400) && i < modelQueue.length - 1) {
