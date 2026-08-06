@@ -549,6 +549,7 @@ serve(async (req) => {
         401: { code: 'auth_error', message: 'Chave da IA inválida ou não autorizada.' },
         403: { code: 'auth_error', message: 'Acesso negado pela IA.' },
         402: { code: 'quota_exhausted', message: 'Cota de IA esgotada. Contate o suporte.' },
+        404: { code: 'model_not_found', message: `Modelo de IA indisponível (${model}). Já estamos ajustando — tente novamente em instantes.` },
         413: { code: 'payload_too_large', message: 'A imagem ficou pesada demais para análise. Tente enviar um print recortado ou uma foto mais próxima do produto.' },
         429: { code: 'rate_limit', message: 'Muitas requisições. Aguarde alguns segundos.' },
       };
