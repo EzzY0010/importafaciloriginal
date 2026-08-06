@@ -12,6 +12,7 @@ import UsersTable, { type UserProfile } from "@/components/admin/UsersTable";
 import SecurityPanel from "@/components/admin/SecurityPanel";
 import DeviceManagement from "@/components/admin/DeviceManagement";
 import IPBlacklist from "@/components/admin/IPBlacklist";
+import LeadsTable from "@/components/admin/LeadsTable";
 
 const AdminPanel = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -140,6 +141,7 @@ const AdminPanel = () => {
               <h1 className="text-lg font-bold text-foreground capitalize">
                 {activeSection === "overview" && "Visão Geral"}
                 {activeSection === "users" && "Usuários"}
+                {activeSection === "leads" && "Leads"}
                 {activeSection === "devices" && "Dispositivos"}
                 {activeSection === "blacklist" && "IPs Bloqueados"}
                 {activeSection === "security" && "Segurança"}
@@ -168,8 +170,11 @@ const AdminPanel = () => {
                   onIncrementDeviceLimit={incrementDeviceLimit}
                   canManageDeviceLimit={canManageDeviceLimit}
                 />
+                <LeadsTable />
               </>
             )}
+
+            {activeSection === "leads" && <LeadsTable />}
 
             {activeSection === "users" && (
               <UsersTable
