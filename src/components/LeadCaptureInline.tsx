@@ -55,8 +55,10 @@ const LeadCaptureInline = ({ scrollToPlansId }: { scrollToPlansId?: string }) =>
       return;
     }
     setLoading(true);
+    let saved = false;
+    let saveError = "";
     try {
-      await fetch(`${backendUrl}/functions/v1/lead-capture`, {
+      const res = await fetch(`${backendUrl}/functions/v1/lead-capture`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -74,14 +76,32 @@ const LeadCaptureInline = ({ scrollToPlansId }: { scrollToPlansId?: string }) =>
             ref: typeof document !== "undefined" ? document.referrer : "",
           },
         }),
-      }).catch(() => null);
+      });
+      if (res.ok) {
+        saved = true;
+      } else {
+        const body = await res.json().catch(() => ({}));
+        saveError = body?.error || `Erro ${res.status}`;
+        console.error("[lead-capture] falha ao salvar", res.status, body);
+      }
+    } catch (err) {
+      saveError = (err as Error)?.message || "Falha de rede";
+      console.error("[lead-capture] erro de rede", err);
     } finally {
       sessionStorage.setItem(
         "presignup_lead",
         JSON.stringify({ fullName, email, whatsapp, reason }),
       );
       setLoading(false);
-      toast({ title: "Perfeito! Bora escolher seu plano 🐺" });
+      if (saved) {
+        toast({ title: "Perfeito! Bora escolher seu plano 🐺" });
+      } else {
+        toast({
+          title: "Não conseguimos salvar seus dados",
+          description: `${saveError}. Você pode continuar, mas tente reenviar depois.`,
+          variant: "destructive",
+        });
+      }
       if (scrollToPlansId) {
         document.getElementById(scrollToPlansId)?.scrollIntoView({ behavior: "smooth" });
       } else {
