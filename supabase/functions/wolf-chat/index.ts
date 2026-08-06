@@ -420,43 +420,121 @@ serve(async (req) => {
       ];
     }
 
-    const model = useVisionModel
-      ? 'meta-llama/llama-4-scout-17b-16e-instruct'
-      : 'llama-3.3-70b-versatile';
+    // Groq depreca modelos de visão com frequência. Descobrimos os modelos
+    // disponíveis em tempo real e escolhemos o primeiro suportado.
+    const VISION_CANDIDATES = [
+      'meta-llama/llama-4-maverick-17b-128e-instruct',
+      'meta-llama/llama-4-scout-17b-16e-instruct',
+      'llama-3.2-90b-vision-preview',
+      'llama-3.2-11b-vision-preview',
+    ];
+    const TEXT_CANDIDATES = [
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+    ];
 
-    const payload = {
-      model,
-      messages: apiMessages,
-      stream: true,
-      temperature: 0.7,
-    };
+    let availableModels: string[] = [];
+    try {
+      const modelsRes = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+      });
+      if (modelsRes.ok) {
+        const modelsJson = await modelsRes.json();
+        availableModels = (modelsJson?.data ?? []).map((m: any) => m.id).filter(Boolean);
+      } else {
+        console.error('Groq models list failed:', modelsRes.status, await modelsRes.text());
+      }
+    } catch (listErr) {
+      console.error('Groq models list error:', (listErr as Error)?.message);
+    }
 
-    const requestBody = JSON.stringify(payload);
-    const approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
+    // A conta Groq não expõe modelos de visão. Quando há imagem, usamos o
+    // Lovable AI Gateway (compatível com OpenAI/SSE) para a análise visual.
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const useGateway = useVisionModel && !!LOVABLE_API_KEY;
 
-    console.log('Groq request prepared:', {
-      model,
+    const candidates = useVisionModel ? VISION_CANDIDATES : TEXT_CANDIDATES;
+    // Ordena: preferidos que aparecem na lista da conta primeiro, depois os
+    // demais modelos da conta que aparentam suportar visão, depois o resto.
+    const preferred = candidates.filter((c) => availableModels.includes(c));
+    const discovered = useVisionModel
+      ? availableModels.filter(
+          (id) => /vision|llama-4|scout|maverick/i.test(id) && !preferred.includes(id),
+        )
+      : availableModels.filter(
+          (id) => /llama-3\.[13]|versatile|instant/i.test(id) && !preferred.includes(id),
+        );
+    const modelQueue = useGateway
+      ? ['openai/gpt-5.6-sol']
+      : [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
+
+    console.log('Groq model selection:', {
       useVisionModel,
-      incomingImageCount: incomingImageUrls.length,
-      historyMessageCount: conversationHistory.length,
-      payloadKb: approximatePayloadKb,
+      useGateway,
+      modelQueue,
+      availableModels,
     });
 
     // Timeout de 90s — dá folga para respostas longas / análise de imagens
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 90000);
 
-    let response: Response;
+    let response!: Response;
+    let model = modelQueue[0];
+    let requestBody = '';
+    let approximatePayloadKb = 0;
+
     try {
-      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${GROQ_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: requestBody,
-        signal: controller.signal,
-      });
+      for (let i = 0; i < modelQueue.length; i++) {
+        model = modelQueue[i];
+        requestBody = JSON.stringify({
+          model,
+          messages: apiMessages,
+          stream: true,
+          ...(useGateway ? {} : { temperature: 0.7 }),
+        });
+        approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
+
+        console.log('Groq request prepared:', {
+          model,
+          attempt: i + 1,
+          useVisionModel,
+          incomingImageCount: incomingImageUrls.length,
+          historyMessageCount: conversationHistory.length,
+          payloadKb: approximatePayloadKb,
+        });
+
+        response = await fetch(
+          useGateway
+            ? "https://ai.gateway.lovable.dev/v1/chat/completions"
+            : "https://api.groq.com/openai/v1/chat/completions",
+          {
+            method: "POST",
+            headers: useGateway
+              ? {
+                  "Lovable-API-Key": LOVABLE_API_KEY!,
+                  "Content-Type": "application/json",
+                }
+              : {
+                  Authorization: `Bearer ${GROQ_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+            body: requestBody,
+            signal: controller.signal,
+          },
+        );
+
+        // Modelo removido/sem acesso → tenta o próximo da fila.
+        if ((response.status === 404 || response.status === 400) && i < modelQueue.length - 1) {
+          const detail = await response.text();
+          if (/model|decommission|does not exist/i.test(detail)) {
+            console.error('Groq model unavailable, trying next:', { model, detail });
+            continue;
+          }
+          response = new Response(detail, { status: response.status, headers: response.headers });
+        }
+        break;
+      }
     } catch (fetchErr) {
       clearTimeout(timeoutId);
       if ((fetchErr as Error)?.name === 'AbortError') {
@@ -516,6 +594,7 @@ serve(async (req) => {
         401: { code: 'auth_error', message: 'Chave da IA inválida ou não autorizada.' },
         403: { code: 'auth_error', message: 'Acesso negado pela IA.' },
         402: { code: 'quota_exhausted', message: 'Cota de IA esgotada. Contate o suporte.' },
+        404: { code: 'model_not_found', message: `Modelo de IA indisponível (${model}). Já estamos ajustando — tente novamente em instantes.` },
         413: { code: 'payload_too_large', message: 'A imagem ficou pesada demais para análise. Tente enviar um print recortado ou uma foto mais próxima do produto.' },
         429: { code: 'rate_limit', message: 'Muitas requisições. Aguarde alguns segundos.' },
       };
