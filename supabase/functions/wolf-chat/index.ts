@@ -491,7 +491,7 @@ serve(async (req) => {
           model,
           messages: apiMessages,
           stream: true,
-          temperature: 0.7,
+          ...(useGateway ? {} : { temperature: 0.7 }),
         });
         approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
 
