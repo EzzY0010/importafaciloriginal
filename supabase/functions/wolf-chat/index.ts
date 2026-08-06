@@ -449,47 +449,76 @@ serve(async (req) => {
     }
 
     const candidates = useVisionModel ? VISION_CANDIDATES : TEXT_CANDIDATES;
-    const model =
-      candidates.find((c) => availableModels.includes(c)) ??
-      (useVisionModel
-        ? availableModels.find((id) => /vision|llama-4|scout|maverick/i.test(id)) ?? candidates[0]
-        : candidates[0]);
+    // Ordena: preferidos que aparecem na lista da conta primeiro, depois os
+    // demais modelos da conta que aparentam suportar visão, depois o resto.
+    const preferred = candidates.filter((c) => availableModels.includes(c));
+    const discovered = useVisionModel
+      ? availableModels.filter(
+          (id) => /vision|llama-4|scout|maverick/i.test(id) && !preferred.includes(id),
+        )
+      : availableModels.filter(
+          (id) => /llama-3\.[13]|versatile|instant/i.test(id) && !preferred.includes(id),
+        );
+    const modelQueue = [...preferred, ...discovered, ...candidates].filter(
+      (v, i, a) => a.indexOf(v) === i,
+    );
 
-    console.log('Groq model selection:', { useVisionModel, model, availableCount: availableModels.length });
-
-    const payload = {
-      model,
-      messages: apiMessages,
-      stream: true,
-      temperature: 0.7,
-    };
-
-    const requestBody = JSON.stringify(payload);
-    const approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
-
-    console.log('Groq request prepared:', {
-      model,
+    console.log('Groq model selection:', {
       useVisionModel,
-      incomingImageCount: incomingImageUrls.length,
-      historyMessageCount: conversationHistory.length,
-      payloadKb: approximatePayloadKb,
+      modelQueue,
+      availableModels,
     });
 
     // Timeout de 90s — dá folga para respostas longas / análise de imagens
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 90000);
 
-    let response: Response;
+    let response!: Response;
+    let model = modelQueue[0];
+    let requestBody = '';
+    let approximatePayloadKb = 0;
+
     try {
-      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${GROQ_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: requestBody,
-        signal: controller.signal,
-      });
+      for (let i = 0; i < modelQueue.length; i++) {
+        model = modelQueue[i];
+        requestBody = JSON.stringify({
+          model,
+          messages: apiMessages,
+          stream: true,
+          temperature: 0.7,
+        });
+        approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
+
+        console.log('Groq request prepared:', {
+          model,
+          attempt: i + 1,
+          useVisionModel,
+          incomingImageCount: incomingImageUrls.length,
+          historyMessageCount: conversationHistory.length,
+          payloadKb: approximatePayloadKb,
+        });
+
+        response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${GROQ_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: requestBody,
+          signal: controller.signal,
+        });
+
+        // Modelo removido/sem acesso → tenta o próximo da fila.
+        if ((response.status === 404 || response.status === 400) && i < modelQueue.length - 1) {
+          const detail = await response.text();
+          if (/model|decommission|does not exist/i.test(detail)) {
+            console.error('Groq model unavailable, trying next:', { model, detail });
+            continue;
+          }
+          response = new Response(detail, { status: response.status, headers: response.headers });
+        }
+        break;
+      }
     } catch (fetchErr) {
       clearTimeout(timeoutId);
       if ((fetchErr as Error)?.name === 'AbortError') {
