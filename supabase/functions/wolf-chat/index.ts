@@ -420,9 +420,42 @@ serve(async (req) => {
       ];
     }
 
-    const model = useVisionModel
-      ? 'meta-llama/llama-4-scout-17b-16e-instruct'
-      : 'llama-3.3-70b-versatile';
+    // Groq depreca modelos de visão com frequência. Descobrimos os modelos
+    // disponíveis em tempo real e escolhemos o primeiro suportado.
+    const VISION_CANDIDATES = [
+      'meta-llama/llama-4-maverick-17b-128e-instruct',
+      'meta-llama/llama-4-scout-17b-16e-instruct',
+      'llama-3.2-90b-vision-preview',
+      'llama-3.2-11b-vision-preview',
+    ];
+    const TEXT_CANDIDATES = [
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+    ];
+
+    let availableModels: string[] = [];
+    try {
+      const modelsRes = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+      });
+      if (modelsRes.ok) {
+        const modelsJson = await modelsRes.json();
+        availableModels = (modelsJson?.data ?? []).map((m: any) => m.id).filter(Boolean);
+      } else {
+        console.error('Groq models list failed:', modelsRes.status, await modelsRes.text());
+      }
+    } catch (listErr) {
+      console.error('Groq models list error:', (listErr as Error)?.message);
+    }
+
+    const candidates = useVisionModel ? VISION_CANDIDATES : TEXT_CANDIDATES;
+    const model =
+      candidates.find((c) => availableModels.includes(c)) ??
+      (useVisionModel
+        ? availableModels.find((id) => /vision|llama-4|scout|maverick/i.test(id)) ?? candidates[0]
+        : candidates[0]);
+
+    console.log('Groq model selection:', { useVisionModel, model, availableCount: availableModels.length });
 
     const payload = {
       model,
