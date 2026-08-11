@@ -38,9 +38,9 @@ const SOURCES: Item[] = [
 ];
 
 const REDIRECTORS: Item[] = [
-  { name: "WeZip4U", url: "https://www.wezip4u.com", country: "EUA", flag: "🇺🇸", description: "Foco no público brasileiro, suporte próximo." },
-  { name: "Zip4Me", url: "https://www.zip4me.com", country: "EUA", flag: "🇺🇸", description: "Excelente para iniciantes, PT-BR no WhatsApp." },
-  { name: "USCloser", url: "https://www.uscloser.com", country: "EUA", flag: "🇺🇸", description: "Otimizada para redirecionamentos em escala." },
+  { name: "WeZip4U", url: "https://www.wezip4u.com", country: "EUA", flag: "🇺🇸", description: "Tradição e experiência, com compras assistidas." },
+  { name: "Zip4Me", url: "https://www.zip4me.com", country: "EUA", flag: "🇺🇸", description: "Mais econômica, sem imposto estadual e com seguro incluso." },
+  { name: "USCloser", url: "https://www.uscloser.com", country: "EUA", flag: "🇺🇸", description: "Suporte 100% em português, fácil comunicação." },
   { name: "ViajaBox", url: "https://www.viajabox.com", country: "EUA", flag: "🇺🇸", description: "Suporte rápido via WhatsApp em português." },
   { name: "Redirect Europa", url: "https://www.redirecteuropa.com", country: "Espanha / Europa", flag: "🇪🇺", description: "Consolidação e envio direto para o Brasil." },
   { name: "CSSBuy", url: "https://www.cssbuy.com", country: "China", flag: "🇨🇳", description: "Agente de compras oficial com QC confiável." },

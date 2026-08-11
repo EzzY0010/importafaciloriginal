@@ -73,7 +73,7 @@ const SourcesDialog = ({ open, onOpenChange, defaultTab = "sources" }: Props) =>
               <Package className="w-4 h-4" /> Fontes ({fSources.length})
             </TabsTrigger>
             <TabsTrigger value="logistics" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Truck className="w-4 h-4" /> Redirect ({fRedir.length})
+              <Truck className="w-4 h-4" /> Redirecionadoras ({fRedir.length})
             </TabsTrigger>
           </TabsList>
           <div className="flex-1 overflow-y-auto px-5 py-4">
