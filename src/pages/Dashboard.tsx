@@ -186,7 +186,10 @@ const Dashboard = () => {
                   className="gap-1.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-medium transition-all px-1.5 text-[11px] sm:text-sm"
                 >
                   <Package className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Fornecedores</span>
+                  <span className="leading-tight text-center text-[9px] sm:text-sm">
+                    Fornecedores <span className="hidden sm:inline">&amp; </span>
+                    <span className="sm:hidden">&amp;</span> Redirecionadoras
+                  </span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="calculator" 
