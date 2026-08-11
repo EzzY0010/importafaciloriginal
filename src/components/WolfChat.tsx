@@ -777,12 +777,12 @@ const WolfChat: React.FC = () => {
 
         {/* Input Area */}
         <div className="p-4 border-t border-border bg-card relative z-[1000]">
-          {/* Quick Reply Pills - Linha 1 (esquerda + direita), Linha 2 (centro) */}
-          <div className="mb-3 space-y-2">
-            <div className="flex justify-between gap-2">
+          {/* Quick Reply Pills */}
+          <div className="mb-3">
+            <div className="flex flex-wrap justify-center gap-2">
               {[
-                { label: 'Como achar fornecedores? 🤝', msg: 'Como achar fornecedores confiáveis no exterior para começar a importar com segurança?' },
                 { label: 'Qual o peso do produto? 📦', msg: 'Qual é o peso médio de um produto para importação? Se precisar, me pergunte qual produto eu tenho em mente ou me dê uma estimativa com base em categorias comuns (roupas, tênis, bonés, eletrônicos, etc.).' },
+                { label: 'Compensa importar? 💸', msg: 'Compensa importar produtos do exterior para revender no Brasil? Vale a pena financeiramente?' },
               ].map((q) => (
                 <button
                   key={q.label}
@@ -794,16 +794,6 @@ const WolfChat: React.FC = () => {
                   {q.label}
                 </button>
               ))}
-            </div>
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={() => { if (!isLoading) sendMessage('Compensa importar produtos do exterior para revender no Brasil? Vale a pena financeiramente?'); }}
-                disabled={isLoading}
-                className="text-xs px-3 py-1.5 rounded-full border border-accent/40 bg-accent/10 text-accent hover:bg-accent/20 hover:border-accent transition-all disabled:opacity-50"
-              >
-                Compensa importar? 💸
-              </button>
             </div>
           </div>
           <div className="flex gap-3">
