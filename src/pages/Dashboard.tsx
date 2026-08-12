@@ -116,6 +116,15 @@ const Dashboard = () => {
             </div>
 
             <div data-tour="topbar" className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-primary-foreground hover:bg-primary-foreground/10"
+                aria-label="Notificações"
+                onClick={() => toast({ title: 'Sem novidades', description: 'Você não tem notificações no momento.' })}
+              >
+                <Bell className="w-5 h-5" />
+              </Button>
               <a
                 href="https://chat.whatsapp.com/IBxNhd45sfF6lNCKIxpe7N"
                 target="_blank"
