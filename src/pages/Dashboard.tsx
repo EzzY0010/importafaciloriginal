@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { LogOut, Crown, User, MessageSquare, Calculator, HelpCircle, Package } from "lucide-react";
+import { LogOut, Crown, User, HelpCircle, Bell, Menu } from "lucide-react";
 import wolfPaymentLogo from "@/assets/wolf-payment-logo.png";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,8 @@ import PaymentButton from "@/components/PaymentButton";
 import OnboardingTutorial, { startOnboardingTutorial } from "@/components/OnboardingTutorial";
 import { getSavedActiveTab, saveActiveTab } from "@/components/AppResilience";
 import SourcesDialog from "@/components/SourcesDialog";
+import HomeView from "@/components/dashboard/HomeView";
+import BottomNav from "@/components/dashboard/BottomNav";
 import { PLANS, type PlanId } from "@/config/plans";
 
 const Dashboard = () => {
@@ -24,8 +26,9 @@ const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<string>(() => getSavedActiveTab() || "chat");
+  const [activeTab, setActiveTab] = useState<string>(() => getSavedActiveTab() || "home");
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(() => {
     const q = searchParams.get('plan') as PlanId | null;
     if (q && PLANS.some((p) => p.id === q)) return q;
@@ -72,6 +75,10 @@ const Dashboard = () => {
     if (value === 'sources') {
       setSourcesOpen(true);
       return; // don't switch active tab
+    }
+    if (value === 'profile') {
+      setMenuOpen(true);
+      return;
     }
     setActiveTab(value);
   };
