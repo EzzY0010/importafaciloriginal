@@ -162,54 +162,27 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 pb-28">
         <div className="max-w-5xl mx-auto">
           {hasAccess ? (
             <>
             <SourcesDialog open={sourcesOpen} onOpenChange={setSourcesOpen} />
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-              {/* 3-button top menu */}
-              <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-6 bg-card border border-border p-1 rounded-2xl shadow-card gap-1">
-                <TabsTrigger 
-                  value="chat" 
-                  data-tour="ai"
-                  className="gap-1.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-soft font-medium transition-all px-1.5 text-[11px] sm:text-sm"
-                >
-                  <MessageSquare className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Import Wolf</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="sources"
-                  data-tour="quick-access"
-                  className="gap-1.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-medium transition-all px-1.5 text-[11px] sm:text-sm"
-                >
-                  <Package className="w-4 h-4 shrink-0" />
-                  <span className="leading-tight text-center text-[9px] sm:text-sm">
-                    Fornecedores <span className="hidden sm:inline">&amp; </span>
-                    <span className="sm:hidden">&amp;</span> Redirecionadoras
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="calculator" 
-                  data-tour="calculator"
-                  className="gap-1.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-soft font-medium transition-all px-1.5 text-[11px] sm:text-sm"
-                >
-                  <Calculator className="w-4 h-4 shrink-0" />
-                  <span className="truncate">{t('calculatorTab')}</span>
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="chat" className="mt-0 animate-fade-in">
-                <WolfChat />
-              </TabsContent>
-
-              <TabsContent value="calculator" className="mt-0 animate-fade-in">
-                <div className="flex flex-col items-center gap-6">
-                  <CurrencyConverter />
-                  <AdvancedPricingCalculator />
-                </div>
-              </TabsContent>
-            </Tabs>
+            {activeTab === 'home' && (
+              <HomeView
+                onAnalyze={() => setActiveTab('chat')}
+                onSources={() => setSourcesOpen(true)}
+                onCalculator={() => setActiveTab('calculator')}
+              />
+            )}
+            {activeTab === 'chat' && (
+              <div className="animate-fade-in"><WolfChat /></div>
+            )}
+            {activeTab === 'calculator' && (
+              <div className="flex flex-col items-center gap-6 animate-fade-in">
+                <CurrencyConverter />
+                <AdvancedPricingCalculator />
+              </div>
+            )}
             </>
           ) : (
             <div className="max-w-4xl mx-auto animate-slide-up">
@@ -254,6 +227,8 @@ const Dashboard = () => {
           )}
         </div>
       </main>
+
+      {hasAccess && <BottomNav active={activeTab} onSelect={handleTabChange} />}
     </div>
   );
 };
