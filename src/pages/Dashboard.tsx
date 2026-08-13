@@ -13,6 +13,7 @@ import WolfChat from "@/components/WolfChat";
 import AdvancedPricingCalculator from "@/components/AdvancedPricingCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import PaymentButton from "@/components/PaymentButton";
+import MinicursoBuyCard from "@/components/MinicursoBuyCard";
 import OnboardingTutorial, { startOnboardingTutorial } from "@/components/OnboardingTutorial";
 import { getSavedActiveTab, saveActiveTab } from "@/components/AppResilience";
 import SourcesDialog from "@/components/SourcesDialog";
@@ -231,6 +232,10 @@ const Dashboard = () => {
                   onPaymentSuccess={refreshPaymentStatus}
                   planId={selectedPlan}
                 />
+              </div>
+              <div className="max-w-md mx-auto mt-6">
+                <p className="text-center text-xs text-muted-foreground mb-2">Prefere começar pelo básico?</p>
+                <MinicursoBuyCard variant="card" />
               </div>
             </div>
           )}
