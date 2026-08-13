@@ -52,6 +52,24 @@ serve(async (req) => {
           Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         );
 
+        const externalRef: string = paymentData.external_reference ?? '';
+
+        // ---- Minicurso PDF + Desafios (external_reference: minicurso:<email>:<ts>) ----
+        if (externalRef.startsWith('minicurso:')) {
+          const email = externalRef.split(':')[1]?.toLowerCase() ?? '';
+          const { error: purchaseError } = await adminClient.from('purchases')
+            .update({
+              status: 'approved',
+              mercadopago_id: paymentId.toString(),
+            })
+            .eq('external_reference', externalRef);
+
+          if (purchaseError) console.error('Error updating purchase:', purchaseError);
+          console.log(`Minicurso liberado para ${email}`);
+
+          return new Response('OK', { status: 200, headers: corsHeaders });
+        }
+
         // Update payment record
         const { error: paymentError } = await adminClient.from('payments')
           .update({
