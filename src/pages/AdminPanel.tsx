@@ -13,6 +13,7 @@ import SecurityPanel from "@/components/admin/SecurityPanel";
 import DeviceManagement from "@/components/admin/DeviceManagement";
 import IPBlacklist from "@/components/admin/IPBlacklist";
 import LeadsTable from "@/components/admin/LeadsTable";
+import MinicursoFiles from "@/components/admin/MinicursoFiles";
 
 const AdminPanel = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -142,6 +143,7 @@ const AdminPanel = () => {
                 {activeSection === "overview" && "Visão Geral"}
                 {activeSection === "users" && "Usuários"}
                 {activeSection === "leads" && "Leads"}
+               {activeSection === "minicurso" && "Minicurso"}
                 {activeSection === "devices" && "Dispositivos"}
                 {activeSection === "blacklist" && "IPs Bloqueados"}
                 {activeSection === "security" && "Segurança"}
@@ -175,6 +177,7 @@ const AdminPanel = () => {
             )}
 
             {activeSection === "leads" && <LeadsTable />}
+            {activeSection === "minicurso" && <MinicursoFiles />}
 
             {activeSection === "users" && (
               <UsersTable

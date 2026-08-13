@@ -21,6 +21,7 @@ const NotFound = React.lazy(() => import("./pages/NotFound"));
 const AdminPanel = React.lazy(() => import("./pages/AdminPanel"));
 const PreSignup = React.lazy(() => import("./pages/PreSignup"));
 const Sources = React.lazy(() => import("./pages/Sources"));
+const AcessoMinicurso = React.lazy(() => import("./pages/AcessoMinicurso"));
 
 const queryClient = new QueryClient();
 
@@ -120,6 +121,7 @@ const App = () => (
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/cadastro" element={<PreSignup />} />
                 <Route path="/fontes" element={<Sources />} />
+                <Route path="/acesso-minicurso" element={<AcessoMinicurso />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/admin" element={<AdminPanel />} />
                 <Route path="/reset-password" element={<ResetPassword />} />

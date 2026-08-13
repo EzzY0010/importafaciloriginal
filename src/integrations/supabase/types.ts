@@ -265,6 +265,45 @@ export type Database = {
         }
         Relationships: []
       }
+      purchases: {
+        Row: {
+          amount: number
+          created_at: string
+          email: string
+          external_reference: string | null
+          id: string
+          mercadopago_id: string | null
+          product: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          email: string
+          external_reference?: string | null
+          id?: string
+          mercadopago_id?: string | null
+          product?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          email?: string
+          external_reference?: string | null
+          id?: string
+          mercadopago_id?: string | null
+          product?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       suspicious_login_attempts: {
         Row: {
           city: string | null
