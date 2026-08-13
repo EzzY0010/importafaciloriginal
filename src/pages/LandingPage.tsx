@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
 import { PLANS } from "@/config/plans";
+import MinicursoBuyCard from "@/components/MinicursoBuyCard";
 
 const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
@@ -243,6 +244,7 @@ const LandingPage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MinicursoBuyCard variant="hero" />
             {PLANS.map((plan) => (
               <div
                 key={plan.id}
