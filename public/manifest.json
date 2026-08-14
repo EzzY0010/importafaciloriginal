@@ -1,0 +1,16 @@
+{
+  "name": "ImportaFácil — Lobo das Importações",
+  "short_name": "ImportaFácil",
+  "description": "Painel ImportaFácil: IA de importação, calculadora e gestão de leads.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B1A33",
+  "theme_color": "#0B1A33",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/wolf-og-image.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/wolf-og-image.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
