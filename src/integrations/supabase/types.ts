@@ -223,6 +223,8 @@ export type Database = {
           last_longitude: number | null
           last_user_agent: string | null
           max_logins: number
+          plan_expires_at: string | null
+          plan_type: string | null
           updated_at: string
         }
         Insert: {
@@ -242,6 +244,8 @@ export type Database = {
           last_longitude?: number | null
           last_user_agent?: string | null
           max_logins?: number
+          plan_expires_at?: string | null
+          plan_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -261,6 +265,8 @@ export type Database = {
           last_longitude?: number | null
           last_user_agent?: string | null
           max_logins?: number
+          plan_expires_at?: string | null
+          plan_type?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -301,6 +307,39 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
