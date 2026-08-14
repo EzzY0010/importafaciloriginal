@@ -57,6 +57,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Push real (Web Push) para os administradores
+    queueMicrotask(async () => {
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/send-lead-push`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${SERVICE_KEY}`,
+          },
+          body: JSON.stringify({
+            title: 'Novo lead recebido!',
+            body: `${full_name} acabou de preencher o formulário`,
+            url: '/admin',
+          }),
+        });
+      } catch (err) {
+        console.error('[lead-capture] push error', err);
+      }
+    });
+
     // Fire-and-forget webhook (Evolution API / n8n / etc.) — configured later via LEAD_WEBHOOK_URL
     const webhook = Deno.env.get('LEAD_WEBHOOK_URL');
     if (webhook) {
