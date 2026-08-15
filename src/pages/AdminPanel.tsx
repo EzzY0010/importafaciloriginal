@@ -13,6 +13,7 @@ import SecurityPanel from "@/components/admin/SecurityPanel";
 import DeviceManagement from "@/components/admin/DeviceManagement";
 import IPBlacklist from "@/components/admin/IPBlacklist";
 import LeadsTable from "@/components/admin/LeadsTable";
+import PushSetupCard from "@/components/admin/PushSetupCard";
 import MinicursoFiles from "@/components/admin/MinicursoFiles";
 
 const AdminPanel = () => {
@@ -172,11 +173,17 @@ const AdminPanel = () => {
                   onIncrementDeviceLimit={incrementDeviceLimit}
                   canManageDeviceLimit={canManageDeviceLimit}
                 />
+                <PushSetupCard />
                 <LeadsTable />
               </>
             )}
 
-            {activeSection === "leads" && <LeadsTable />}
+            {activeSection === "leads" && (
+              <>
+                <PushSetupCard />
+                <LeadsTable />
+              </>
+            )}
             {activeSection === "minicurso" && <MinicursoFiles />}
 
             {activeSection === "users" && (
