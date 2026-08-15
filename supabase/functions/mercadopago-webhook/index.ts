@@ -83,13 +83,26 @@ serve(async (req) => {
           console.error('Error updating payment:', paymentError);
         }
 
-        // Extract user_id from external_reference (format: userId_timestamp)
-        const userId = paymentData.external_reference?.split('_')[0];
+        // Extract user_id / plan from external_reference (format: userId_planId_timestamp)
+        const refParts: string[] = (paymentData.external_reference ?? '').split('_');
+        const userId = refParts[0];
+        const planId = refParts.length >= 3 ? refParts[1] : 'vitalicio';
+
+        const PLAN_DAYS: Record<string, number | null> = {
+          mensal: 30,
+          trimestral: 90,
+          semestral: 180,
+          vitalicio: null,
+        };
+        const days = PLAN_DAYS[planId] ?? null;
+        const expiresAt = days
+          ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+          : null;
         
         if (userId) {
           // Mark user as paid
           const { error: profileError } = await adminClient.from('profiles')
-            .update({ has_paid: true })
+            .update({ has_paid: true, plan_type: planId, plan_expires_at: expiresAt })
             .eq('id', userId);
 
           if (profileError) {
