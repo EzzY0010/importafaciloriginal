@@ -177,7 +177,7 @@ const Dashboard = () => {
         <div className="max-w-5xl mx-auto">
           {hasAccess ? (
             <>
-            <RenewalBanner />
+            <RenewalBanner onRenew={() => navigate('/dashboard?plan=vitalicio')} />
             <SourcesDialog open={sourcesOpen} onOpenChange={setSourcesOpen} />
             {activeTab === 'home' && (
               <HomeView
