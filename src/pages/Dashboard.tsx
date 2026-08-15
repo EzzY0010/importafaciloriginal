@@ -17,6 +17,7 @@ import MinicursoBuyCard from "@/components/MinicursoBuyCard";
 import OnboardingTutorial, { startOnboardingTutorial } from "@/components/OnboardingTutorial";
 import { getSavedActiveTab, saveActiveTab } from "@/components/AppResilience";
 import SourcesDialog from "@/components/SourcesDialog";
+import RenewalBanner from "@/components/RenewalBanner";
 import HomeView from "@/components/dashboard/HomeView";
 import BottomNav from "@/components/dashboard/BottomNav";
 import { PLANS, type PlanId } from "@/config/plans";
@@ -176,6 +177,7 @@ const Dashboard = () => {
         <div className="max-w-5xl mx-auto">
           {hasAccess ? (
             <>
+            <RenewalBanner />
             <SourcesDialog open={sourcesOpen} onOpenChange={setSourcesOpen} />
             {activeTab === 'home' && (
               <HomeView
