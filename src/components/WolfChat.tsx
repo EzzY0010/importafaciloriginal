@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Send, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag } from 'lucide-react';
+import { Send, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag, Camera } from 'lucide-react';
 import wolfLogo from '@/assets/wolf-logo-clean.png';
 import StrategyButtons from './StrategyButtons';
 import { backendKey, backendUrl, getSupabaseClient, isBackendConfigured } from '@/lib/backend';
@@ -812,7 +812,7 @@ const WolfChat: React.FC = () => {
               onClick={() => fileInputRef.current?.click()}
               className="rounded-xl border-border hover:bg-muted"
             >
-              <img src={wolfLogo} alt="Enviar foto" className="h-5 w-5 rounded-full object-cover" />
+              <Camera className="h-5 w-5" />
             </Button>
             <Input
               data-tour="chat-input"

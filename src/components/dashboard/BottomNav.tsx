@@ -1,4 +1,5 @@
-import { Home, Camera, Package, Calculator, User } from "lucide-react";
+import { Home, Package, Calculator, User } from "lucide-react";
+import wolfLogo from "@/assets/wolf-logo-clean.png";
 
 interface BottomNavProps {
   active: string;
@@ -7,7 +8,7 @@ interface BottomNavProps {
 
 const items = [
   { key: "home", label: "Início", icon: Home, tour: undefined },
-  { key: "chat", label: "Analisar", icon: Camera, tour: "ai" },
+  { key: "chat", label: "Analisar", icon: null, tour: "ai" },
   { key: "sources", label: "Fornecedores", icon: Package, tour: "quick-access" },
   { key: "calculator", label: "Calculadora", icon: Calculator, tour: "calculator" },
   { key: "profile", label: "Perfil", icon: User, tour: undefined },
@@ -28,7 +29,15 @@ const BottomNav = ({ active, onSelect }: BottomNavProps) => (
               isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Icon className="w-5 h-5" />
+            {Icon ? (
+              <Icon className="w-5 h-5" />
+            ) : (
+              <img
+                src={wolfLogo}
+                alt="Lobo das Importações"
+                className={`w-5 h-5 rounded-full object-cover transition-opacity ${isActive ? "opacity-100" : "opacity-70"}`}
+              />
+            )}
             <span className="leading-none">{label}</span>
           </button>
         );
