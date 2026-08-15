@@ -118,6 +118,15 @@ const LandingPage = () => {
             <LeadCaptureInline scrollToPlansId="plans-section" />
           </div>
 
+          {!user && (
+            <button
+              onClick={() => navigate("/login")}
+              className="mx-auto block text-sm text-hero-foreground/70 hover:text-gold underline underline-offset-4 transition-colors"
+            >
+              Já tenho conta — entrar
+            </button>
+          )}
+
           <button onClick={scrollToManifesto} className="mx-auto block animate-bounce text-gold/60 hover:text-gold transition-colors mt-8" aria-label="Rolar para baixo">
             <ChevronDown className="w-8 h-8" />
           </button>
@@ -271,13 +280,13 @@ const LandingPage = () => {
                 </div>
                 <Button
                   onClick={() => goToPlan(plan.id)}
-                  className={`w-full h-11 font-bold ${
+                  className={`w-full min-h-11 h-auto py-2.5 font-bold whitespace-normal leading-tight text-xs sm:text-sm ${
                     plan.highlight
                       ? "bg-gold text-gold-foreground hover:bg-gold/90"
                       : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20"
                   }`}
                 >
-                  {plan.highlight ? "🎯 Eu quero meu acesso vitalício" : "Escolher"}
+                  {plan.highlight ? "🎯 Quero meu acesso vitalício" : "Escolher"}
                 </Button>
               </div>
             ))}
