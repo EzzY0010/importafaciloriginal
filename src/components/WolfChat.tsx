@@ -812,7 +812,7 @@ const WolfChat: React.FC = () => {
               onClick={() => fileInputRef.current?.click()}
               className="rounded-xl border-border hover:bg-muted"
             >
-              <ImagePlus className="h-4 w-4" />
+              <img src={wolfLogo} alt="Enviar foto" className="h-5 w-5 rounded-full object-cover" />
             </Button>
             <Input
               data-tour="chat-input"
