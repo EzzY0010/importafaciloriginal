@@ -286,7 +286,19 @@ serve(async (req) => {
       : availableModels.filter(
           (id) => /gpt-oss|qwen|llama-3\.[13]|versatile|instant/i.test(id) && !preferred.includes(id) && !/guard|whisper|compound|orpheus|allam/i.test(id),
         );
-    const modelQueue = [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
+    let modelQueue = [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
+
+    // Se a conta Groq não tem nenhum modelo de visão ativo, falha rápido com
+    // mensagem clara em vez de queimar tentativas em modelos de texto.
+    if (useVisionModel && modelQueue.every((m) => !availableModels.includes(m))) {
+      return new Response(
+        JSON.stringify({
+          error: 'vision_unavailable',
+          message: 'A análise por foto está temporariamente indisponível (sem modelo de visão ativo no provedor). Envie o nome/link do produto por texto que eu analiso normalmente. 🐺',
+        }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     console.log('Groq model selection:', {
       useVisionModel,
