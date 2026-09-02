@@ -251,6 +251,9 @@ serve(async (req) => {
       'llama-3.2-11b-vision-preview',
     ];
     const TEXT_CANDIDATES = [
+      'openai/gpt-oss-120b',
+      'openai/gpt-oss-20b',
+      'qwen/qwen3.6-27b',
       'llama-3.3-70b-versatile',
       'llama-3.1-8b-instant',
     ];
@@ -270,11 +273,8 @@ serve(async (req) => {
       console.error('Groq models list error:', (listErr as Error)?.message);
     }
 
-    // A conta Groq não expõe modelos de visão. Quando há imagem, usamos o
-    // Lovable AI Gateway (compatível com OpenAI/SSE) para a análise visual.
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const useGateway = useVisionModel && !!LOVABLE_API_KEY;
-
+    // Tudo (texto e visão) sai pela GROQ_API_KEY — nunca pelo Lovable AI
+    // Gateway, para não consumir os créditos de IA do workspace.
     const candidates = useVisionModel ? VISION_CANDIDATES : TEXT_CANDIDATES;
     // Ordena: preferidos que aparecem na lista da conta primeiro, depois os
     // demais modelos da conta que aparentam suportar visão, depois o resto.
@@ -284,15 +284,25 @@ serve(async (req) => {
           (id) => /vision|llama-4|scout|maverick/i.test(id) && !preferred.includes(id),
         )
       : availableModels.filter(
-          (id) => /llama-3\.[13]|versatile|instant/i.test(id) && !preferred.includes(id),
+          (id) => /gpt-oss|qwen|llama-3\.[13]|versatile|instant/i.test(id) && !preferred.includes(id) && !/guard|whisper|compound|orpheus|allam/i.test(id),
         );
-    const modelQueue = useGateway
-      ? ['openai/gpt-5.6-sol']
-      : [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
+    let modelQueue = [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
+
+    // Se a conta Groq não tem nenhum modelo de visão ativo, falha rápido com
+    // mensagem clara em vez de queimar tentativas em modelos de texto.
+    if (useVisionModel && modelQueue.every((m) => !availableModels.includes(m))) {
+      return new Response(
+        JSON.stringify({
+          error: 'vision_unavailable',
+          message: 'A análise por foto está temporariamente indisponível (sem modelo de visão ativo no provedor). Envie o nome/link do produto por texto que eu analiso normalmente. 🐺',
+        }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     console.log('Groq model selection:', {
       useVisionModel,
-      useGateway,
+      provider: 'groq',
       modelQueue,
       availableModels,
     });
@@ -313,7 +323,7 @@ serve(async (req) => {
           model,
           messages: apiMessages,
           stream: true,
-          ...(useGateway ? {} : { temperature: 0.7 }),
+          temperature: 0.7,
         });
         approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
 
@@ -327,20 +337,13 @@ serve(async (req) => {
         });
 
         response = await fetch(
-          useGateway
-            ? "https://ai.gateway.lovable.dev/v1/chat/completions"
-            : "https://api.groq.com/openai/v1/chat/completions",
+          "https://api.groq.com/openai/v1/chat/completions",
           {
             method: "POST",
-            headers: useGateway
-              ? {
-                  "Lovable-API-Key": LOVABLE_API_KEY!,
-                  "Content-Type": "application/json",
-                }
-              : {
-                  Authorization: `Bearer ${GROQ_API_KEY}`,
-                  "Content-Type": "application/json",
-                },
+            headers: {
+              Authorization: `Bearer ${GROQ_API_KEY}`,
+              "Content-Type": "application/json",
+            },
             body: requestBody,
             signal: controller.signal,
           },
