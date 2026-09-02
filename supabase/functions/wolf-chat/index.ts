@@ -308,7 +308,7 @@ serve(async (req) => {
           model,
           messages: apiMessages,
           stream: true,
-          ...(useGateway ? {} : { temperature: 0.7 }),
+          temperature: 0.7,
         });
         approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
 
@@ -322,20 +322,13 @@ serve(async (req) => {
         });
 
         response = await fetch(
-          useGateway
-            ? "https://ai.gateway.lovable.dev/v1/chat/completions"
-            : "https://api.groq.com/openai/v1/chat/completions",
+          "https://api.groq.com/openai/v1/chat/completions",
           {
             method: "POST",
-            headers: useGateway
-              ? {
-                  "Lovable-API-Key": LOVABLE_API_KEY!,
-                  "Content-Type": "application/json",
-                }
-              : {
-                  Authorization: `Bearer ${GROQ_API_KEY}`,
-                  "Content-Type": "application/json",
-                },
+            headers: {
+              Authorization: `Bearer ${GROQ_API_KEY}`,
+              "Content-Type": "application/json",
+            },
             body: requestBody,
             signal: controller.signal,
           },
