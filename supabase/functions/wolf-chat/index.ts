@@ -272,8 +272,6 @@ serve(async (req) => {
 
     // Tudo (texto e visão) sai pela GROQ_API_KEY — nunca pelo Lovable AI
     // Gateway, para não consumir os créditos de IA do workspace.
-    const useGateway = false;
-
     const candidates = useVisionModel ? VISION_CANDIDATES : TEXT_CANDIDATES;
     // Ordena: preferidos que aparecem na lista da conta primeiro, depois os
     // demais modelos da conta que aparentam suportar visão, depois o resto.
@@ -285,13 +283,11 @@ serve(async (req) => {
       : availableModels.filter(
           (id) => /llama-3\.[13]|versatile|instant/i.test(id) && !preferred.includes(id),
         );
-    const modelQueue = useGateway
-      ? ['openai/gpt-5.6-sol']
-      : [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
+    const modelQueue = [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
 
     console.log('Groq model selection:', {
       useVisionModel,
-      useGateway,
+      provider: 'groq',
       modelQueue,
       availableModels,
     });
