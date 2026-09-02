@@ -251,6 +251,9 @@ serve(async (req) => {
       'llama-3.2-11b-vision-preview',
     ];
     const TEXT_CANDIDATES = [
+      'openai/gpt-oss-120b',
+      'openai/gpt-oss-20b',
+      'qwen/qwen3.6-27b',
       'llama-3.3-70b-versatile',
       'llama-3.1-8b-instant',
     ];
@@ -281,7 +284,7 @@ serve(async (req) => {
           (id) => /vision|llama-4|scout|maverick/i.test(id) && !preferred.includes(id),
         )
       : availableModels.filter(
-          (id) => /llama-3\.[13]|versatile|instant/i.test(id) && !preferred.includes(id),
+          (id) => /gpt-oss|qwen|llama-3\.[13]|versatile|instant/i.test(id) && !preferred.includes(id) && !/guard|whisper|compound|orpheus|allam/i.test(id),
         );
     const modelQueue = [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
 
