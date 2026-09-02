@@ -270,10 +270,9 @@ serve(async (req) => {
       console.error('Groq models list error:', (listErr as Error)?.message);
     }
 
-    // A conta Groq não expõe modelos de visão. Quando há imagem, usamos o
-    // Lovable AI Gateway (compatível com OpenAI/SSE) para a análise visual.
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const useGateway = useVisionModel && !!LOVABLE_API_KEY;
+    // Tudo (texto e visão) sai pela GROQ_API_KEY — nunca pelo Lovable AI
+    // Gateway, para não consumir os créditos de IA do workspace.
+    const useGateway = false;
 
     const candidates = useVisionModel ? VISION_CANDIDATES : TEXT_CANDIDATES;
     // Ordena: preferidos que aparecem na lista da conta primeiro, depois os
