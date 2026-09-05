@@ -14,7 +14,7 @@ import AdvancedPricingCalculator from "@/components/AdvancedPricingCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import PaymentButton from "@/components/PaymentButton";
 import MinicursoBuyCard from "@/components/MinicursoBuyCard";
-import OnboardingTutorial, { startOnboardingTutorial } from "@/components/OnboardingTutorial";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
 import WelcomeOnboarding, { startWelcomeOnboarding } from "@/components/WelcomeOnboarding";
 import { getSavedActiveTab, saveActiveTab } from "@/components/AppResilience";
 import SourcesDialog from "@/components/SourcesDialog";
@@ -161,9 +161,6 @@ const Dashboard = () => {
                     )}
                     <Button variant="outline" className="w-full justify-start gap-2" onClick={() => { setMenuOpen(false); startWelcomeOnboarding(); }}>
                       <HelpCircle className="w-4 h-4" /> Ajuda / Como usar
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start gap-2" onClick={() => { setMenuOpen(false); startOnboardingTutorial(); }}>
-                      <HelpCircle className="w-4 h-4" /> Tutorial
                     </Button>
                     <div className="pt-2"><LanguageSelector /></div>
                     <Button variant="outline" className="w-full justify-start gap-2" onClick={handleLogout}>
