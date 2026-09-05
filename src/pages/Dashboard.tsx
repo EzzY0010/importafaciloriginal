@@ -15,6 +15,7 @@ import CurrencyConverter from "@/components/CurrencyConverter";
 import PaymentButton from "@/components/PaymentButton";
 import MinicursoBuyCard from "@/components/MinicursoBuyCard";
 import OnboardingTutorial, { startOnboardingTutorial } from "@/components/OnboardingTutorial";
+import WelcomeOnboarding, { startWelcomeOnboarding } from "@/components/WelcomeOnboarding";
 import { getSavedActiveTab, saveActiveTab } from "@/components/AppResilience";
 import SourcesDialog from "@/components/SourcesDialog";
 import RenewalBanner from "@/components/RenewalBanner";
@@ -105,6 +106,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <OnboardingTutorial />
+      <WelcomeOnboarding />
       {/* Header fixo */}
       <header className="header-gradient sticky top-0 z-50 shadow-medium">
         <div className="max-w-5xl mx-auto px-4">
@@ -157,6 +159,9 @@ const Dashboard = () => {
                         <Crown className="w-4 h-4 text-accent" /> Admin
                       </Button>
                     )}
+                    <Button variant="outline" className="w-full justify-start gap-2" onClick={() => { setMenuOpen(false); startWelcomeOnboarding(); }}>
+                      <HelpCircle className="w-4 h-4" /> Ajuda / Como usar
+                    </Button>
                     <Button variant="outline" className="w-full justify-start gap-2" onClick={() => { setMenuOpen(false); startOnboardingTutorial(); }}>
                       <HelpCircle className="w-4 h-4" /> Tutorial
                     </Button>
