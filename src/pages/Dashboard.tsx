@@ -15,6 +15,7 @@ import CurrencyConverter from "@/components/CurrencyConverter";
 import PaymentButton from "@/components/PaymentButton";
 import MinicursoBuyCard from "@/components/MinicursoBuyCard";
 import OnboardingTutorial, { startOnboardingTutorial } from "@/components/OnboardingTutorial";
+import WelcomeOnboarding, { startWelcomeOnboarding } from "@/components/WelcomeOnboarding";
 import { getSavedActiveTab, saveActiveTab } from "@/components/AppResilience";
 import SourcesDialog from "@/components/SourcesDialog";
 import RenewalBanner from "@/components/RenewalBanner";
