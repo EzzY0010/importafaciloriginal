@@ -3,6 +3,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Calculator, RefreshCcw, ArrowRight, Rocket } from 'lucide-react';
 import wolfLogo from '@/assets/wolf-logo-clean.png';
+import { startOnboardingTutorial } from '@/components/OnboardingTutorial';
 
 const STORAGE_KEY = 'has_seen_welcome_onboarding';
 
@@ -43,9 +44,12 @@ const WelcomeOnboarding: React.FC = () => {
   const [step, setStep] = useState(0);
 
   const finish = () => {
+    const firstTime = !localStorage.getItem(STORAGE_KEY);
     localStorage.setItem(STORAGE_KEY, 'true');
     setOpen(false);
     setStep(0);
+    // No primeiro acesso, continua para o tour detalhado das telas
+    if (firstTime) startOnboardingTutorial();
   };
 
   useEffect(() => {
