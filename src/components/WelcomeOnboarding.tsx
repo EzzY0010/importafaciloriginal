@@ -70,7 +70,7 @@ const WelcomeOnboarding: React.FC = () => {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) finish(); }}>
-      <DialogContent className="sm:max-w-md text-center" hideClose>
+      <DialogContent className="sm:max-w-md text-center">
         <div className="flex flex-col items-center gap-4 pt-2">
           <img src={wolfLogo} alt="ImportaFácil" className="w-16 h-16 rounded-2xl shadow-soft" />
 
