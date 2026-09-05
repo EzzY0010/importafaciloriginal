@@ -220,9 +220,8 @@ const OnboardingTutorial: React.FC = () => {
       setTimeout(tryStart, 600);
     };
 
-    // Auto-start on first visit (per device, since localStorage is per-device)
-    const autoStart = !localStorage.getItem(STORAGE_KEY);
-    if (autoStart) launchWithRetry();
+    // O auto-start no primeiro acesso é disparado pelo WelcomeOnboarding (cards de boas-vindas),
+    // que encadeia este tour ao finalizar — evitando sobreposição de sobreposições.
 
     // Manual replay trigger — funciona em Android, iOS e desktop
     const handleManualStart = () => {
