@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, Rocket, Sparkle } from 'lucide-react';
 import wolfLogo from '@/assets/wolf-logo-clean.png';
-import { getSupabase } from '@/lib/backend';
+import { getSupabaseClient } from '@/lib/backend';
 import { useAuth } from '@/hooks/useAuth';
 
 const STORAGE_KEY = 'has_done_interactive_tutorial';
@@ -99,7 +99,7 @@ const InteractiveOnboarding: React.FC = () => {
     localStorage.setItem(STORAGE_KEY, 'true');
     if (!user) return;
     try {
-      const client = await getSupabase();
+      const client = await getSupabaseClient();
       if (client) {
         await client
           .from('profiles')
