@@ -214,6 +214,7 @@ export type Database = {
           full_name: string | null
           has_paid: boolean | null
           id: string
+          interactive_tutorial_done: boolean
           last_city: string | null
           last_country: string | null
           last_device_fingerprint: string | null
@@ -235,6 +236,7 @@ export type Database = {
           full_name?: string | null
           has_paid?: boolean | null
           id: string
+          interactive_tutorial_done?: boolean
           last_city?: string | null
           last_country?: string | null
           last_device_fingerprint?: string | null
@@ -256,6 +258,7 @@ export type Database = {
           full_name?: string | null
           has_paid?: boolean | null
           id?: string
+          interactive_tutorial_done?: boolean
           last_city?: string | null
           last_country?: string | null
           last_device_fingerprint?: string | null

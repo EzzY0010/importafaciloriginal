@@ -227,6 +227,16 @@ const WolfChat: React.FC = () => {
     }
   }, [user]);
 
+  // Tutorial interativo: preenche o campo com a sugestão tocada pelo usuário
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const text = (e as CustomEvent).detail as string;
+      if (typeof text === 'string') setInput(text);
+    };
+    window.addEventListener('onboarding-fill-chat', handler);
+    return () => window.removeEventListener('onboarding-fill-chat', handler);
+  }, []);
+
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -555,6 +565,9 @@ const WolfChat: React.FC = () => {
       }
 
       await saveMessage(convId, 'assistant', assistantMessage);
+      if (assistantMessage.trim()) {
+        window.dispatchEvent(new CustomEvent('wolf-chat-answered'));
+      }
 
     } catch (error: any) {
       console.error('wolf-chat error (client):', {
