@@ -104,8 +104,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <OnboardingTutorial />
-      <WelcomeOnboarding />
+      <InteractiveOnboarding />
       {/* Header fixo */}
       <header className="header-gradient sticky top-0 z-50 shadow-medium">
         <div className="max-w-5xl mx-auto px-4">
@@ -158,7 +157,7 @@ const Dashboard = () => {
                         <Crown className="w-4 h-4 text-accent" /> Admin
                       </Button>
                     )}
-                    <Button variant="outline" className="w-full justify-start gap-2" onClick={() => { setMenuOpen(false); startWelcomeOnboarding(); }}>
+                    <Button variant="outline" className="w-full justify-start gap-2" onClick={() => { setMenuOpen(false); startInteractiveOnboarding(); }}>
                       <HelpCircle className="w-4 h-4" /> Ajuda / Como usar
                     </Button>
                     <div className="pt-2"><LanguageSelector /></div>
