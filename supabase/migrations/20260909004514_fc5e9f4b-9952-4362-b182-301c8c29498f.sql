@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS interactive_tutorial_done boolean NOT NULL DEFAULT false;
