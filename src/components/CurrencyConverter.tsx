@@ -74,7 +74,7 @@ const CurrencyConverter: React.FC = () => {
   };
 
   return (
-    <Card className="w-full max-w-2xl" translate="no">
+    <Card data-tour="converter" className="w-full max-w-2xl" translate="no">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
           <span className="flex items-center gap-2">
