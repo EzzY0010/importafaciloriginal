@@ -565,6 +565,9 @@ const WolfChat: React.FC = () => {
       }
 
       await saveMessage(convId, 'assistant', assistantMessage);
+      if (assistantMessage.trim()) {
+        window.dispatchEvent(new CustomEvent('wolf-chat-answered'));
+      }
 
     } catch (error: any) {
       console.error('wolf-chat error (client):', {
