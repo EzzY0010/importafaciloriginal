@@ -519,66 +519,76 @@ const WolfChat: React.FC = () => {
       const decoder = new TextDecoder('utf-8');
       let assistantMessage = '';
       let sseBuffer = '';
+      let sawDone = false;
 
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
+
+      const paintAssistant = () => {
+        if (!isCurrent()) return;
+        setMessages(prev =>
+          prev.map(m => (m.id === assistantId ? { ...m, content: assistantMessage } : m))
+        );
+      };
 
       const processSSELine = (line: string) => {
         const trimmed = line.trim();
-        if (!trimmed || trimmed === 'data: [DONE]') return;
-        
-        if (trimmed.startsWith('data: ')) {
+        if (!trimmed) return;
+        if (trimmed === 'data: [DONE]') { sawDone = true; return; }
+
+        if (trimmed.startsWith('data:')) {
+          const jsonStr = trimmed.slice(5).trim();
+          if (!jsonStr.startsWith('{')) return;
           try {
-            const jsonStr = trimmed.slice(6);
-            if (jsonStr && jsonStr.startsWith('{')) {
-              const json = JSON.parse(jsonStr);
-              const content = json.choices?.[0]?.delta?.content;
-              if (content && typeof content === 'string') {
-                assistantMessage += content;
-                setMessages(prev => {
-                  const updated = [...prev];
-                  updated[updated.length - 1] = { role: 'assistant', content: assistantMessage };
-                  return updated;
-                });
-              }
+            const json = JSON.parse(jsonStr);
+            const content = json.choices?.[0]?.delta?.content;
+            if (content && typeof content === 'string') {
+              assistantMessage += content;
+              paintAssistant();
             }
-          } catch {
-            // Skip malformed chunks - they'll be reprocessed with more data
+          } catch (parseErr) {
+            console.warn('wolf-chat: chunk SSE inválido ignorado', jsonStr.slice(0, 120));
           }
         }
       };
 
       while (reader) {
         const { done, value } = await reader.read();
-        
+
         if (done) {
           // Flush remaining decoder bytes and process final buffer
-          const finalChunk = decoder.decode(new Uint8Array(), { stream: false });
-          sseBuffer += finalChunk;
-          const finalLines = sseBuffer.split('\n');
-          for (const line of finalLines) {
-            processSSELine(line);
-          }
+          sseBuffer += decoder.decode();
+          for (const line of sseBuffer.split('\n')) processSSELine(line);
+          sseBuffer = '';
           break;
         }
 
         // Decode with stream: true to handle UTF-8 multi-byte characters across chunk boundaries
-        const chunk = decoder.decode(value, { stream: true });
-        sseBuffer += chunk;
-        
+        sseBuffer += decoder.decode(value, { stream: true });
+
         // Process only complete lines (ending with \n)
         const lines = sseBuffer.split('\n');
         // Keep incomplete line in buffer for next iteration
         sseBuffer = lines.pop() || '';
 
-        for (const line of lines) {
-          processSSELine(line);
-        }
+        for (const line of lines) processSSELine(line);
+      }
+
+      if (!isCurrent()) return; // resposta antiga: não escreve nem salva
+
+      console.log('wolf-chat stream finalizado:', {
+        reqId,
+        chars: assistantMessage.length,
+        sawDone,
+      });
+
+      if (!assistantMessage.trim()) {
+        assistantMessage = 'Não consegui gerar a resposta agora. Pode repetir a pergunta? 🐺';
+        paintAssistant();
       }
 
       await saveMessage(convId, 'assistant', assistantMessage);
-      if (assistantMessage.trim()) {
-        window.dispatchEvent(new CustomEvent('wolf-chat-answered'));
-      }
+      window.dispatchEvent(new CustomEvent('wolf-chat-answered'));
+
 
     } catch (error: any) {
       console.error('wolf-chat error (client):', {
