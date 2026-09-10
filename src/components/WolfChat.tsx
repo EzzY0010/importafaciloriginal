@@ -221,6 +221,9 @@ const WolfChat: React.FC = () => {
   const [showStrategies, setShowStrategies] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Evita condição de corrida: só o pedido mais recente pode escrever na tela
+  const requestSeqRef = useRef(0);
+  const activeControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (user) {
