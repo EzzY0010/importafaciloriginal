@@ -7,11 +7,11 @@ interface BottomNavProps {
 }
 
 const items = [
-  { key: "home", label: "Início", icon: Home, tour: undefined },
+  { key: "home", label: "Início", icon: Home, tour: "nav-home" },
   { key: "chat", label: "IA Lobo", icon: null, tour: "ai" },
   { key: "sources", label: "Fornecedores", icon: Package, tour: "quick-access" },
   { key: "calculator", label: "Calculadora", icon: Calculator, tour: "calculator" },
-  { key: "profile", label: "Perfil", icon: User, tour: undefined },
+  { key: "profile", label: "Perfil", icon: User, tour: "nav-profile" },
 ];
 
 const BottomNav = ({ active, onSelect }: BottomNavProps) => (

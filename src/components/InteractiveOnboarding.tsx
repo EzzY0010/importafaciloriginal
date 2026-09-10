@@ -11,71 +11,120 @@ export const startInteractiveOnboarding = () => {
   window.dispatchEvent(new CustomEvent('start-interactive-onboarding'));
 };
 
-const setTab = (tab: 'chat' | 'calculator') => {
+const setTab = (tab: 'home' | 'chat' | 'calculator') => {
   window.dispatchEvent(new CustomEvent('tutorial-set-tab', { detail: tab }));
 };
 
-type SubStep = {
+type Step = {
+  id: string;
+  tab: 'home' | 'chat' | 'calculator';
   selector: string;
   title: string;
   text: string;
   suggestion?: string;
-  /** quando true, o "Próximo" só libera após a prática ser concluída */
-  practice?: boolean;
-};
-
-type Step = {
-  id: 'chat' | 'calculator' | 'converter';
-  tab: 'chat' | 'calculator';
-  subSteps: SubStep[];
-  success: string;
+  /** prática obrigatória: só libera "Próximo" depois da ação */
+  practice?: 'chat' | 'calculator' | 'converter';
+  success?: string;
 };
 
 const STEPS: Step[] = [
   {
-    id: 'chat',
+    id: 'chat-input',
     tab: 'chat',
+    selector: '[data-tour="chat-input"]',
+    title: 'Digite sua primeira pergunta aqui',
+    text: 'Toque na sugestão abaixo para preencher automaticamente — ou escreva sua própria dúvida e envie.',
+    suggestion: 'Quanto pago de imposto para importar um celular?',
+    practice: 'chat',
     success: 'Boa! Você já sabe conversar com o Lobo. 🐺',
-    subSteps: [
-      {
-        selector: '[data-tour="chat-input"]',
-        title: 'Digite sua primeira pergunta aqui',
-        text: 'Toque na sugestão abaixo para preencher automaticamente — ou escreva sua própria dúvida.',
-        suggestion: 'Quanto pago de imposto para importar um celular?',
-        practice: true,
-      },
-    ],
   },
   {
-    id: 'calculator',
+    id: 'chat-image',
+    tab: 'chat',
+    selector: '[data-tour="chat-image"]',
+    title: 'Enviar foto do produto',
+    text: 'Esta câmera serve para mandar a foto de um produto e receber a análise dele — é diferente de perguntar por texto.',
+  },
+  {
+    id: 'calc-inputs',
     tab: 'calculator',
+    selector: '[data-tour="calc-inputs"]',
+    title: 'Frete internacional',
+    text: 'Escolha a moeda e digite um valor de exemplo, como 20.',
+  },
+  {
+    id: 'calc-root',
+    tab: 'calculator',
+    selector: '[data-tour="calc-root"]',
+    title: 'Preencha um produto',
+    text: 'Escreva o nome do item e o valor de compra (ex: 50). O resultado aparece sozinho, sem botão.',
+    practice: 'calculator',
     success: 'Boa! Você já sabe simular uma importação. 🧮',
-    subSteps: [
-      {
-        selector: '[data-tour="calc-inputs"]',
-        title: 'Frete internacional',
-        text: 'Escolha a moeda e digite um valor de exemplo, como 20.',
-      },
-      {
-        selector: '[data-tour="calc-root"]',
-        title: 'Preencha um produto',
-        text: 'Escreva o nome do item e o valor de compra (ex: 50). O resultado aparece sozinho, sem botão.',
-        practice: true,
-      },
-    ],
   },
   {
     id: 'converter',
     tab: 'calculator',
+    selector: '[data-tour="converter"]',
+    title: 'Converta ao vivo',
+    text: 'Digite um valor em dólar, euro, libra ou yuan e veja as outras moedas mudarem na hora.',
+    practice: 'converter',
     success: 'Boa! Agora você compara preços em qualquer moeda. 💱',
-    subSteps: [
-      {
-        selector: '[data-tour="converter"]',
-        title: 'Converta ao vivo',
-        text: 'Digite um valor em dólar, euro, libra ou yuan e veja as outras moedas mudarem na hora.',
-        practice: true,
-      },
-    ],
+  },
+  {
+    id: 'nav-home',
+    tab: 'calculator',
+    selector: '[data-tour="nav-home"]',
+    title: 'Início',
+    text: 'Volta para a tela principal, com os atalhos das funções mais usadas.',
+  },
+  {
+    id: 'nav-ai',
+    tab: 'calculator',
+    selector: '[data-tour="ai"]',
+    title: 'IA Lobo',
+    text: 'Abre o chat com o Lobo das Importações para tirar dúvidas e analisar produtos.',
+  },
+  {
+    id: 'nav-sources',
+    tab: 'calculator',
+    selector: '[data-tour="quick-access"]',
+    title: 'Fornecedores',
+    text: 'Lista de lojas confiáveis e redirecionadoras para comprar e receber no Brasil.',
+  },
+  {
+    id: 'nav-calc',
+    tab: 'calculator',
+    selector: '[data-tour="calculator"]',
+    title: 'Calculadora',
+    text: 'Atalho para a calculadora de custos e o conversor de moedas.',
+  },
+  {
+    id: 'nav-profile',
+    tab: 'calculator',
+    selector: '[data-tour="nav-profile"]',
+    title: 'Perfil',
+    text: 'Abre o seu menu: idioma, ajuda e sair da conta.',
+  },
+  {
+    id: 'bell',
+    tab: 'calculator',
+    selector: '[data-tour="bell"]',
+    title: 'Notificações',
+    text: 'O sininho avisa sobre novidades, avisos e atualizações do app.',
+  },
+  {
+    id: 'whatsapp',
+    tab: 'calculator',
+    selector: '[data-tour="whatsapp"]',
+    title: 'Comunidade no WhatsApp',
+    text: 'Entra no grupo para falar com o suporte e com outros importadores.',
+  },
+  {
+    id: 'menu',
+    tab: 'calculator',
+    selector: '[data-tour="menu"]',
+    title: 'Menu',
+    text: 'Aqui ficam idioma, "Ajuda / Como usar" (para rever este tutorial) e sair da conta.',
   },
 ];
 
@@ -85,7 +134,6 @@ const InteractiveOnboarding: React.FC = () => {
   const { user } = useAuth();
   const [running, setRunning] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
-  const [subIdx, setSubIdx] = useState(0);
   const [done, setDone] = useState(false);
   const [finished, setFinished] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -93,7 +141,6 @@ const InteractiveOnboarding: React.FC = () => {
   const startedRef = useRef(false);
 
   const step = STEPS[stepIdx];
-  const sub = step?.subSteps[subIdx];
 
   const persistDone = useCallback(async () => {
     localStorage.setItem(STORAGE_KEY, 'true');
@@ -115,7 +162,6 @@ const InteractiveOnboarding: React.FC = () => {
     setRunning(false);
     setFinished(false);
     setStepIdx(0);
-    setSubIdx(0);
     setDone(false);
     setFeedback(null);
     persistDone();
@@ -123,7 +169,6 @@ const InteractiveOnboarding: React.FC = () => {
 
   const begin = useCallback(() => {
     setStepIdx(0);
-    setSubIdx(0);
     setDone(false);
     setFeedback(null);
     setFinished(false);
@@ -157,14 +202,14 @@ const InteractiveOnboarding: React.FC = () => {
 
   /* acompanha a posição do elemento destacado */
   useEffect(() => {
-    if (!running || finished || !sub) {
+    if (!running || finished || !step) {
       setRect(null);
       return;
     }
     let raf = 0;
     let scrolled = false;
     const tick = () => {
-      const el = document.querySelector(sub.selector) as HTMLElement | null;
+      const el = document.querySelector(step.selector) as HTMLElement | null;
       if (el) {
         if (!scrolled) {
           scrolled = true;
@@ -178,42 +223,37 @@ const InteractiveOnboarding: React.FC = () => {
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
-  }, [running, finished, sub]);
+  }, [running, finished, step]);
 
   /* detecção da prática concluída */
   useEffect(() => {
-    if (!running || finished || !sub?.practice || done) return;
+    if (!running || finished || !step?.practice || done) return;
 
-    if (step.id === 'chat') {
+    if (step.practice === 'chat') {
       const onAnswer = () => setDone(true);
       window.addEventListener('wolf-chat-answered', onAnswer);
       return () => window.removeEventListener('wolf-chat-answered', onAnswer);
     }
 
     const interval = window.setInterval(() => {
-      if (step.id === 'calculator') {
+      if (step.practice === 'calculator') {
         if (document.querySelector('[data-tour="calc-results"]')) setDone(true);
-      } else if (step.id === 'converter') {
+      } else if (step.practice === 'converter') {
         const inputs = document.querySelectorAll<HTMLInputElement>('[data-tour="converter"] input');
         if (Array.from(inputs).some((i) => i.value.trim() !== '')) setDone(true);
       }
     }, 500);
     return () => window.clearInterval(interval);
-  }, [running, finished, sub, step, done]);
+  }, [running, finished, step, done]);
 
   /* feedback positivo ao concluir a prática */
   useEffect(() => {
-    if (done && step) setFeedback(step.success);
+    if (done && step?.success) setFeedback(step.success);
   }, [done, step]);
 
   const goNext = () => {
     setFeedback(null);
-    if (subIdx < step.subSteps.length - 1) {
-      setSubIdx((s) => s + 1);
-      return;
-    }
     setDone(false);
-    setSubIdx(0);
     if (stepIdx < STEPS.length - 1) {
       setStepIdx((s) => s + 1);
     } else {
@@ -231,7 +271,7 @@ const InteractiveOnboarding: React.FC = () => {
           <img src={wolfLogo} alt="ImportaFácil" className="w-16 h-16 rounded-2xl mx-auto mb-4 shadow-soft" />
           <h2 className="text-xl font-bold text-foreground">Você já sabe usar o ImportaFácil!</h2>
           <p className="text-sm text-muted-foreground mt-2">
-            Chat com o Lobo, calculadora de importação e conversor de moedas na palma da mão.
+            Chat com o Lobo, calculadora de importação, conversor de moedas e todos os atalhos na palma da mão.
           </p>
           <Button className="w-full mt-6 gap-2" onClick={close}>
             Começar a usar <Rocket className="w-4 h-4" />
@@ -285,20 +325,20 @@ const InteractiveOnboarding: React.FC = () => {
             <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">
               Passo {stepIdx + 1} de {STEPS.length}
             </p>
-            <h3 className="text-sm font-bold text-foreground mt-0.5">{sub?.title}</h3>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{sub?.text}</p>
+            <h3 className="text-sm font-bold text-foreground mt-0.5">{step?.title}</h3>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{step?.text}</p>
 
-            {sub?.suggestion && !done && (
+            {step?.suggestion && !done && (
               <button
                 onClick={() => {
                   window.dispatchEvent(
-                    new CustomEvent('onboarding-fill-chat', { detail: sub.suggestion })
+                    new CustomEvent('onboarding-fill-chat', { detail: step.suggestion })
                   );
                 }}
-                className="mt-3 w-full text-left text-xs bg-accent/10 hover:bg-accent/20 text-accent-foreground/90 border border-accent/30 rounded-xl px-3 py-2 transition-colors flex items-center gap-2"
+                className="mt-3 w-full text-left text-xs bg-accent text-accent-foreground font-semibold border border-accent rounded-xl px-3 py-2 transition-opacity hover:opacity-90 flex items-center gap-2 shadow-soft"
               >
-                <Sparkle className="w-3.5 h-3.5 text-accent shrink-0" />
-                <span className="truncate">"{sub.suggestion}"</span>
+                <Sparkle className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">"{step.suggestion}"</span>
               </button>
             )}
 
@@ -317,14 +357,14 @@ const InteractiveOnboarding: React.FC = () => {
           <Button
             size="sm"
             className="gap-1.5"
-            disabled={!!sub?.practice && !done}
+            disabled={!!step?.practice && !done}
             onClick={goNext}
           >
-            {stepIdx === STEPS.length - 1 && subIdx === step.subSteps.length - 1 ? 'Concluir' : 'Próximo'}
+            {stepIdx === STEPS.length - 1 ? 'Concluir' : 'Próximo'}
             <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         </div>
-        {sub?.practice && !done && (
+        {step?.practice && !done && (
           <p className="text-[10px] text-muted-foreground text-center mt-1">
             Faça a ação acima para liberar o "Próximo"
           </p>
