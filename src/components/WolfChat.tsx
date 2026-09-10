@@ -12,6 +12,7 @@ import StrategyButtons from './StrategyButtons';
 import { backendKey, backendUrl, getSupabaseClient, isBackendConfigured } from '@/lib/backend';
 
 interface Message {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   image_url?: string;
