@@ -67,7 +67,7 @@ const Dashboard = () => {
   useEffect(() => {
     const handler = (e: Event) => {
       const tab = (e as CustomEvent).detail as string;
-      if (tab === 'chat' || tab === 'calculator') setActiveTab(tab);
+      if (tab === 'chat' || tab === 'calculator' || tab === 'home') setActiveTab(tab);
     };
     window.addEventListener('tutorial-set-tab', handler);
     return () => window.removeEventListener('tutorial-set-tab', handler);
@@ -121,6 +121,7 @@ const Dashboard = () => {
               <Button
                 variant="ghost"
                 size="icon"
+                data-tour="bell"
                 className="text-primary-foreground hover:bg-primary-foreground/10"
                 aria-label="Notificações"
                 onClick={() => toast({ title: 'Sem novidades', description: 'Você não tem notificações no momento.' })}
@@ -140,7 +141,7 @@ const Dashboard = () => {
 
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10" aria-label="Menu">
+                  <Button data-tour="menu" variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10" aria-label="Menu">
                     <Menu className="w-5 h-5" />
                   </Button>
                 </SheetTrigger>
