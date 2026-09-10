@@ -467,6 +467,12 @@ const WolfChat: React.FC = () => {
       setConversations(prev => prev.map(c => c.id === convId ? { ...c, title } : c));
     }
 
+    // Cancela um streaming anterior ainda em curso e marca este como o atual
+    activeControllerRef.current?.abort();
+    const reqId = ++requestSeqRef.current;
+    const isCurrent = () => requestSeqRef.current === reqId;
+    const assistantId = `a-${reqId}`;
+
     try {
       const finalContent = currentImages.length > 0
         ? [
@@ -477,6 +483,7 @@ const WolfChat: React.FC = () => {
 
       // 90s timeout — análises visuais podem demorar mais no plano gratuito da Groq
       const controller = new AbortController();
+      activeControllerRef.current = controller;
       const timeoutId = setTimeout(() => controller.abort(), 90000);
 
       const response = await fetch(`${backendUrl}/functions/v1/wolf-chat`, {
