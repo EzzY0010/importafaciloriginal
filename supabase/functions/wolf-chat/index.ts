@@ -288,9 +288,14 @@ serve(async (req) => {
         );
     let modelQueue = [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
 
-    // Se a conta Groq não tem nenhum modelo de visão ativo, falha rápido com
-    // mensagem clara em vez de queimar tentativas em modelos de texto.
-    if (useVisionModel && modelQueue.every((m) => !availableModels.includes(m))) {
+    // Se a conta Groq respondeu a lista e não há NENHUM modelo de visão ativo,
+    // falha rápido com mensagem clara. Se a listagem falhou (lista vazia),
+    // seguimos tentando os candidatos — nunca bloqueamos por falta de lista.
+    if (
+      useVisionModel &&
+      availableModels.length > 0 &&
+      modelQueue.every((m) => !availableModels.includes(m))
+    ) {
       return new Response(
         JSON.stringify({
           error: 'vision_unavailable',
@@ -324,6 +329,8 @@ serve(async (req) => {
           messages: apiMessages,
           stream: true,
           temperature: 0.7,
+          // Limite alto o suficiente para a resposta nunca ser cortada no meio.
+          max_tokens: 2048,
         });
         approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
 
@@ -415,6 +422,18 @@ serve(async (req) => {
         payloadKb: approximatePayloadKb,
       });
 
+      // Visão: se nenhum modelo aceitou a imagem, devolve a mensagem amigável
+      // em vez do erro genérico.
+      if (useVisionModel && [400, 404, 415, 422].includes(response.status)) {
+        return new Response(
+          JSON.stringify({
+            error: 'vision_unavailable',
+            message: 'A análise por foto está temporariamente indisponível. Me manda o nome ou o link do produto por texto que eu analiso na hora. 🐺',
+          }),
+          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
       const errorMap: Record<number, { code: string; message: string }> = {
         401: { code: 'auth_error', message: 'Chave da IA inválida ou não autorizada.' },
         403: { code: 'auth_error', message: 'Acesso negado pela IA.' },
@@ -438,7 +457,44 @@ serve(async (req) => {
       );
     }
 
-    return new Response(response.body, {
+    // Passthrough que apenas observa o stream para registrar por que a
+    // resposta terminou (stop, length, etc.) e quantos caracteres saíram.
+    let finishReason: string | null = null;
+    let charCount = 0;
+    let tail = '';
+    const monitor = new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, ctrl) {
+        ctrl.enqueue(chunk);
+        try {
+          tail += new TextDecoder().decode(chunk, { stream: true });
+          const lines = tail.split('\n');
+          tail = lines.pop() ?? '';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            const data = trimmed.slice(5).trim();
+            if (!data || data === '[DONE]') continue;
+            const parsed = JSON.parse(data);
+            const delta = parsed?.choices?.[0]?.delta?.content;
+            if (typeof delta === 'string') charCount += delta.length;
+            const fr = parsed?.choices?.[0]?.finish_reason;
+            if (fr) finishReason = fr;
+          }
+        } catch {
+          // Chunk parcial/inválido: ignora, é só telemetria.
+        }
+      },
+      flush() {
+        console.log('Groq stream finished:', {
+          model,
+          useVisionModel,
+          finishReason,
+          charCount,
+        });
+      },
+    });
+
+    return new Response(response.body!.pipeThrough(monitor), {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
 

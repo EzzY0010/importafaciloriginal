@@ -508,6 +508,16 @@ const WolfChat: React.FC = () => {
           statusText: response.statusText,
           body: errPayload,
         });
+        // Foto sem modelo de visão disponível: mostra a mensagem amigável
+        // como resposta do Lobo, não como erro genérico.
+        if (errPayload?.error === 'vision_unavailable' && errPayload?.message) {
+          const friendly = errPayload.message as string;
+          setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: friendly }]);
+          await saveMessage(convId, 'assistant', friendly);
+          window.dispatchEvent(new CustomEvent('wolf-chat-answered'));
+          return;
+        }
+
         const err = new Error(errPayload?.message || 'Failed to get response');
         (err as any).status = response.status;
         (err as any).code = errPayload?.error;
