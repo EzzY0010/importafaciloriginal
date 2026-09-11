@@ -329,6 +329,8 @@ serve(async (req) => {
           messages: apiMessages,
           stream: true,
           temperature: 0.7,
+          // Limite alto o suficiente para a resposta nunca ser cortada no meio.
+          max_tokens: 2048,
         });
         approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
 
