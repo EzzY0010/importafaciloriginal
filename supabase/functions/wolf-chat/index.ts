@@ -288,9 +288,14 @@ serve(async (req) => {
         );
     let modelQueue = [...preferred, ...discovered, ...candidates].filter((v, i, a) => a.indexOf(v) === i);
 
-    // Se a conta Groq não tem nenhum modelo de visão ativo, falha rápido com
-    // mensagem clara em vez de queimar tentativas em modelos de texto.
-    if (useVisionModel && modelQueue.every((m) => !availableModels.includes(m))) {
+    // Se a conta Groq respondeu a lista e não há NENHUM modelo de visão ativo,
+    // falha rápido com mensagem clara. Se a listagem falhou (lista vazia),
+    // seguimos tentando os candidatos — nunca bloqueamos por falta de lista.
+    if (
+      useVisionModel &&
+      availableModels.length > 0 &&
+      modelQueue.every((m) => !availableModels.includes(m))
+    ) {
       return new Response(
         JSON.stringify({
           error: 'vision_unavailable',
