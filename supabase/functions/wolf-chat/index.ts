@@ -457,7 +457,44 @@ serve(async (req) => {
       );
     }
 
-    return new Response(response.body, {
+    // Passthrough que apenas observa o stream para registrar por que a
+    // resposta terminou (stop, length, etc.) e quantos caracteres saíram.
+    let finishReason: string | null = null;
+    let charCount = 0;
+    let tail = '';
+    const monitor = new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, ctrl) {
+        ctrl.enqueue(chunk);
+        try {
+          tail += new TextDecoder().decode(chunk, { stream: true });
+          const lines = tail.split('\n');
+          tail = lines.pop() ?? '';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            const data = trimmed.slice(5).trim();
+            if (!data || data === '[DONE]') continue;
+            const parsed = JSON.parse(data);
+            const delta = parsed?.choices?.[0]?.delta?.content;
+            if (typeof delta === 'string') charCount += delta.length;
+            const fr = parsed?.choices?.[0]?.finish_reason;
+            if (fr) finishReason = fr;
+          }
+        } catch {
+          // Chunk parcial/inválido: ignora, é só telemetria.
+        }
+      },
+      flush() {
+        console.log('Groq stream finished:', {
+          model,
+          useVisionModel,
+          finishReason,
+          charCount,
+        });
+      },
+    });
+
+    return new Response(response.body!.pipeThrough(monitor), {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
 
