@@ -190,6 +190,144 @@ serve(async (req) => {
       return '';
     };
 
+    // ─────────────────────────────────────────────────────────────
+    // HÍBRIDO: imagem → Google Gemini | texto → Groq
+    // ─────────────────────────────────────────────────────────────
+    const visionFallbackResponse = () =>
+      new Response(
+        JSON.stringify({
+          error: 'vision_unavailable',
+          message: 'A análise por foto está temporariamente indisponível. Me manda o nome ou o link do produto por texto que eu analiso na hora. 🐺',
+        }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+
+    if (useVisionModel) {
+      const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+      if (!GEMINI_API_KEY) {
+        console.error('AI provider: gemini (image) — GOOGLE_GEMINI_API_KEY ausente');
+        return visionFallbackResponse();
+      }
+
+      try {
+        // Normaliza imagens (data URL ou URL http) para inline_data base64.
+        const toInlineData = async (url: string) => {
+          if (url.startsWith('data:')) {
+            const match = url.match(/^data:([^;]+);base64,(.*)$/);
+            if (!match) return null;
+            return { mime_type: match[1], data: match[2] };
+          }
+          const res = await fetch(url);
+          if (!res.ok) return null;
+          const mime = res.headers.get('content-type') ?? 'image/jpeg';
+          const buf = new Uint8Array(await res.arrayBuffer());
+          let binary = '';
+          for (let i = 0; i < buf.length; i++) binary += String.fromCharCode(buf[i]);
+          return { mime_type: mime.split(';')[0], data: btoa(binary) };
+        };
+
+        const inlineParts: any[] = [];
+        for (const url of incomingImageUrls.slice(0, 4)) {
+          const part = await toInlineData(url);
+          if (part) inlineParts.push({ inline_data: part });
+        }
+
+        if (inlineParts.length === 0) {
+          console.error('AI provider: gemini (image) — nenhuma imagem válida no payload');
+          return visionFallbackResponse();
+        }
+
+        // Contexto textual curto da conversa, para manter a continuidade.
+        const historyText = conversationHistory
+          .slice(-6)
+          .map((m: any) => `${m.role === 'user' ? 'Usuário' : 'Lobo'}: ${m.content ?? ''}`)
+          .join('\n');
+
+        const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+        let geminiText = '';
+        let usedModel = '';
+        let lastErr = '';
+
+        for (const gModel of GEMINI_MODELS) {
+          const gRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${gModel}:generateContent?key=${GEMINI_API_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                system_instruction: { parts: [{ text: FULL_SYSTEM_PROMPT }] },
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [
+                      ...(historyText ? [{ text: `Contexto da conversa até aqui:\n${historyText}` }] : []),
+                      { text: incomingText || 'Analise este produto na imagem.' },
+                      ...inlineParts,
+                    ],
+                  },
+                ],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+              }),
+            },
+          );
+
+          if (!gRes.ok) {
+            lastErr = `${gRes.status} ${await gRes.text()}`;
+            console.error('Gemini vision error:', { model: gModel, error: lastErr });
+            continue;
+          }
+
+          const gJson = await gRes.json();
+          geminiText = (gJson?.candidates?.[0]?.content?.parts ?? [])
+            .map((p: any) => p?.text ?? '')
+            .join('')
+            .trim();
+          usedModel = gModel;
+          if (geminiText) break;
+        }
+
+        if (!geminiText) {
+          console.error('AI provider: gemini (image) — sem texto de resposta', { lastErr });
+          return visionFallbackResponse();
+        }
+
+        console.log('AI provider: gemini (image) respondeu', {
+          provider: 'gemini',
+          model: usedModel,
+          imageCount: inlineParts.length,
+          charCount: geminiText.length,
+        });
+
+        // Devolve no mesmo formato SSE que o frontend já consome (Groq-like).
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(ctrl) {
+            const chunkSize = 400;
+            for (let i = 0; i < geminiText.length; i += chunkSize) {
+              const payload = {
+                choices: [{ delta: { content: geminiText.slice(i, i + chunkSize) }, finish_reason: null }],
+              };
+              ctrl.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+            }
+            ctrl.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: 'stop' }] })}\n\n`),
+            );
+            ctrl.enqueue(encoder.encode('data: [DONE]\n\n'));
+            ctrl.close();
+          },
+        });
+
+        return new Response(stream, {
+          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+        });
+      } catch (geminiErr) {
+        console.error('Gemini vision exception:', (geminiErr as Error)?.message);
+        return visionFallbackResponse();
+      }
+    }
+
+    console.log('AI provider: groq (texto)', { provider: 'groq' });
+
     let apiMessages: any[];
 
     if (useVisionModel) {
