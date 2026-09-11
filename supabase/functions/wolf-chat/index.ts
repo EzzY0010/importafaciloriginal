@@ -422,6 +422,18 @@ serve(async (req) => {
         payloadKb: approximatePayloadKb,
       });
 
+      // Visão: se nenhum modelo aceitou a imagem, devolve a mensagem amigável
+      // em vez do erro genérico.
+      if (useVisionModel && [400, 404, 415, 422].includes(response.status)) {
+        return new Response(
+          JSON.stringify({
+            error: 'vision_unavailable',
+            message: 'A análise por foto está temporariamente indisponível. Me manda o nome ou o link do produto por texto que eu analiso na hora. 🐺',
+          }),
+          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
       const errorMap: Record<number, { code: string; message: string }> = {
         401: { code: 'auth_error', message: 'Chave da IA inválida ou não autorizada.' },
         403: { code: 'auth_error', message: 'Acesso negado pela IA.' },
