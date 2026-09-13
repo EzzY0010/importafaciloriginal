@@ -1,16 +1,36 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check, Crown } from "lucide-react";
+import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check, Crown, Smartphone, MessageCircle } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
 import { PLANS } from "@/config/plans";
 import MinicursoBuyCard from "@/components/MinicursoBuyCard";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
 
 const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
   const navigate = useNavigate();
+
+  const [virtualService, setVirtualService] = useState<"Vinted" | "Depop" | "">("");
+  const [virtualCountry, setVirtualCountry] = useState("");
 
   useEffect(() => {
     if (user && (hasPaid || isAdmin)) {
@@ -25,6 +45,26 @@ const LandingPage = () => {
   const scrollToPlans = () => {
     document.getElementById("plans-section")?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const virtualCountryOptions: Record<string, string[]> = {
+    Vinted: ["Espanha", "Reino Unido", "Portugal"],
+    Depop: ["EUA"],
+  };
+
+  const buildWhatsAppLink = () => {
+    const message = `Opa alê, preciso de um número da ${virtualService} do ${virtualCountry} gera pra mim...`;
+    return `https://api.whatsapp.com/send?phone=5511958690389&text=${encodeURIComponent(message)}`;
+  };
+
+  const handleServiceChange = (value: string) => {
+    setVirtualService(value as "Vinted" | "Depop");
+    setVirtualCountry("");
+  };
+
+  const openWhatsAppGroup = () => {
+    window.open("https://chat.whatsapp.com/FISWT8vu8SX8RqymoUirJZ?s=cl&p=a&mlu=4&ilr=4", "_blank", "noopener,noreferrer");
+  };
+
 
   const goToPlan = (planId: string) => {
     // If already logged in, go straight to dashboard payment area
@@ -297,7 +337,117 @@ const LandingPage = () => {
           </p>
         </div>
       </section>
+
+      {/* ── 7. Números Virtuais SMS & Grupo VIP ── */}
+      <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+        <div className="max-w-3xl mx-auto w-full space-y-8">
+          <div className="text-center">
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Mais Ferramentas</p>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              Números Virtuais & <span className="text-gold">Comunidade VIP</span>
+            </h2>
+            <p className="text-sm sm:text-base text-hero-foreground/70 mt-2 max-w-2xl mx-auto">
+              Tudo que você precisa para validar contas internacionais e trocar experiência com outros importadores.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Virtual Number Card */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-hero-foreground/5 border border-hero-foreground/15 hover:border-gold/40 transition-all flex flex-col">
+              <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold mb-4">
+                <Smartphone className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-hero-foreground mb-2">Números Virtuais SMS</h3>
+              <p className="text-sm text-hero-foreground/75 leading-relaxed mb-5 flex-1">
+                Gere números virtuais para verificar contas na Vinted, Depop e outras plataformas do exterior sem expor seu número pessoal.
+              </p>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="w-full bg-gold text-gold-foreground hover:bg-gold/90 font-bold h-auto py-3 rounded-xl">
+                    Gerar Número Virtual
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-hero border-hero-foreground/15 text-hero-foreground sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-hero-foreground">Solicitar Número Virtual</DialogTitle>
+                    <DialogDescription className="text-hero-foreground/60">
+                      Escolha o serviço e o país. Você será redirecionado para o WhatsApp com a solicitação pronta.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                      <Label className="text-hero-foreground">Serviço</Label>
+                      <Select value={virtualService} onValueChange={handleServiceChange}>
+                        <SelectTrigger className="bg-hero-foreground/5 border-hero-foreground/15 text-hero-foreground">
+                          <SelectValue placeholder="Selecione o serviço" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-hero border-hero-foreground/15 text-hero-foreground">
+                          <SelectItem value="Vinted">Vinted</SelectItem>
+                          <SelectItem value="Depop">Depop</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-hero-foreground">País</Label>
+                      <Select value={virtualCountry} onValueChange={setVirtualCountry} disabled={!virtualService}>
+                        <SelectTrigger className="bg-hero-foreground/5 border-hero-foreground/15 text-hero-foreground">
+                          <SelectValue placeholder={virtualService ? "Selecione o país" : "Escolha um serviço primeiro"} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-hero border-hero-foreground/15 text-hero-foreground">
+                          {virtualService &&
+                            virtualCountryOptions[virtualService].map((country) => (
+                              <SelectItem key={country} value={country}>
+                                {country}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <a
+                    href={virtualService && virtualCountry ? buildWhatsAppLink() : undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`block w-full text-center font-bold py-3 rounded-xl transition-all ${
+                      virtualService && virtualCountry
+                        ? "bg-green-600 text-white hover:bg-green-700 shadow-lg"
+                        : "bg-hero-foreground/10 text-hero-foreground/40 cursor-not-allowed pointer-events-none"
+                    }`}
+                    onClick={(e) => {
+                      if (!virtualService || !virtualCountry) e.preventDefault();
+                    }}
+                  >
+                    💬 Solicitar via WhatsApp
+                  </a>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Free WhatsApp Group Card */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-green-950/30 border border-green-500/30 hover:border-green-500/50 transition-all flex flex-col">
+              <div className="w-12 h-12 rounded-xl bg-green-500/15 flex items-center justify-center text-green-400 mb-4">
+                <MessageCircle className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-hero-foreground mb-2">Grupo Gratuito VIP</h3>
+              <p className="text-sm text-hero-foreground/75 leading-relaxed mb-5 flex-1">
+                Entre no nosso grupo exclusivo do WhatsApp para receber dicas, novidades e fazer networking com a comunidade de importadores.
+              </p>
+              <Button
+                onClick={openWhatsAppGroup}
+                className="w-full bg-green-600 text-white hover:bg-green-700 font-bold h-auto py-3 rounded-xl shadow-[0_0_20px_hsl(142_76%_36%_/_0.3)] hover:shadow-[0_0_30px_hsl(142_76%_36%_/_0.45)] transition-all"
+              >
+                💬 Entrar no Grupo Gratuito VIP
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
+
   );
 };
 
