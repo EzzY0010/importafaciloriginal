@@ -29,6 +29,9 @@ const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  const [virtualService, setVirtualService] = useState<"Vinted" | "Depop" | "">("");
+  const [virtualCountry, setVirtualCountry] = useState("");
+
   useEffect(() => {
     if (user && (hasPaid || isAdmin)) {
       navigate("/dashboard");
@@ -42,6 +45,26 @@ const LandingPage = () => {
   const scrollToPlans = () => {
     document.getElementById("plans-section")?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const virtualCountryOptions: Record<string, string[]> = {
+    Vinted: ["Espanha", "Reino Unido", "Portugal"],
+    Depop: ["EUA"],
+  };
+
+  const buildWhatsAppLink = () => {
+    const message = `Opa alê, preciso de um número da ${virtualService} do ${virtualCountry} gera pra mim...`;
+    return `https://api.whatsapp.com/send?phone=5511958690389&text=${encodeURIComponent(message)}`;
+  };
+
+  const handleServiceChange = (value: string) => {
+    setVirtualService(value as "Vinted" | "Depop");
+    setVirtualCountry("");
+  };
+
+  const openWhatsAppGroup = () => {
+    window.open("https://chat.whatsapp.com/FISWT8vu8SX8RqymoUirJZ?s=cl&p=a&mlu=4&ilr=4", "_blank", "noopener,noreferrer");
+  };
+
 
   const goToPlan = (planId: string) => {
     // If already logged in, go straight to dashboard payment area
