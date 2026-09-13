@@ -408,7 +408,7 @@ const LandingPage = () => {
                   <DialogHeader>
                     <DialogTitle className="text-hero-foreground">Solicitar Número Virtual</DialogTitle>
                     <DialogDescription className="text-hero-foreground/60">
-                      Escolha o serviço e o país. Você será redirecionado para o WhatsApp com a solicitação pronta.
+                      Escolha o serviço e o país, pague e receba o número direto no WhatsApp.
                     </DialogDescription>
                   </DialogHeader>
 
