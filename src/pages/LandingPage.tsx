@@ -33,6 +33,8 @@ const LandingPage = () => {
 
   const [virtualService, setVirtualService] = useState<"Vinted" | "Depop" | "">("");
   const [virtualCountry, setVirtualCountry] = useState("");
+  const [virtualPayLoading, setVirtualPayLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user && (hasPaid || isAdmin)) {
