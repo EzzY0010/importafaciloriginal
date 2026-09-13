@@ -55,11 +55,6 @@ const LandingPage = () => {
     Depop: ["EUA"],
   };
 
-  const buildWhatsAppLink = () => {
-    const message = `Opa alê, preciso de um número da ${virtualService} do ${virtualCountry} gera pra mim...`;
-    return `https://api.whatsapp.com/send?phone=5511958690389&text=${encodeURIComponent(message)}`;
-  };
-
   const VIRTUAL_NUMBER_PRICE = 12.0;
 
   const handleVirtualNumberPayment = async () => {
