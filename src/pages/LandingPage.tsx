@@ -1,12 +1,29 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check, Crown } from "lucide-react";
+import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check, Crown, Smartphone, MessageCircle } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
 import { PLANS } from "@/config/plans";
 import MinicursoBuyCard from "@/components/MinicursoBuyCard";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
 
 const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
