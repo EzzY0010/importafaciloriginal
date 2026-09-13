@@ -444,21 +444,28 @@ const LandingPage = () => {
                     </div>
                   </div>
 
-                  <a
-                    href={virtualService && virtualCountry ? buildWhatsAppLink() : undefined}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`block w-full text-center font-bold py-3 rounded-xl transition-all ${
-                      virtualService && virtualCountry
-                        ? "bg-green-600 text-white hover:bg-green-700 shadow-lg"
-                        : "bg-hero-foreground/10 text-hero-foreground/40 cursor-not-allowed pointer-events-none"
-                    }`}
-                    onClick={(e) => {
-                      if (!virtualService || !virtualCountry) e.preventDefault();
-                    }}
+                  <div className="rounded-xl bg-hero-foreground/5 border border-hero-foreground/10 p-4 text-center">
+                    <p className="text-xs text-hero-foreground/60 mb-1">Valor único por número</p>
+                    <p className="text-3xl font-extrabold text-gold">
+                      R$ {VIRTUAL_NUMBER_PRICE.toFixed(2).replace(".", ",")}
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={handleVirtualNumberPayment}
+                    disabled={!virtualService || !virtualCountry || virtualPayLoading}
+                    className="w-full bg-green-600 text-white hover:bg-green-700 font-bold py-3 h-auto rounded-xl shadow-lg"
                   >
-                    💬 Solicitar via WhatsApp
-                  </a>
+                    {virtualPayLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      `Pagar R$ ${VIRTUAL_NUMBER_PRICE.toFixed(2).replace(".", ",")} e Gerar Número`
+                    )}
+                  </Button>
+
+                  <p className="text-[11px] text-center text-hero-foreground/50">
+                    Pagamento seguro via Mercado Pago. Após a confirmação, você cai direto no nosso WhatsApp com o pedido pronto.
+                  </p>
                 </DialogContent>
               </Dialog>
             </div>
