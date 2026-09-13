@@ -60,6 +60,38 @@ const LandingPage = () => {
     return `https://api.whatsapp.com/send?phone=5511958690389&text=${encodeURIComponent(message)}`;
   };
 
+  const VIRTUAL_NUMBER_PRICE = 12.0;
+
+  const handleVirtualNumberPayment = async () => {
+    if (!virtualService || !virtualCountry || virtualPayLoading) return;
+    setVirtualPayLoading(true);
+    try {
+      const client = await getSupabaseClient();
+      if (!client) throw new Error("Backend indisponível");
+
+      const { data: { session } } = await client.auth.getSession();
+
+      const { data, error } = await client.functions.invoke("virtual-number-payment", {
+        body: { service: virtualService, country: virtualCountry },
+        headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+      });
+
+      if (error) throw error;
+
+      const url = data?.init_point || data?.sandbox_init_point;
+      if (!url) throw new Error("Link de pagamento indisponível");
+      window.location.href = url;
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Não foi possível iniciar o pagamento",
+        description: "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+      setVirtualPayLoading(false);
+    }
+  };
+
   const handleServiceChange = (value: string) => {
     setVirtualService(value as "Vinted" | "Depop");
     setVirtualCountry("");
