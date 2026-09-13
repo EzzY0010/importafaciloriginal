@@ -430,7 +430,7 @@ const LandingPage = () => {
             {/* Free WhatsApp Group Card */}
             <div className="p-5 sm:p-6 rounded-2xl bg-green-950/30 border border-green-500/30 hover:border-green-500/50 transition-all flex flex-col">
               <div className="w-12 h-12 rounded-xl bg-green-500/15 flex items-center justify-center text-green-400 mb-4">
-                <MessageCircle className="w-6 h6" />
+                <MessageCircle className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-hero-foreground mb-2">Grupo Gratuito VIP</h3>
               <p className="text-sm text-hero-foreground/75 leading-relaxed mb-5 flex-1">
