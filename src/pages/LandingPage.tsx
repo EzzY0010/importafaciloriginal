@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check, Crown, Smartphone, MessageCircle } from "lucide-react";
+import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check, Crown, Smartphone, MessageCircle, Loader2 } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { getSupabaseClient } from "@/lib/backend";
 
 
 const LandingPage = () => {
@@ -31,6 +33,8 @@ const LandingPage = () => {
 
   const [virtualService, setVirtualService] = useState<"Vinted" | "Depop" | "">("");
   const [virtualCountry, setVirtualCountry] = useState("");
+  const [virtualPayLoading, setVirtualPayLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user && (hasPaid || isAdmin)) {
@@ -51,9 +55,36 @@ const LandingPage = () => {
     Depop: ["EUA"],
   };
 
-  const buildWhatsAppLink = () => {
-    const message = `Opa alê, preciso de um número da ${virtualService} do ${virtualCountry} gera pra mim...`;
-    return `https://api.whatsapp.com/send?phone=5511958690389&text=${encodeURIComponent(message)}`;
+  const VIRTUAL_NUMBER_PRICE = 12.0;
+
+  const handleVirtualNumberPayment = async () => {
+    if (!virtualService || !virtualCountry || virtualPayLoading) return;
+    setVirtualPayLoading(true);
+    try {
+      const client = await getSupabaseClient();
+      if (!client) throw new Error("Backend indisponível");
+
+      const { data: { session } } = await client.auth.getSession();
+
+      const { data, error } = await client.functions.invoke("virtual-number-payment", {
+        body: { service: virtualService, country: virtualCountry },
+        headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+      });
+
+      if (error) throw error;
+
+      const url = data?.init_point || data?.sandbox_init_point;
+      if (!url) throw new Error("Link de pagamento indisponível");
+      window.location.href = url;
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Não foi possível iniciar o pagamento",
+        description: "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+      setVirtualPayLoading(false);
+    }
   };
 
   const handleServiceChange = (value: string) => {
@@ -372,7 +403,7 @@ const LandingPage = () => {
                   <DialogHeader>
                     <DialogTitle className="text-hero-foreground">Solicitar Número Virtual</DialogTitle>
                     <DialogDescription className="text-hero-foreground/60">
-                      Escolha o serviço e o país. Você será redirecionado para o WhatsApp com a solicitação pronta.
+                      Escolha o serviço e o país, pague e receba o número direto no WhatsApp.
                     </DialogDescription>
                   </DialogHeader>
 
@@ -408,21 +439,28 @@ const LandingPage = () => {
                     </div>
                   </div>
 
-                  <a
-                    href={virtualService && virtualCountry ? buildWhatsAppLink() : undefined}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`block w-full text-center font-bold py-3 rounded-xl transition-all ${
-                      virtualService && virtualCountry
-                        ? "bg-green-600 text-white hover:bg-green-700 shadow-lg"
-                        : "bg-hero-foreground/10 text-hero-foreground/40 cursor-not-allowed pointer-events-none"
-                    }`}
-                    onClick={(e) => {
-                      if (!virtualService || !virtualCountry) e.preventDefault();
-                    }}
+                  <div className="rounded-xl bg-hero-foreground/5 border border-hero-foreground/10 p-4 text-center">
+                    <p className="text-xs text-hero-foreground/60 mb-1">Valor único por número</p>
+                    <p className="text-3xl font-extrabold text-gold">
+                      R$ {VIRTUAL_NUMBER_PRICE.toFixed(2).replace(".", ",")}
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={handleVirtualNumberPayment}
+                    disabled={!virtualService || !virtualCountry || virtualPayLoading}
+                    className="w-full bg-green-600 text-white hover:bg-green-700 font-bold py-3 h-auto rounded-xl shadow-lg"
                   >
-                    💬 Solicitar via WhatsApp
-                  </a>
+                    {virtualPayLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      `Pagar R$ ${VIRTUAL_NUMBER_PRICE.toFixed(2).replace(".", ",")} e Gerar Número`
+                    )}
+                  </Button>
+
+                  <p className="text-[11px] text-center text-hero-foreground/50">
+                    Pagamento seguro via Mercado Pago. Após a confirmação, você cai direto no nosso WhatsApp com o pedido pronto.
+                  </p>
                 </DialogContent>
               </Dialog>
             </div>
