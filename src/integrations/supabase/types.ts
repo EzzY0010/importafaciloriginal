@@ -226,6 +226,7 @@ export type Database = {
           max_logins: number
           plan_expires_at: string | null
           plan_type: string | null
+          unlimited_devices: boolean
           updated_at: string
         }
         Insert: {
@@ -248,6 +249,7 @@ export type Database = {
           max_logins?: number
           plan_expires_at?: string | null
           plan_type?: string | null
+          unlimited_devices?: boolean
           updated_at?: string
         }
         Update: {
@@ -270,6 +272,7 @@ export type Database = {
           max_logins?: number
           plan_expires_at?: string | null
           plan_type?: string | null
+          unlimited_devices?: boolean
           updated_at?: string
         }
         Relationships: []
