@@ -1,0 +1,3 @@
+CREATE POLICY "Admins can insert purchases" ON public.purchases FOR INSERT TO authenticated WITH CHECK (public.has_role(auth.uid(), 'admin'::app_role));
+CREATE POLICY "Admins can update purchases" ON public.purchases FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'admin'::app_role)) WITH CHECK (public.has_role(auth.uid(), 'admin'::app_role));
+CREATE INDEX IF NOT EXISTS purchases_email_lower_idx ON public.purchases (lower(email), product, status);
