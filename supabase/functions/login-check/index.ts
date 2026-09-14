@@ -34,7 +34,7 @@ serve(async (req) => {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('last_device_fingerprint, last_ip, last_city, last_country, last_login_at, device_approved, last_latitude, last_longitude, max_logins, app_installed')
+      .select('last_device_fingerprint, last_ip, last_city, last_country, last_login_at, device_approved, last_latitude, last_longitude, max_logins, app_installed, unlimited_devices, email')
       .eq('id', userId)
       .maybeSingle();
 
