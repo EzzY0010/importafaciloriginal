@@ -94,6 +94,27 @@ serve(async (req) => {
     const devices = authorizedDevices || [];
     const maxLogins = profile.max_logins || 1;
     const isKnownDevice = devices.some(d => d.device_fingerprint === deviceFingerprint);
+    const unlimitedDevices = profile.unlimited_devices === true;
+
+    if (unlimitedDevices) {
+      console.log('login-check: unlimited_devices account, skipping device limit', userId);
+
+      await supabase.from('profiles').update({
+        last_device_fingerprint: deviceFingerprint,
+        last_ip: ipInfo.ip,
+        last_city: ipInfo.city,
+        last_country: ipInfo.country,
+        last_latitude: ipInfo.lat,
+        last_longitude: ipInfo.lon,
+        last_login_at: new Date().toISOString(),
+        last_user_agent: userAgent || null,
+        device_approved: true,
+      }).eq('id', userId);
+
+      return new Response(JSON.stringify({ blocked: false, message: null, unlimited: true }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     // MULTI-DEVICE LOGIC
     if (!isKnownDevice) {
