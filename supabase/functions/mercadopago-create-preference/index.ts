@@ -13,13 +13,12 @@ serve(async (req) => {
 
   try {
     const PLAN_PRICES: Record<string, { price: number; title: string }> = {
-      mensal: { price: 47.9, title: 'ImportaFácil - Plano Mensal' },
-      trimestral: { price: 97.9, title: 'ImportaFácil - Plano Trimestral' },
-      semestral: { price: 137.9, title: 'ImportaFácil - Plano Semestral' },
-      vitalicio: { price: 187.9, title: 'ImportaFácil - Acesso Vitalício' },
+      mensal: { price: 97, title: 'ImportaFácil - Plano Mensal' },
+      trimestral: { price: 239, title: 'ImportaFácil - Plano Trimestral' },
+      anual: { price: 499, title: 'ImportaFácil - Plano Anual' },
     };
 
-    let planId = 'vitalicio';
+    let planId = 'anual';
     try {
       const body = await req.json();
       if (body?.planId && PLAN_PRICES[body.planId]) planId = body.planId;

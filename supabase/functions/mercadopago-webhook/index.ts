@@ -86,13 +86,12 @@ serve(async (req) => {
         // Extract user_id / plan from external_reference (format: userId_planId_timestamp)
         const refParts: string[] = (paymentData.external_reference ?? '').split('_');
         const userId = refParts[0];
-        const planId = refParts.length >= 3 ? refParts[1] : 'vitalicio';
+        const planId = refParts.length >= 3 ? refParts[1] : 'mensal';
 
         const PLAN_DAYS: Record<string, number | null> = {
           mensal: 30,
           trimestral: 90,
-          semestral: 180,
-          vitalicio: null,
+          anual: 365,
         };
         const days = PLAN_DAYS[planId] ?? null;
         const expiresAt = days
