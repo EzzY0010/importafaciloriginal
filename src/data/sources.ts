@@ -27,6 +27,9 @@ export const SOURCES: SourceItem[] = [
   { name: "Zalando Lounge", url: "https://www.zalando-lounge.com", country: "Europa", flag: "🇪🇺", description: "Clube de vendas privadas com grifes." },
   { name: "Zalando Privé", url: "https://www.zalando-prive.es", country: "Espanha", flag: "🇪🇸", description: "Grifes de luxo com desconto." },
   { name: "Vinted UK", url: "https://www.vinted.co.uk", country: "Reino Unido", flag: "🇬🇧", description: "Marcas inglesas em garimpo direto." },
+  { name: "Vinted.pl", url: "https://www.vinted.pl", country: "Polônia", flag: "🇵🇱", description: "Garimpo de moda e marcas direto da Polônia." },
+  { name: "Vinted.de", url: "https://www.vinted.de", country: "Alemanha", flag: "🇩🇪", description: "Garimpo de moda e marcas direto da Alemanha." },
+  { name: "Dubizzle", url: "https://dubai.dubizzle.com", country: "Dubai", flag: "🇦🇪", description: "Classificados de Dubai com eletrônicos e luxo." },
 ];
 
 export const REDIRECTORS: SourceItem[] = [
@@ -38,4 +41,7 @@ export const REDIRECTORS: SourceItem[] = [
   { name: "CSSBuy", url: "https://www.cssbuy.com", country: "China", flag: "🇨🇳", description: "Agente de compras oficial com QC confiável." },
   { name: "ForwardVia", url: "https://www.forwardvia.com", country: "Reino Unido", flag: "🇬🇧", description: "Envio rápido da Europa/UK para o Brasil." },
   { name: "UK2Brazil", url: "https://www.uk2brazil.com", country: "Reino Unido", flag: "🇬🇧", description: "Suporte focado em brasileiros no UK." },
+  { name: "Forward2Me", url: "https://my.forward2me.com/package/61/", country: "Alemanha / Reino Unido / Japão / EUA", flag: "🌍", description: "Endereços na Alemanha, Reino Unido, Japão e EUA." },
+  { name: "Shopogolic", url: "https://shopogolic.net/en", country: "Polônia", flag: "🇵🇱", description: "Redirecionamento a partir da Polônia." },
+  { name: "Shopiniworld", url: "https://shopiniworld.com", country: "Arábia Saudita / Dubai", flag: "🇦🇪", description: "Redirecionamento da Arábia Saudita e Dubai." },
 ];

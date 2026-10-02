@@ -12,7 +12,7 @@ interface PaymentButtonProps {
   compact?: boolean;
 }
 
-const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess, planId = 'vitalicio', compact = false }) => {
+const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess, planId = 'anual', compact = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const plan = getPlan(planId);

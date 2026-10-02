@@ -5,7 +5,7 @@ import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
-import { PLANS } from "@/config/plans";
+import { PLANS, PLAN_FEATURES } from "@/config/plans";
 import MinicursoBuyCard from "@/components/MinicursoBuyCard";
 import {
   Dialog,

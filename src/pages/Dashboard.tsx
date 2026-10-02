@@ -34,7 +34,7 @@ const Dashboard = () => {
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(() => {
     const q = searchParams.get('plan') as PlanId | null;
     if (q && PLANS.some((p) => p.id === q)) return q;
-    return 'vitalicio';
+    return 'anual';
   });
 
   useEffect(() => {
@@ -178,7 +178,7 @@ const Dashboard = () => {
         <div className="max-w-5xl mx-auto">
           {hasAccess ? (
             <>
-            <RenewalBanner onRenew={() => navigate('/dashboard?plan=vitalicio')} />
+            <RenewalBanner onRenew={() => navigate('/dashboard?plan=anual')} />
             <SourcesDialog open={sourcesOpen} onOpenChange={setSourcesOpen} />
             {activeTab === 'home' && (
               <HomeView
