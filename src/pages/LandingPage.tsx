@@ -5,7 +5,7 @@ import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
-import { PLANS } from "@/config/plans";
+import { PLANS, PLAN_FEATURES } from "@/config/plans";
 import MinicursoBuyCard from "@/components/MinicursoBuyCard";
 import {
   Dialog,
@@ -137,28 +137,34 @@ const LandingPage = () => {
     },
     {
       icon: <Gem className="w-6 h-6" />,
-      title: "💎 Mais de 7 Fontes de Garimpo",
+      title: "💎 Mais de 15 Fontes de Garimpo",
       desc: (
         <>
-          <span className="font-bold text-hero-foreground">Não fique preso apenas a roupas.</span> Te damos o caminho das pedras com <span className="font-semibold text-gold">mais de 7 fontes secretas de garimpo</span> para você encontrar os itens mais desejados e exclusivos do mercado global.
+          <span className="font-bold text-hero-foreground">Não fique preso apenas a roupas.</span> Te damos o caminho das pedras com <span className="font-semibold text-gold">mais de 15 fontes secretas de garimpo</span> para você encontrar os itens mais desejados e exclusivos do mercado global.
         </>
       ),
     },
     {
       icon: <Headset className="w-6 h-6" />,
-      title: "🎧 Suporte VIP & Grupo de Elite",
+      title: "🎧 Acompanhamento & Suporte VIP",
       desc: (
         <>
-          <span className="font-bold text-hero-foreground">Você nunca estará sozinho.</span> Tenha acesso direto comigo e com nossa equipe para tirar qualquer dúvida em até <span className="font-semibold text-hero-foreground">24h-48h</span>, além de fazer networking com outros importadores no nosso <span className="font-semibold text-gold">grupo exclusivo do WhatsApp</span>.
+          <span className="font-bold text-hero-foreground">Você nunca estará sozinho.</span> Receba <span className="font-semibold text-hero-foreground">acompanhamento na sua primeira importação</span>, do pedido até a chegada, e conte com <span className="font-semibold text-hero-foreground">suporte para dúvidas de acordo com o seu plano</span>, além de fazer networking com outros importadores no nosso <span className="font-semibold text-gold">grupo exclusivo do WhatsApp</span>.
         </>
       ),
     },
   ];
 
+  const partnerRedirectors = [
+    { name: "Forward2Me", countries: "🇩🇪 Alemanha, 🇬🇧 Reino Unido, 🇯🇵 Japão e 🇺🇸 EUA", url: "https://my.forward2me.com/package/61/" },
+    { name: "Shopogolic", countries: "🇵🇱 Polônia", url: "https://shopogolic.net/en" },
+    { name: "Shopiniworld", countries: "🇸🇦 Arábia Saudita e 🇦🇪 Dubai (Emirados Árabes)", url: "https://shopiniworld.com" },
+  ];
+
   const offerItems = [
     "Ecossistema Completo (EUA, China e Europa)",
     "IA Especialista + Calculadora Pro + Busca Global",
-    "7 Fontes Secretas de Garimpo",
+    "Mais de 15 Fontes Secretas de Garimpo",
     "Grupo no WhatsApp + Suporte VIP",
   ];
 
@@ -319,7 +325,7 @@ const LandingPage = () => {
               Planos <span className="text-gold">Sob Medida</span>
             </h2>
             <p className="text-sm sm:text-base text-hero-foreground/70 mt-2 max-w-2xl mx-auto">
-              Do teste inicial ao acesso definitivo. Quatro caminhos, um único ecossistema.
+              Três caminhos, um único ecossistema. Todos os planos incluem tudo — muda só o prazo e o suporte.
             </p>
           </div>
 
@@ -335,8 +341,8 @@ const LandingPage = () => {
                 }`}
               >
                 {plan.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-gold-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1">
-                    <Crown className="w-3 h-3" /> Mais escolhido
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-gold-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 whitespace-nowrap">
+                    <Crown className="w-3 h-3" /> Melhor custo-benefício
                   </div>
                 )}
                 <h3 className="font-bold text-hero-foreground text-base mb-1">{plan.name}</h3>
@@ -348,7 +354,20 @@ const LandingPage = () => {
                     </span>
                   </div>
                   <span className="text-[11px] text-hero-foreground/60">{plan.period}</span>
+                  {plan.monthlyEquivalent && (
+                    <p className="text-xs font-semibold text-gold/90 mt-1">{plan.monthlyEquivalent}</p>
+                  )}
                 </div>
+                <ul className="space-y-1.5 mb-4 flex-1">
+                  {PLAN_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-[11px] text-hero-foreground/80">
+                      <Check className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {f}
+                    </li>
+                  ))}
+                  <li className="flex items-start gap-2 text-[11px] font-semibold text-hero-foreground">
+                    <Headset className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {plan.support}
+                  </li>
+                </ul>
                 <Button
                   onClick={() => goToPlan(plan.id)}
                   className={`w-full min-h-11 h-auto py-2.5 font-bold whitespace-normal leading-tight text-xs sm:text-sm ${
@@ -357,15 +376,44 @@ const LandingPage = () => {
                       : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20"
                   }`}
                 >
-                  {plan.highlight ? "🎯 Quero meu acesso vitalício" : "Escolher"}
+                  {plan.highlight ? "🎯 Quero o Plano Anual" : "Escolher"}
                 </Button>
               </div>
             ))}
           </div>
 
           <p className="text-center text-xs text-hero-foreground/60">
-            Pagamento seguro via Mercado Pago · Sem taxas escondidas
+            Pagamento seguro · Sem taxas escondidas
           </p>
+        </div>
+      </section>
+
+      {/* ── Redirecionadores Parceiros ── */}
+      <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+        <div className="max-w-5xl mx-auto w-full space-y-8">
+          <div className="text-center">
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Entregas pelo mundo</p>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              Redirecionadores <span className="text-gold">Parceiros</span>
+            </h2>
+            <p className="text-sm sm:text-base text-hero-foreground/70 mt-2 max-w-2xl mx-auto">
+              Receba suas compras em um endereço no exterior e envie tudo para o Brasil.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {partnerRedirectors.map((r) => (
+              <div key={r.name} className="p-5 sm:p-6 rounded-2xl bg-hero-foreground/5 border border-hero-foreground/15 hover:border-gold/40 transition-all flex flex-col">
+                <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold mb-4">
+                  <Globe className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-hero-foreground mb-2">📦 {r.name}</h3>
+                <p className="text-sm text-hero-foreground/75 leading-relaxed mb-5 flex-1">{r.countries}</p>
+                <Button asChild className="w-full bg-gold text-gold-foreground hover:bg-gold/90 font-bold h-auto py-3 rounded-xl">
+                  <a href={r.url} target="_blank" rel="noopener noreferrer">Acessar</a>
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

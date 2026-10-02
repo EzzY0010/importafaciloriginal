@@ -7,7 +7,7 @@ import { getSupabaseClient } from "@/lib/backend";
 /** Dias de antecedência para começar a avisar. */
 export const RENEWAL_WARNING_DAYS = 7;
 
-const RECURRING_PLANS = ["mensal", "trimestral", "semestral"];
+const RECURRING_PLANS = ["mensal", "trimestral", "anual"];
 
 interface Props {
   onRenew: () => void;
@@ -38,7 +38,7 @@ const RenewalBanner = ({ onRenew }: Props) => {
     };
   }, [user]);
 
-  // Vitalício e minicurso nunca recebem aviso
+  // Minicurso nunca recebe aviso
   if (!planType || !RECURRING_PLANS.includes(planType) || !expiresAt) return null;
 
   const end = new Date(expiresAt).getTime();
