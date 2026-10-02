@@ -1,5 +1,5 @@
 // Central pricing map — edit values here to change amounts across the app.
-export type PlanId = "mensal" | "trimestral" | "semestral" | "vitalicio";
+export type PlanId = "mensal" | "trimestral" | "anual";
 
 export interface Plan {
   id: PlanId;
@@ -7,37 +7,50 @@ export interface Plan {
   price: number; // BRL
   period: string;
   description: string;
+  monthlyEquivalent?: string;
+  support: string;
+  durationDays: number;
   highlight?: boolean;
 }
+
+export const PLAN_FEATURES = [
+  "IA Especialista em Importação",
+  "Busca Global Copia e Cola",
+  "Calculadora Pro",
+  "Mais de 15 fontes de garimpo",
+  "Acompanhamento na primeira importação",
+  "Acesso ao grupo de WhatsApp",
+];
 
 export const PLANS: Plan[] = [
   {
     id: "mensal",
     name: "Plano Mensal",
-    price: 47.9,
-    period: "/mês",
+    price: 97,
+    period: "/mês · cobrança mensal",
     description: "Ideal para testar todo o ecossistema por 30 dias.",
+    support: "Suporte para dúvidas em até 48h",
+    durationDays: 30,
   },
   {
     id: "trimestral",
     name: "Plano Trimestral",
-    price: 97.9,
+    price: 239,
     period: "/3 meses",
-    description: "Economize já no segundo mês de uso.",
+    monthlyEquivalent: "≈ R$ 79,67/mês",
+    description: "3 meses de acesso completo com economia.",
+    support: "Suporte para dúvidas em até 24h–48h",
+    durationDays: 90,
   },
   {
-    id: "semestral",
-    name: "Plano Semestral",
-    price: 137.9,
-    period: "/6 meses",
-    description: "6 meses de acesso completo com economia real.",
-  },
-  {
-    id: "vitalicio",
-    name: "Acesso Vitalício",
-    price: 187.9,
-    period: "pagamento único",
-    description: "Pague uma vez, use para sempre. A escolha do Lobo.",
+    id: "anual",
+    name: "Plano Anual",
+    price: 499,
+    period: "/ano",
+    monthlyEquivalent: "≈ R$ 41,58/mês",
+    description: "Um ano inteiro de acesso pelo menor preço por mês.",
+    support: "Suporte prioritário em até 24h",
+    durationDays: 365,
     highlight: true,
   },
 ];
