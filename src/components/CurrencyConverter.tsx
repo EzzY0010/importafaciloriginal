@@ -11,6 +11,10 @@ interface Rates {
   CNY: number;
   BRL: number;
   GBP: number;
+  PLN: number;
+  JPY: number;
+  SAR: number;
+  AED: number;
 }
 
 const CURRENCIES = [
@@ -18,35 +22,46 @@ const CURRENCIES = [
   { key: 'USD' as const, symbol: '$', flag: '🇺🇸', label: 'Dólar' },
   { key: 'GBP' as const, symbol: '£', flag: '🇬🇧', label: 'Libra' },
   { key: 'CNY' as const, symbol: '¥', flag: '🇨🇳', label: 'Yuan' },
+  { key: 'PLN' as const, symbol: 'zł', flag: '🇵🇱', label: 'Zloty' },
+  { key: 'JPY' as const, symbol: '¥', flag: '🇯🇵', label: 'Iene' },
+  { key: 'SAR' as const, symbol: '﷼', flag: '🇸🇦', label: 'Rial' },
+  { key: 'AED' as const, symbol: 'د.إ', flag: '🇦🇪', label: 'Dirham' },
   { key: 'BRL' as const, symbol: 'R$', flag: '🇧🇷', label: 'Real' },
 ];
 
 const CurrencyConverter: React.FC = () => {
-  const [rates, setRates] = useState<Rates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80, GBP: 0.79 });
+  const [rates, setRates] = useState<Rates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80, GBP: 0.79, PLN: 3.95, JPY: 150, SAR: 3.75, AED: 3.67 });
+  const [rateError, setRateError] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [values, setValues] = useState<Record<string, string>>({ EUR: '', USD: '', GBP: '', CNY: '', BRL: '' });
+  const [values, setValues] = useState<Record<string, string>>({} as Record<string, string>);
   const [activeCurrency, setActiveCurrency] = useState<string | null>(null);
 
   const fetchRates = useCallback(async () => {
     try {
       const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
       const data = await response.json();
+      if (!data?.rates?.BRL) throw new Error('rates');
       setRates({
         USD: 1,
         EUR: data.rates.EUR,
         CNY: data.rates.CNY,
         BRL: data.rates.BRL,
         GBP: data.rates.GBP,
+        PLN: data.rates.PLN,
+        JPY: data.rates.JPY,
+        SAR: data.rates.SAR,
+        AED: data.rates.AED,
       });
       setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Erro ao buscar cotações:', error);
+      setRateError(false);
+    } catch {
+      setRateError(true);
     }
   }, []);
 
   useEffect(() => {
     fetchRates();
-    const interval = setInterval(fetchRates, 4000);
+    const interval = setInterval(fetchRates, 60000);
     return () => clearInterval(interval);
   }, [fetchRates]);
 
@@ -55,7 +70,7 @@ const CurrencyConverter: React.FC = () => {
     const numValue = parseFloat(rawValue);
 
     if (!rawValue || isNaN(numValue)) {
-      setValues({ EUR: '', USD: '', GBP: '', CNY: '', BRL: '' });
+      setValues({} as Record<string, string>);
       return;
     }
 
@@ -93,7 +108,12 @@ const CurrencyConverter: React.FC = () => {
           <Badge variant="outline" className="text-xs font-mono">🇪🇺 1 EUR = R$ {(rates.BRL / rates.EUR).toFixed(2)}</Badge>
           <Badge variant="outline" className="text-xs font-mono">🇬🇧 1 GBP = R$ {(rates.BRL / rates.GBP).toFixed(2)}</Badge>
           <Badge variant="outline" className="text-xs font-mono">🇨🇳 1 CNY = R$ {(rates.BRL / rates.CNY).toFixed(2)}</Badge>
+          <Badge variant="outline" className="text-xs font-mono">🇵🇱 1 PLN = R$ {(rates.BRL / rates.PLN).toFixed(2)}</Badge>
+          <Badge variant="outline" className="text-xs font-mono">🇯🇵 1 JPY = R$ {(rates.BRL / rates.JPY).toFixed(3)}</Badge>
+          <Badge variant="outline" className="text-xs font-mono">🇸🇦 1 SAR = R$ {(rates.BRL / rates.SAR).toFixed(2)}</Badge>
+          <Badge variant="outline" className="text-xs font-mono">🇦🇪 1 AED = R$ {(rates.BRL / rates.AED).toFixed(2)}</Badge>
         </div>
+        {rateError && <p className="text-xs text-muted-foreground">⚠️ Não foi possível atualizar a cotação agora. Usando os últimos valores.</p>}
 
         <div className="grid grid-cols-2 gap-3">
           {CURRENCIES.map((c) => (
@@ -105,7 +125,7 @@ const CurrencyConverter: React.FC = () => {
                 type="number"
                 step="0.01"
                 placeholder="0.00"
-                value={values[c.key]}
+                value={values[c.key] ?? ''}
                 onChange={(e) => handleChange(c.key, e.target.value)}
                 className={`h-9 text-sm font-medium ${activeCurrency === c.key ? 'ring-2 ring-accent' : ''}`}
               />
