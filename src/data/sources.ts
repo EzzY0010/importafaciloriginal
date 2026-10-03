@@ -44,4 +44,5 @@ export const REDIRECTORS: SourceItem[] = [
   { name: "Forward2Me", url: "https://my.forward2me.com/package/61/", country: "Alemanha / Reino Unido / Japão / EUA", flag: "🌍", description: "Endereços na Alemanha, Reino Unido, Japão e EUA." },
   { name: "Shopogolic", url: "https://shopogolic.net/en", country: "Polônia", flag: "🇵🇱", description: "Redirecionamento a partir da Polônia." },
   { name: "Shopiniworld", url: "https://shopiniworld.com", country: "Arábia Saudita / Dubai", flag: "🇦🇪", description: "Redirecionamento da Arábia Saudita e Dubai." },
+  { name: "Gomez", url: "https://gomez.es", country: "Espanha", flag: "🇪🇸", description: "Redirecionamento a partir da Espanha (moeda: EUR)." },
 ];

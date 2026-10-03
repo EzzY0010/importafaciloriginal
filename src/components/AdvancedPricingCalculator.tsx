@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from 'sonner';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
 
-type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY';
+type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY' | 'PLN' | 'JPY' | 'SAR' | 'AED';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 type ExportType = 'pdf' | 'docx';
 
@@ -117,6 +117,10 @@ interface ExchangeRates {
   CNY: number;
   BRL: number;
   GBP: number;
+  PLN: number;
+  JPY: number;
+  SAR: number;
+  AED: number;
 }
 
 interface ProductItem {
@@ -136,7 +140,24 @@ const CURRENCY_CONFIG = {
   EUR: { symbol: '€', flag: '🇪🇺', label: 'Euro' },
   GBP: { symbol: '£', flag: '🇬🇧', label: 'Libra' },
   CNY: { symbol: '¥', flag: '🇨🇳', label: 'Yuan' },
+  PLN: { symbol: 'zł', flag: '🇵🇱', label: 'Zloty' },
+  JPY: { symbol: '¥', flag: '🇯🇵', label: 'Iene' },
+  SAR: { symbol: '﷼', flag: '🇸🇦', label: 'Rial' },
+  AED: { symbol: 'د.إ', flag: '🇦🇪', label: 'Dirham' },
 };
+
+// País/redirecionador → moeda usada automaticamente
+const ORIGIN_CURRENCY: { label: string; currency: Currency }[] = [
+  { label: '🇺🇸 EUA', currency: 'USD' },
+  { label: '🇨🇳 China', currency: 'CNY' },
+  { label: '🇬🇧 Reino Unido', currency: 'GBP' },
+  { label: '🇪🇸 Espanha', currency: 'EUR' },
+  { label: '🇩🇪 Alemanha', currency: 'EUR' },
+  { label: '🇵🇱 Polônia', currency: 'PLN' },
+  { label: '🇯🇵 Japão', currency: 'JPY' },
+  { label: '🇸🇦 Arábia Saudita', currency: 'SAR' },
+  { label: '🇦🇪 Dubai', currency: 'AED' },
+];
 
 // Marcas famosas que devem ser substituídas
 const FAMOUS_BRANDS = [
@@ -257,7 +278,8 @@ const AdvancedPricingCalculator: React.FC = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [filename, setFilename] = useState('');
   const [exportType, setExportType] = useState<ExportType>('pdf');
-  const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80, GBP: 0.79 });
+  const [rates, setRates] = useState<ExchangeRates>({ USD: 1, EUR: 0.92, CNY: 7.25, BRL: 5.80, GBP: 0.79, PLN: 3.95, JPY: 150, SAR: 3.75, AED: 3.67 });
+  const [rateError, setRateError] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [totalShipping, setTotalShipping] = useState<string>('');
   const [shippingCurrency, setShippingCurrency] = useState<Currency>('USD');
@@ -287,22 +309,28 @@ const AdvancedPricingCalculator: React.FC = () => {
     try {
       const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
       const data = await response.json();
+      if (!data?.rates?.BRL || !data.rates.PLN || !data.rates.EUR) throw new Error('rates');
       setRates({
         USD: 1,
         EUR: data.rates.EUR,
         CNY: data.rates.CNY,
         BRL: data.rates.BRL,
         GBP: data.rates.GBP,
+        PLN: data.rates.PLN,
+        JPY: data.rates.JPY,
+        SAR: data.rates.SAR,
+        AED: data.rates.AED,
       });
       setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Error fetching rates:', error);
+      setRateError(false);
+    } catch {
+      setRateError(true);
     }
   }, []);
 
   useEffect(() => {
     fetchRates();
-    const interval = setInterval(fetchRates, 3000);
+    const interval = setInterval(fetchRates, 60000);
     return () => clearInterval(interval);
   }, [fetchRates]);
 
@@ -917,7 +945,15 @@ const AdvancedPricingCalculator: React.FC = () => {
           <Badge variant="outline" className="text-xs font-mono">
             🇨🇳 1 CNY = R$ {cnyToBrl.toFixed(2)}
           </Badge>
+          {(['PLN', 'JPY', 'SAR', 'AED'] as Currency[]).map((c) => (
+            <Badge key={c} variant="outline" className="text-xs font-mono">
+              {CURRENCY_CONFIG[c].flag} 1 {c} = R$ {(rates.BRL / rates[c]).toFixed(2)}
+            </Badge>
+          ))}
         </div>
+        {rateError && (
+          <p className="text-xs text-muted-foreground">⚠️ Não foi possível atualizar a cotação agora. Usando os últimos valores disponíveis.</p>
+        )}
 
         {/* Camouflage Status */}
         {(camouflagedItems.size > 0 || wasAdjusted) && (
@@ -948,6 +984,20 @@ const AdvancedPricingCalculator: React.FC = () => {
             <Package className="h-4 w-4 text-accent" />
             Frete Total Internacional
           </Label>
+          <Select onValueChange={(v) => {
+            const cur = ORIGIN_CURRENCY[Number(v)].currency;
+            setShippingCurrency(cur);
+            setItems((prev) => prev.map((it) => ({ ...it, currency: cur })));
+          }}>
+            <SelectTrigger className="w-full h-9 text-sm">
+              <SelectValue placeholder="País do redirecionador (define a moeda)" />
+            </SelectTrigger>
+            <SelectContent>
+              {ORIGIN_CURRENCY.map((o, i) => (
+                <SelectItem key={o.label} value={String(i)}>{o.label} — {o.currency}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <div className="flex gap-2">
             <Select value={shippingCurrency} onValueChange={(v) => setShippingCurrency(v as Currency)}>
               <SelectTrigger className="w-28">
