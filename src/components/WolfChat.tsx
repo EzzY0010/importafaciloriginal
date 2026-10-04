@@ -490,7 +490,7 @@ const WolfChat: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await client.auth.getSession()).data.session?.access_token ?? backendKey}`,
+          'Authorization': `Bearer ${(await (await getSupabase())?.auth.getSession())?.data.session?.access_token ?? backendKey}`,
         },
         body: JSON.stringify({
           messages: [{ role: 'user', content: finalContent }],

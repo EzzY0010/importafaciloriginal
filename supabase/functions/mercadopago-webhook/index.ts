@@ -94,8 +94,13 @@ serve(async (req) => {
           anual: 365,
         };
         const days = PLAN_DAYS[planId] ?? null;
+        let baseTime = Date.now();
+        if (userId) {
+          const { data: cur } = await adminClient.from('profiles').select('plan_expires_at').eq('id', userId).maybeSingle();
+          if (cur?.plan_expires_at) baseTime = Math.max(baseTime, new Date(cur.plan_expires_at).getTime());
+        }
         const expiresAt = days
-          ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+          ? new Date(baseTime + days * 24 * 60 * 60 * 1000).toISOString()
           : null;
         
         if (userId) {
