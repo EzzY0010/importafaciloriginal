@@ -223,6 +223,7 @@ export type Database = {
           last_login_at: string | null
           last_longitude: number | null
           last_user_agent: string | null
+          legacy_access: boolean
           max_logins: number
           plan_expires_at: string | null
           plan_type: string | null
@@ -246,6 +247,7 @@ export type Database = {
           last_login_at?: string | null
           last_longitude?: number | null
           last_user_agent?: string | null
+          legacy_access?: boolean
           max_logins?: number
           plan_expires_at?: string | null
           plan_type?: string | null
@@ -269,6 +271,7 @@ export type Database = {
           last_login_at?: string | null
           last_longitude?: number | null
           last_user_agent?: string | null
+          legacy_access?: boolean
           max_logins?: number
           plan_expires_at?: string | null
           plan_type?: string | null
@@ -411,6 +414,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_active_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
