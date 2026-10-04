@@ -23,7 +23,7 @@ import BottomNav from "@/components/dashboard/BottomNav";
 import { PLANS, type PlanId } from "@/config/plans";
 
 const Dashboard = () => {
-  const { user, isAdmin, hasPaid, signOut, loading, refreshPaymentStatus } = useAuth();
+  const { user, isAdmin, hasAccess: subscriptionActive, signOut, loading, refreshPaymentStatus } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -100,7 +100,7 @@ const Dashboard = () => {
 
   if (!user) return null;
 
-  const hasAccess = hasPaid || isAdmin;
+  const hasAccess = subscriptionActive || isAdmin;
 
   return (
     <div className="min-h-screen flex flex-col">

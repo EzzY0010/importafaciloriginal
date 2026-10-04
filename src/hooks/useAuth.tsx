@@ -8,6 +8,9 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   hasPaid: boolean;
+  hasAccess: boolean;
+  legacyAccess: boolean;
+  planExpiresAt: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -22,6 +25,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
+  const [legacyAccess, setLegacyAccess] = useState(false);
+  const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null);
+  const [nowTick, setNowTick] = useState(Date.now());
   const [loading, setLoading] = useState(true);
 
   const checkAdminRole = async (userId: string, client: SupabaseClient<Database>) => {
@@ -38,11 +44,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkPaymentStatus = async (userId: string, client: SupabaseClient<Database>) => {
     const { data } = await client
       .from('profiles')
-      .select('has_paid')
+      .select('has_paid, legacy_access, plan_expires_at')
       .eq('id', userId)
       .maybeSingle();
 
     setHasPaid(data?.has_paid ?? false);
+    setLegacyAccess(data?.legacy_access ?? false);
+    setPlanExpiresAt(data?.plan_expires_at ?? null);
+    setNowTick(Date.now());
   };
 
   const refreshPaymentStatus = async () => {
@@ -125,6 +134,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Reavalia o acesso a cada 60s (e ao receber subscription_expired do backend)
+  useEffect(() => {
+    if (!user) return;
+    const tick = () => { refreshPaymentStatus(); };
+    const id = window.setInterval(tick, 60_000);
+    window.addEventListener('subscription-expired', tick);
+    return () => { window.clearInterval(id); window.removeEventListener('subscription-expired', tick); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Regra única: (legacy E pago) OU (pago E vencimento futuro)
+  const hasAccess =
+    hasPaid && (legacyAccess || (!!planExpiresAt && new Date(planExpiresAt).getTime() > nowTick));
+
   const signIn = async (email: string, password: string) => {
     const client = await getSupabaseClient();
     if (!client) {
@@ -168,7 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, hasPaid, loading, signIn, signUp, signOut, refreshPaymentStatus }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, hasPaid, hasAccess, legacyAccess, planExpiresAt, loading, signIn, signUp, signOut, refreshPaymentStatus }}>
       {children}
     </AuthContext.Provider>
   );

@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getSupabaseClient } from "@/lib/backend";
 
 /** Dias de antecedência para começar a avisar. */
-export const RENEWAL_WARNING_DAYS = 7;
+export const RENEWAL_WARNING_DAYS = 3;
 
 const RECURRING_PLANS = ["mensal", "trimestral", "anual"];
 
@@ -14,9 +14,8 @@ interface Props {
 }
 
 const RenewalBanner = ({ onRenew }: Props) => {
-  const { user } = useAuth();
+  const { user, legacyAccess, planExpiresAt: expiresAt } = useAuth();
   const [planType, setPlanType] = useState<string | null>(null);
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,18 +25,18 @@ const RenewalBanner = ({ onRenew }: Props) => {
       if (!supabase) return;
       const { data } = await supabase
         .from("profiles")
-        .select("plan_type, plan_expires_at")
+        .select("plan_type")
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled || !data) return;
       setPlanType(data.plan_type ?? null);
-      setExpiresAt(data.plan_expires_at ?? null);
     })();
     return () => {
       cancelled = true;
     };
   }, [user]);
 
+  if (legacyAccess) return null;
   // Minicurso nunca recebe aviso
   if (!planType || !RECURRING_PLANS.includes(planType) || !expiresAt) return null;
 
@@ -65,7 +64,7 @@ const RenewalBanner = ({ onRenew }: Props) => {
           <p className="font-semibold text-foreground text-sm">
             {expired
               ? "Sua assinatura venceu. Renove para continuar tendo acesso."
-              : `Sua assinatura vence em ${daysLeft} ${daysLeft === 1 ? "dia" : "dias"}. Renove agora para não perder o acesso.`}
+              : `Sua assinatura vence em ${daysLeft} ${daysLeft === 1 ? "dia" : "dias"}. Renove para não perder o acesso.`}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Plano {planType} · vencimento em {new Date(expiresAt).toLocaleDateString("pt-BR")}

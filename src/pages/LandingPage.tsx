@@ -159,7 +159,6 @@ const LandingPage = () => {
     { name: "Forward2Me", countries: "🇩🇪 Alemanha, 🇬🇧 Reino Unido, 🇯🇵 Japão e 🇺🇸 EUA", url: "https://my.forward2me.com/package/61/" },
     { name: "Shopogolic", countries: "🇵🇱 Polônia", url: "https://shopogolic.net/en" },
     { name: "Shopiniworld", countries: "🇸🇦 Arábia Saudita e 🇦🇪 Dubai (Emirados Árabes)", url: "https://shopiniworld.com" },
-    { name: "Gomez", countries: "🇪🇸 Espanha", url: "https://gomez.es" },
   ];
 
   const offerItems = [

@@ -38,6 +38,8 @@ const SOURCES: Item[] = [
   { name: "Vinted.pl", url: "https://www.vinted.pl", country: "Polônia", flag: "🇵🇱", description: "Garimpo de moda e marcas direto da Polônia." },
   { name: "Vinted.de", url: "https://www.vinted.de", country: "Alemanha", flag: "🇩🇪", description: "Garimpo de moda e marcas direto da Alemanha." },
   { name: "Dubizzle", url: "https://dubai.dubizzle.com", country: "Dubai", flag: "🇦🇪", description: "Classificados de Dubai com eletrônicos e luxo." },
+  { name: "Mercari Japão", url: "https://jp.mercari.com/", country: "Japão", flag: "🇯🇵", description: "Desapegos japoneses com marcas e raridades." },
+  { name: "Gomezmoda", url: "https://gomezmoda.es", country: "Espanha", flag: "🇪🇸", description: "Moda e grifes espanholas com preços competitivos." },
 ];
 
 const REDIRECTORS: Item[] = [
@@ -52,7 +54,6 @@ const REDIRECTORS: Item[] = [
   { name: "Forward2Me", url: "https://my.forward2me.com/package/61/", country: "Alemanha / Reino Unido / Japão / EUA", flag: "🌍", description: "Endereços na Alemanha, Reino Unido, Japão e EUA." },
   { name: "Shopogolic", url: "https://shopogolic.net/en", country: "Polônia", flag: "🇵🇱", description: "Redirecionamento a partir da Polônia." },
   { name: "Shopiniworld", url: "https://shopiniworld.com", country: "Arábia Saudita / Dubai", flag: "🇦🇪", description: "Redirecionamento da Arábia Saudita e Dubai." },
-  { name: "Gomez", url: "https://gomez.es", country: "Espanha", flag: "🇪🇸", description: "Redirecionamento a partir da Espanha (moeda: EUR)." },
 ];
 
 const ItemCard = ({ item }: { item: Item }) => (
