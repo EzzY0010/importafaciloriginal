@@ -490,7 +490,7 @@ const WolfChat: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${backendKey}`,
+          'Authorization': `Bearer ${(await client.auth.getSession()).data.session?.access_token ?? backendKey}`,
         },
         body: JSON.stringify({
           messages: [{ role: 'user', content: finalContent }],
@@ -508,6 +508,10 @@ const WolfChat: React.FC = () => {
           statusText: response.statusText,
           body: errPayload,
         });
+        if (errPayload?.error === 'subscription_expired') {
+          window.dispatchEvent(new CustomEvent('subscription-expired'));
+          return;
+        }
         // Foto sem modelo de visão disponível: mostra a mensagem amigável
         // como resposta do Lobo, não como erro genérico.
         if (errPayload?.error === 'vision_unavailable' && errPayload?.message) {

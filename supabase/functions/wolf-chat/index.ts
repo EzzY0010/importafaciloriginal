@@ -101,6 +101,29 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Verificação de assinatura (antes de chamar qualquer IA)
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const jwt = authHeader.replace(/^Bearer\s+/i, '');
+    const { data: authData } = jwt ? await supabase.auth.getUser(jwt) : { data: { user: null } } as any;
+    const authUser = authData?.user;
+    if (!authUser) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const [{ data: active }, { data: isAdmin }] = await Promise.all([
+      supabase.rpc('has_active_access', { _user_id: authUser.id }),
+      supabase.rpc('has_role', { _user_id: authUser.id, _role: 'admin' }),
+    ]);
+    if (!active && !isAdmin) {
+      console.log('[wolf-chat] acesso negado: subscription_expired', authUser.id);
+      return new Response(JSON.stringify({ error: 'subscription_expired' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    if (conversationId) {
+      const { data: conv } = await supabase.from('conversations').select('user_id').eq('id', conversationId).maybeSingle();
+      if (conv && conv.user_id !== authUser.id) {
+        return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
     // Fetch conversation history
     let conversationHistory: any[] = [];
     if (conversationId) {
