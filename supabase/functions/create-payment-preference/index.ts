@@ -9,7 +9,7 @@ const corsHeaders = {
 const PRODUCT = {
   id: 'minicurso',
   title: 'Minicurso PDF + Desafios - ImportaFácil',
-  price: 27.9,
+  price: 14.99,
 };
 
 serve(async (req) => {
@@ -72,7 +72,7 @@ serve(async (req) => {
       items: [{
         id: PRODUCT.id,
         title: PRODUCT.title,
-        description: 'Minicurso em PDF com desafios práticos de importação',
+        description: '7 PDFs, um para cada dia, cada um contendo um desafio.',
         quantity: 1,
         currency_id: 'BRL',
         unit_price: PRODUCT.price,

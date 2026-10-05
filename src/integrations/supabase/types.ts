@@ -212,6 +212,7 @@ export type Database = {
           device_approved: boolean | null
           email: string | null
           full_name: string | null
+          has_minicourse: boolean
           has_paid: boolean | null
           id: string
           interactive_tutorial_done: boolean
@@ -238,6 +239,7 @@ export type Database = {
           full_name?: string | null
           has_paid?: boolean | null
           id: string
+          has_minicourse?: boolean
           interactive_tutorial_done?: boolean
           last_city?: string | null
           last_country?: string | null
@@ -262,6 +264,7 @@ export type Database = {
           full_name?: string | null
           has_paid?: boolean | null
           id?: string
+          has_minicourse?: boolean
           interactive_tutorial_done?: boolean
           last_city?: string | null
           last_country?: string | null

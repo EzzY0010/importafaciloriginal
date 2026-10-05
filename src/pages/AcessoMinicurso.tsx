@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { FileDown, Loader2, Lock, Clock, XCircle } from "lucide-react";
+import { FileDown, Loader2, Lock, Clock, XCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSupabaseClient } from "@/lib/backend";
@@ -97,16 +97,16 @@ const AcessoMinicurso = () => {
               <p className="text-sm text-muted-foreground">Os materiais serão publicados em breve.</p>
             ) : (
               files.map((f) => (
-                <a
+                <div
                   key={f.name}
-                  href={f.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="flex items-center justify-between gap-3 rounded-xl border border-border p-3 hover:border-primary/40 transition-colors"
                 >
                   <span className="text-sm font-medium text-foreground truncate">{f.name}</span>
-                  <FileDown className="w-4 h-4 text-primary shrink-0" />
-                </a>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <Button size="sm" variant="outline" asChild><a href={f.url} target="_blank" rel="noopener noreferrer">Abrir</a></Button>
+                    <Button size="sm" asChild><a href={f.url} download rel="noopener noreferrer"><FileDown className="w-4 h-4 mr-1" />Baixar</a></Button>
+                  </span>
+                </div>
               ))
             )}
           </CardContent>
@@ -118,6 +118,14 @@ const AcessoMinicurso = () => {
             {DESAFIOS.map((d) => (
               <p key={d} className="text-sm text-muted-foreground">• {d}</p>
             ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="text-base">Links úteis</CardTitle></CardHeader>
+          <CardContent className="flex flex-wrap gap-3">
+            <Button variant="outline" asChild><a href="https://www.vinted.pt" target="_blank" rel="noopener noreferrer">Vinted.pt <ExternalLink className="w-4 h-4 ml-2" /></a></Button>
+            <Button variant="outline" asChild><a href="https://redirecteuropa.com" target="_blank" rel="noopener noreferrer">RedirectEuropa <ExternalLink className="w-4 h-4 ml-2" /></a></Button>
           </CardContent>
         </Card>
 

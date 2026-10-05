@@ -8,9 +8,10 @@ import { getSupabaseClient } from "@/lib/backend";
 
 export const MINICURSO = {
   name: "Minicurso PDF + desafios",
-  price: 27.9,
+  price: 14.99,
+  previousPrice: 27.9,
   period: "pagamento único",
-  description: "Material em PDF com desafios práticos para dar o primeiro passo.",
+  description: "7 PDFs, um para cada dia, cada um contendo um desafio.",
 };
 
 interface Props {
@@ -79,9 +80,11 @@ const MinicursoBuyCard = ({ variant = "hero" }: Props) => {
           {MINICURSO.description}
         </p>
         <div className="my-4">
+          <span className={`text-xs line-through block ${isHero ? "text-hero-foreground/60" : "text-muted-foreground"}`}>De R$ 27,90</span>
           <span className={`text-2xl sm:text-3xl font-extrabold ${isHero ? "text-gold" : "text-foreground"}`}>
             R$ {MINICURSO.price.toFixed(2).replace(".", ",")}
           </span>
+          <span className="ml-2 text-[10px] bg-gold text-gold-foreground rounded-full px-2 py-0.5">-46%</span>
           <p className={`text-[11px] ${isHero ? "text-hero-foreground/60" : "text-muted-foreground"}`}>
             {MINICURSO.period}
           </p>
@@ -93,7 +96,7 @@ const MinicursoBuyCard = ({ variant = "hero" }: Props) => {
             isHero ? "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20" : ""
           }`}
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Comprar"}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Escolher"}
         </Button>
       </div>
 

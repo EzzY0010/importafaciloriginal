@@ -65,6 +65,10 @@ serve(async (req) => {
             .eq('external_reference', externalRef);
 
           if (purchaseError) console.error('Error updating purchase:', purchaseError);
+          const { error: profileError } = await adminClient.from('profiles')
+            .update({ has_minicourse: true })
+            .ilike('email', email);
+          if (profileError) console.error('Error marking minicurso access:', profileError);
           console.log(`Minicurso liberado para ${email}`);
 
           return new Response('OK', { status: 200, headers: corsHeaders });

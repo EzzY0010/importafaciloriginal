@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   hasPaid: boolean;
+  hasMinicourse: boolean;
   hasAccess: boolean;
   legacyAccess: boolean;
   planExpiresAt: string | null;
@@ -25,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
+  const [hasMinicourse, setHasMinicourse] = useState(false);
   const [legacyAccess, setLegacyAccess] = useState(false);
   const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
@@ -44,11 +46,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkPaymentStatus = async (userId: string, client: SupabaseClient<Database>) => {
     const { data } = await client
       .from('profiles')
-      .select('has_paid, legacy_access, plan_expires_at')
+      .select('has_paid, has_minicourse, legacy_access, plan_expires_at')
       .eq('id', userId)
       .maybeSingle();
 
     setHasPaid(data?.has_paid ?? false);
+    setHasMinicourse(data?.has_minicourse ?? false);
     setLegacyAccess(data?.legacy_access ?? false);
     setPlanExpiresAt(data?.plan_expires_at ?? null);
     setNowTick(Date.now());
@@ -191,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, hasPaid, hasAccess, legacyAccess, planExpiresAt, loading, signIn, signUp, signOut, refreshPaymentStatus }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, hasPaid, hasMinicourse, hasAccess, legacyAccess, planExpiresAt, loading, signIn, signUp, signOut, refreshPaymentStatus }}>
       {children}
     </AuthContext.Provider>
   );

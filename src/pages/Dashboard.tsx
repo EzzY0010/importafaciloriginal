@@ -20,10 +20,11 @@ import SourcesDialog from "@/components/SourcesDialog";
 import RenewalBanner from "@/components/RenewalBanner";
 import HomeView from "@/components/dashboard/HomeView";
 import BottomNav from "@/components/dashboard/BottomNav";
-import { PLANS, type PlanId } from "@/config/plans";
+import MinicursoGate from "@/components/MinicursoGate";
+import { PLANS, getDiscountPercent, type PlanId } from "@/config/plans";
 
 const Dashboard = () => {
-  const { user, isAdmin, hasAccess: subscriptionActive, signOut, loading, refreshPaymentStatus } = useAuth();
+  const { user, isAdmin, hasAccess: subscriptionActive, hasMinicourse, signOut, loading, refreshPaymentStatus } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -197,6 +198,8 @@ const Dashboard = () => {
               </div>
             )}
             </>
+          ) : hasMinicourse ? (
+            <MinicursoGate />
           ) : (
             <div className="max-w-4xl mx-auto animate-slide-up">
               <div className="text-center mb-6">
@@ -223,9 +226,11 @@ const Dashboard = () => {
                       </span>
                     )}
                     <p className="text-xs text-muted-foreground">{plan.name}</p>
+                    {plan.previousPrice && <p className="text-xs text-muted-foreground line-through">De R$ {plan.previousPrice.toFixed(2).replace('.', ',')}</p>}
                     <p className="text-xl font-extrabold text-foreground mt-1">
                       R$ {plan.price.toFixed(2).replace('.', ',')}
                     </p>
+                    {getDiscountPercent(plan) && <span className="text-[10px] bg-accent text-accent-foreground rounded-full px-2 py-0.5">-{getDiscountPercent(plan)}%</span>}
                     <p className="text-[11px] text-muted-foreground">{plan.period}</p>
                   </button>
                 ))}

@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Fixed callback URL for every AppCNPay Pix transaction.
-const DAYS: Record<string, number> = { mensal: 30, trimestral: 90, anual: 365 };
+const DAYS: Record<string, number> = { mensal: 30, trimestral: 90, anual: 365, autonomo: 30 };
 const PAID = ["COMPLETED", "PAID", "APPROVED", "CONFIRMED"];
 
 Deno.serve(async (req) => {

@@ -5,7 +5,7 @@ import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
-import { PLANS, PLAN_FEATURES } from "@/config/plans";
+import { PLANS, getDiscountPercent } from "@/config/plans";
 import MinicursoBuyCard from "@/components/MinicursoBuyCard";
 import {
   Dialog,
@@ -319,12 +319,11 @@ const LandingPage = () => {
               Planos <span className="text-gold">Sob Medida</span>
             </h2>
             <p className="text-sm sm:text-base text-hero-foreground/70 mt-2 max-w-2xl mx-auto">
-              Três caminhos, um único ecossistema. Todos os planos incluem tudo — muda só o prazo e o suporte.
+              Quatro caminhos, um único ecossistema. Escolha entre mentoria completa ou acesso autônomo ao site.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <MinicursoBuyCard variant="hero" />
             {PLANS.map((plan) => (
               <div
                 key={plan.id}
@@ -341,20 +340,22 @@ const LandingPage = () => {
                 )}
                 <h3 className="font-bold text-hero-foreground text-base mb-1">{plan.name}</h3>
                 <p className="text-xs text-hero-foreground/60 min-h-[32px]">{plan.description}</p>
-                <div className="my-4">
+                    <div className="my-4">
+                      {plan.previousPrice && <p className="text-xs text-hero-foreground/60 line-through">De R$ {plan.previousPrice.toFixed(2).replace('.', ',')}</p>}
                   <div className="flex items-baseline gap-1">
                     <span className="text-2xl sm:text-3xl font-extrabold text-gold">
                       R$ {plan.price.toFixed(2).replace(".", ",")}
                     </span>
                   </div>
+                  {getDiscountPercent(plan) && <span className="inline-block text-[10px] bg-gold text-gold-foreground rounded-full px-2 py-0.5 mt-1">-{getDiscountPercent(plan)}%</span>}
                   <span className="text-[11px] text-hero-foreground/60">{plan.period}</span>
                   {plan.monthlyEquivalent && (
                     <p className="text-xs font-semibold text-gold/90 mt-1">{plan.monthlyEquivalent}</p>
                   )}
                 </div>
                 <ul className="space-y-1.5 mb-4 flex-1">
-                  {PLAN_FEATURES.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-[11px] text-hero-foreground/80">
+                  {plan.features.map((f) => (
+                    <li key={f} className={`flex items-start gap-2 text-[11px] ${f.startsWith('Sem ') ? 'text-hero-foreground/50' : 'text-hero-foreground/80'}`}>
                       <Check className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {f}
                     </li>
                   ))}
@@ -370,10 +371,14 @@ const LandingPage = () => {
                       : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20"
                   }`}
                 >
-                  {plan.highlight ? "🎯 Quero o Plano Anual" : "Escolher"}
+                  Escolher
                 </Button>
               </div>
             ))}
+          </div>
+
+          <div className="max-w-sm mx-auto w-full mb-4">
+            <MinicursoBuyCard variant="hero" />
           </div>
 
           <p className="text-center text-xs text-hero-foreground/60">

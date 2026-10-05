@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SOURCES, REDIRECTORS, type SourceItem } from "@/data/sources";
+import { useAuth } from "@/hooks/useAuth";
+import MinicursoGate from "@/components/MinicursoGate";
 
 const ItemCard = ({ item }: { item: SourceItem }) => (
   <Card className="p-4 flex flex-col gap-3 border border-border/60 hover:border-primary/40 hover:shadow-medium transition-all bg-card rounded-2xl">
@@ -43,6 +45,7 @@ const ItemCard = ({ item }: { item: SourceItem }) => (
 );
 
 const Sources = () => {
+  const { hasAccess, hasMinicourse, loading } = useAuth();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -62,6 +65,8 @@ const Sources = () => {
 
   const filteredSources = useMemo(() => filter(SOURCES), [query]);
   const filteredRedirectors = useMemo(() => filter(REDIRECTORS), [query]);
+
+  if (!loading && !hasAccess && hasMinicourse) return <MinicursoGate />;
 
   return (
     <div className="min-h-screen bg-background">

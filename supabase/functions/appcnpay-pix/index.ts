@@ -6,9 +6,10 @@ const cors = {
 };
 
 const PLANS: Record<string, { name: string; price: number }> = {
-  mensal: { name: "Plano Mensal", price: 97 },
-  trimestral: { name: "Plano Trimestral", price: 239 },
-  anual: { name: "Plano Anual", price: 499 },
+  mensal: { name: "Mentoria (plano mensal)", price: 97 },
+  trimestral: { name: "Mentoria (plano trimestral)", price: 239 },
+  anual: { name: "Mentoria (plano anual)", price: 499 },
+  autonomo: { name: "Acesso ao Site (plano mensal)", price: 34.99 },
 };
 
 const json = (b: unknown, s = 200) =>

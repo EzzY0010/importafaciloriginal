@@ -1,16 +1,18 @@
 // Central pricing map — edit values here to change amounts across the app.
-export type PlanId = "mensal" | "trimestral" | "anual";
+export type PlanId = "mensal" | "trimestral" | "anual" | "autonomo";
 
 export interface Plan {
   id: PlanId;
   name: string;
-  price: number; // BRL
+  price: number;
+  previousPrice?: number;
   period: string;
   description: string;
   monthlyEquivalent?: string;
   support: string;
   durationDays: number;
   highlight?: boolean;
+  features: string[];
 }
 
 export const PLAN_FEATURES = [
@@ -25,35 +27,54 @@ export const PLAN_FEATURES = [
 export const PLANS: Plan[] = [
   {
     id: "mensal",
-    name: "Plano Mensal",
+    name: "Mentoria (plano mensal)",
     price: 97,
+    previousPrice: 239,
     period: "/mês · cobrança mensal",
-    description: "Ideal para testar todo o ecossistema por 30 dias.",
+    description: "Acompanhamento completo por 30 dias.",
     support: "Suporte para dúvidas em até 48h",
     durationDays: 30,
+    features: PLAN_FEATURES,
   },
   {
     id: "trimestral",
-    name: "Plano Trimestral",
+    name: "Mentoria (plano trimestral)",
     price: 239,
+    previousPrice: 499,
     period: "/3 meses",
     monthlyEquivalent: "≈ R$ 79,67/mês",
-    description: "3 meses de acesso completo com economia.",
+    description: "3 meses de mentoria com economia.",
     support: "Suporte para dúvidas em até 24h–48h",
     durationDays: 90,
+    features: PLAN_FEATURES,
   },
   {
     id: "anual",
-    name: "Plano Anual",
+    name: "Mentoria (plano anual)",
     price: 499,
+    previousPrice: 799,
     period: "/ano",
     monthlyEquivalent: "≈ R$ 41,58/mês",
-    description: "Um ano inteiro de acesso pelo menor preço por mês.",
+    description: "Um ano de mentoria pelo menor preço mensal.",
     support: "Suporte prioritário em até 24h",
     durationDays: 365,
     highlight: true,
+    features: PLAN_FEATURES,
+  },
+  {
+    id: "autonomo",
+    name: "Acesso ao Site (plano mensal)",
+    price: 34.99,
+    period: "/mês · 30 dias",
+    description: "Somente acesso ao site e ao grupo de importação. Não contém acompanhamento nem suporte do ADM para dúvidas sobre importação. As dúvidas são tiradas somente na interação com o grupo.",
+    support: "Sem suporte do ADM",
+    durationDays: 30,
+    features: ["Site completo", "Acesso ao grupo de importação", "Sem acompanhamento", "Sem suporte do ADM"],
   },
 ];
 
 export const getPlan = (id: PlanId): Plan =>
   PLANS.find((p) => p.id === id) ?? PLANS[PLANS.length - 1];
+
+export const getDiscountPercent = (plan: Plan) =>
+  plan.previousPrice ? Math.round((1 - plan.price / plan.previousPrice) * 100) : null;
