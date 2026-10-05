@@ -20,6 +20,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const LEGACY_ACCOUNT_CUTOFF = Date.parse('2026-10-05T00:00:00Z');
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -62,9 +63,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const paid = legacyData?.has_paid ?? false;
       const expiresAt = legacyData?.plan_expires_at ?? null;
-      const legacyCutoff = Date.parse('2026-10-05T00:00:00Z');
       const wasCreatedBeforeNewPlans = !!legacyData?.created_at
-        && Date.parse(legacyData.created_at) < legacyCutoff;
+        && Date.parse(legacyData.created_at) < LEGACY_ACCOUNT_CUTOFF;
       setHasPaid(paid);
       setHasMinicourse(legacyData?.has_minicourse ?? false);
       setLegacyAccess(paid && (wasCreatedBeforeNewPlans || !expiresAt));
@@ -77,9 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setHasMinicourse(data?.has_minicourse ?? false);
     // Contas antigas sem vencimento continuam permanentes mesmo antes de
     // serem marcadas explicitamente pela migration.
-    const legacyCutoff = Date.parse('2026-10-05T00:00:00Z');
     const wasCreatedBeforeNewPlans = !!data?.created_at
-      && Date.parse(data.created_at) < legacyCutoff;
+      && Date.parse(data.created_at) < LEGACY_ACCOUNT_CUTOFF;
     setLegacyAccess(data?.legacy_access === true || (
       data?.has_paid === true && (wasCreatedBeforeNewPlans || !data?.plan_expires_at)
     ));
@@ -178,8 +177,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   // Contas legadas permanecem ativas para sempre; compras novas respeitam a validade do plano.
+  // O cadastro autenticado é a fonte final para contas antigas: mesmo que o
+  // perfil esteja incompleto, expirado ou ainda sem a migration, a conta já
+  // existente antes dos novos planos deve entrar direto nas ferramentas.
+  const isPreexistingAccount = !!user
+    && Date.parse(user.created_at) < LEGACY_ACCOUNT_CUTOFF;
   const hasAccess =
-    legacyAccess || (hasPaid && !!planExpiresAt && new Date(planExpiresAt).getTime() > nowTick);
+    isPreexistingAccount
+    || legacyAccess
+    || (hasPaid && !!planExpiresAt && new Date(planExpiresAt).getTime() > nowTick);
 
   const signIn = async (email: string, password: string) => {
     const client = await getSupabaseClient();
