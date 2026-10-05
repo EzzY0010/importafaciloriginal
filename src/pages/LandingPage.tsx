@@ -323,6 +323,10 @@ const LandingPage = () => {
             </p>
           </div>
 
+          <div className="max-w-sm mx-auto w-full mb-4">
+            <MinicursoBuyCard variant="hero" />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {PLANS.map((plan) => (
               <div
@@ -375,10 +379,6 @@ const LandingPage = () => {
                 </Button>
               </div>
             ))}
-          </div>
-
-          <div className="max-w-sm mx-auto w-full mb-4">
-            <MinicursoBuyCard variant="hero" />
           </div>
 
           <p className="text-center text-xs text-hero-foreground/60">

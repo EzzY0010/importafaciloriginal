@@ -209,6 +209,10 @@ const Dashboard = () => {
                   Escolha o plano que combina com o seu momento.
                 </p>
               </div>
+              <div className="max-w-md mx-auto mb-6">
+                <p className="text-center text-xs text-muted-foreground mb-2">Prefere começar pelo básico?</p>
+                <MinicursoBuyCard variant="card" />
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                 {PLANS.map((plan) => (
                   <button
@@ -240,10 +244,6 @@ const Dashboard = () => {
                   onPaymentSuccess={refreshPaymentStatus}
                   planId={selectedPlan}
                 />
-              </div>
-              <div className="max-w-md mx-auto mt-6">
-                <p className="text-center text-xs text-muted-foreground mb-2">Prefere começar pelo básico?</p>
-                <MinicursoBuyCard variant="card" />
               </div>
             </div>
           )}
