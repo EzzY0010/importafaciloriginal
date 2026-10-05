@@ -205,7 +205,7 @@ const LandingPage = () => {
       </section>
 
       {/* ── 2. O Manifesto do Lobo ── */}
-      <section id="manifesto-section" className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+      <section id="manifesto-section" className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
         <div className="max-w-3xl mx-auto w-full space-y-5">
           <div className="text-center mb-6">
             <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">O Manifesto do Lobo</p>
@@ -214,22 +214,13 @@ const LandingPage = () => {
             </h2>
           </div>
           <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
-            O sucesso pertence a quem prefere <span className="font-bold text-hero-foreground">praticidade e facilidade</span>, em vez de ficar colecionando vários cursos baratos que não saem do lugar.
-          </p>
-          <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
-            <span className="font-bold text-gold">Jordan Belfort</span>, o verdadeiro Lobo de Wall Street, não construiu seu império aceitando métodos incompletos ou ferramentas pela metade. Ele trabalhava de forma inteligente para chegar onde queria muito mais rápido — e você também pode, <span className="font-semibold text-hero-foreground">centralizando o seu conhecimento sobre importação</span>.
-          </p>
-          <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
-            A maioria dos "gurus" por aí tenta te vender o conhecimento em partes: um curso só para Europa, outro só para Estados Unidos, outro só para China. <span className="font-bold text-hero-foreground">Isso não é estratégia, é perda de tempo e de dinheiro.</span>
-          </p>
-          <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
-            O <span className="font-bold text-gold">ImportaFácil</span> nasceu sob essa mesma premissa: <span className="font-semibold text-hero-foreground">centralizar o poder</span>. Nós criamos um ecossistema completo onde você domina os <span className="font-semibold text-hero-foreground">três maiores polos de importação do mundo</span> de forma cirúrgica, sem precisar de mais nenhum outro treinamento.
+            O <span className="font-bold text-gold">ImportaFácil</span> centraliza conhecimento, ferramentas e fontes para você importar com mais praticidade, sem precisar comprar vários cursos separados.
           </p>
         </div>
       </section>
 
       {/* ── 3. O Problema do Mercado ── */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+      <section className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
         <div className="max-w-3xl mx-auto w-full space-y-6">
           <div className="text-center mb-4">
             <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">A Quebra de Objeção</p>
@@ -253,7 +244,7 @@ const LandingPage = () => {
       </section>
 
       {/* ── 4. O Que Entregamos ── */}
-      <section id="deliverables-section" className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+      <section id="deliverables-section" className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
         <div className="max-w-3xl mx-auto w-full">
           <div className="text-center mb-8">
             <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Os Pilares do Seu Sucesso</p>
@@ -278,7 +269,7 @@ const LandingPage = () => {
       </section>
 
       {/* ── 5. Oferta Irrecusável ── */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+      <section className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
         <div className="max-w-2xl mx-auto w-full space-y-6 text-center">
           <div>
             <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Ancoragem de Valor</p>
@@ -311,7 +302,7 @@ const LandingPage = () => {
       </section>
 
       {/* ── 6. Planos de Pagamento ── */}
-      <section id="plans-section" className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+      <section id="plans-section" className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
         <div className="max-w-5xl mx-auto w-full space-y-8">
           <div className="text-center">
             <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Escolha seu plano</p>
@@ -388,7 +379,7 @@ const LandingPage = () => {
       </section>
 
       {/* ── 7. Números Virtuais SMS & Grupo VIP ── */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+      <section className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
         <div className="max-w-3xl mx-auto w-full space-y-8">
           <div className="text-center">
             <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Mais Ferramentas</p>
