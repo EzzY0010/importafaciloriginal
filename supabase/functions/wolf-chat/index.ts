@@ -286,7 +286,7 @@ serve(async (req) => {
                     ],
                   },
                 ],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+                generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
               }),
             },
           );
@@ -338,7 +338,7 @@ serve(async (req) => {
         });
 
         return new Response(stream, {
-          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform' },
         });
       } catch (geminiErr) {
         console.error('Gemini vision exception:', (geminiErr as Error)?.message);
@@ -417,7 +417,7 @@ serve(async (req) => {
         },
       });
       console.log('AI fallback respondeu', { provider, model, charCount: text.length });
-      return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' } });
+      return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform' } });
     };
 
     const tryGeminiTextFallback = async (): Promise<Response | null> => {
@@ -434,7 +434,7 @@ serve(async (req) => {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ system_instruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature: 0.7, maxOutputTokens: 2048 } }),
+            body: JSON.stringify({ system_instruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } }),
           });
           if (!res.ok) {
             console.warn('AI fallback Gemini falhou', { model, status: res.status });
@@ -544,7 +544,7 @@ serve(async (req) => {
           stream: true,
           temperature: 0.7,
           // Limite alto o suficiente para a resposta nunca ser cortada no meio.
-          max_tokens: 2048,
+            max_tokens: 4096,
         });
         approximatePayloadKb = Math.round(new TextEncoder().encode(requestBody).length / 1024);
 
@@ -718,7 +718,7 @@ serve(async (req) => {
     });
 
     return new Response(response.body!.pipeThrough(monitor), {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform" },
     });
 
   } catch (error) {

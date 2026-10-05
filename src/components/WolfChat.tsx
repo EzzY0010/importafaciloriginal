@@ -306,13 +306,22 @@ const WolfChat: React.FC = () => {
   const speakText = (text: string) => {
     if (!voiceEnabled || !('speechSynthesis' in window) || !text.trim()) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(
-      text.replace(/https?:\/\/\S+/g, '').replace(/[*_#`]/g, '').replace(/\s+/g, ' ').trim(),
-    );
-    utterance.lang = 'pt-BR';
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    window.speechSynthesis.speak(utterance);
+    const cleanText = text.replace(/https?:\/\/\S+/g, '').replace(/[*_#`]/g, '').replace(/\s+/g, ' ').trim();
+    // Android Chrome costuma interromper utterances muito longas. Quebramos
+    // em frases/trechos curtos e encadeamos cada parte no evento onend.
+    const chunks = cleanText.match(/.{1,180}(?:\s+|$)/g) ?? [cleanText];
+    let index = 0;
+    const speakNext = () => {
+      if (index >= chunks.length || !voiceEnabled) return;
+      const utterance = new SpeechSynthesisUtterance(chunks[index++].trim());
+      utterance.lang = 'pt-BR';
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.onend = speakNext;
+      utterance.onerror = () => { index = chunks.length; };
+      window.speechSynthesis.speak(utterance);
+    };
+    speakNext();
   };
 
   const toggleVoiceInput = () => {
