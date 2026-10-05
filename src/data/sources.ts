@@ -4,6 +4,8 @@ export type SourceItem = {
   country: string;
   flag: string;
   description: string;
+  countries?: Array<{ name: string; flag: string }>;
+  searchTerms?: string[];
 };
 
 export const SOURCES: SourceItem[] = [
@@ -13,7 +15,7 @@ export const SOURCES: SourceItem[] = [
   { name: "1688", url: "https://www.1688.com", country: "China", flag: "🇨🇳", description: "Atacado direto de fábrica a preço de custo." },
   { name: "Taobao", url: "https://www.taobao.com", country: "China", flag: "🇨🇳", description: "O maior varejo interno chinês." },
   { name: "Vinted", url: "https://www.vinted.com", country: "Europa", flag: "🇪🇺", description: "Roupas e moda usada/vintage com garimpo premium." },
-  { name: "Depop", url: "https://www.depop.com", country: "Europa", flag: "🇪🇺", description: "Vitrine de streetwear jovem e peças raras." },
+  { name: "Depop", url: "https://www.depop.com", country: "Estados Unidos", flag: "🇺🇸", description: "Vitrine de streetwear jovem e peças raras.", searchTerms: ["EUA", "USA"] },
   { name: "Vestiaire Collective", url: "https://www.vestiairecollective.com", country: "França", flag: "🇫🇷", description: "Luxo de elite certificado por especialistas." },
   { name: "Wallapop", url: "https://es.wallapop.com", country: "Espanha", flag: "🇪🇸", description: "Eletrônicos e desapegos locais espanhóis." },
   { name: "Milanuncios", url: "https://www.milanuncios.com", country: "Espanha", flag: "🇪🇸", description: "Classificados gerais para todo tipo de garimpo." },
@@ -42,8 +44,27 @@ export const REDIRECTORS: SourceItem[] = [
   { name: "Redirect Europa", url: "https://www.redirecteuropa.com", country: "Espanha / Europa", flag: "🇪🇺", description: "Consolidação e envio direto para o Brasil." },
   { name: "CSSBuy", url: "https://www.cssbuy.com", country: "China", flag: "🇨🇳", description: "Agente de compras oficial com QC confiável." },
   { name: "ForwardVia", url: "https://www.forwardvia.com", country: "Reino Unido", flag: "🇬🇧", description: "Envio rápido da Europa/UK para o Brasil." },
-  { name: "UK2Brazil", url: "https://www.uk2brazil.com", country: "Reino Unido", flag: "🇬🇧", description: "Suporte focado em brasileiros no UK." },
   { name: "Forward2Me", url: "https://my.forward2me.com/package/61/", country: "Alemanha / Reino Unido / Japão / EUA", flag: "🌍", description: "Endereços na Alemanha, Reino Unido, Japão e EUA." },
-  { name: "Shopogolic", url: "https://shopogolic.net/en", country: "Polônia", flag: "🇵🇱", description: "Redirecionamento a partir da Polônia." },
+  {
+    name: "Shopogolic",
+    url: "https://shopogolic.net/en",
+    country: "Reino Unido / Alemanha / Polônia / Itália / França / Espanha / Lituânia / Cazaquistão / China / Letônia / Estados Unidos",
+    flag: "🌍",
+    countries: [
+      { name: "Reino Unido", flag: "🇬🇧" },
+      { name: "Alemanha", flag: "🇩🇪" },
+      { name: "Polônia", flag: "🇵🇱" },
+      { name: "Itália", flag: "🇮🇹" },
+      { name: "França", flag: "🇫🇷" },
+      { name: "Espanha", flag: "🇪🇸" },
+      { name: "Lituânia", flag: "🇱🇹" },
+      { name: "Cazaquistão", flag: "🇰🇿" },
+      { name: "China", flag: "🇨🇳" },
+      { name: "Letônia", flag: "🇱🇻" },
+      { name: "Estados Unidos", flag: "🇺🇸" },
+    ],
+    searchTerms: ["EUA", "USA"],
+    description: "Redirecionamento a partir de 11 países: Reino Unido, Alemanha, Polônia, Itália, França, Espanha, Lituânia, Cazaquistão, China, Letônia e Estados Unidos.",
+  },
   { name: "Shopiniworld", url: "https://shopiniworld.com", country: "Arábia Saudita / Dubai", flag: "🇦🇪", description: "Redirecionamento da Arábia Saudita e Dubai." },
 ];

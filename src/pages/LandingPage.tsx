@@ -155,12 +155,6 @@ const LandingPage = () => {
     },
   ];
 
-  const partnerRedirectors = [
-    { name: "Forward2Me", countries: "🇩🇪 Alemanha, 🇬🇧 Reino Unido, 🇯🇵 Japão e 🇺🇸 EUA", url: "https://my.forward2me.com/package/61/" },
-    { name: "Shopogolic", countries: "🇵🇱 Polônia", url: "https://shopogolic.net/en" },
-    { name: "Shopiniworld", countries: "🇸🇦 Arábia Saudita e 🇦🇪 Dubai (Emirados Árabes)", url: "https://shopiniworld.com" },
-  ];
-
   const offerItems = [
     "Ecossistema Completo (EUA, China e Europa)",
     "IA Especialista + Calculadora Pro + Busca Global",
@@ -385,35 +379,6 @@ const LandingPage = () => {
           <p className="text-center text-xs text-hero-foreground/60">
             Pagamento seguro · Sem taxas escondidas
           </p>
-        </div>
-      </section>
-
-      {/* ── Redirecionadores Parceiros ── */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
-        <div className="max-w-5xl mx-auto w-full space-y-8">
-          <div className="text-center">
-            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Entregas pelo mundo</p>
-            <h2 className="text-2xl sm:text-3xl font-bold">
-              Redirecionadores <span className="text-gold">Parceiros</span>
-            </h2>
-            <p className="text-sm sm:text-base text-hero-foreground/70 mt-2 max-w-2xl mx-auto">
-              Receba suas compras em um endereço no exterior e envie tudo para o Brasil.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {partnerRedirectors.map((r) => (
-              <div key={r.name} className="p-5 sm:p-6 rounded-2xl bg-hero-foreground/5 border border-hero-foreground/15 hover:border-gold/40 transition-all flex flex-col">
-                <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold mb-4">
-                  <Globe className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold text-hero-foreground mb-2">📦 {r.name}</h3>
-                <p className="text-sm text-hero-foreground/75 leading-relaxed mb-5 flex-1">{r.countries}</p>
-                <Button asChild className="w-full bg-gold text-gold-foreground hover:bg-gold/90 font-bold h-auto py-3 rounded-xl">
-                  <a href={r.url} target="_blank" rel="noopener noreferrer">Acessar</a>
-                </Button>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 

@@ -18,9 +18,19 @@ const ItemCard = ({ item }: { item: SourceItem }) => (
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 flex-wrap">
         <h3 className="font-semibold text-foreground text-sm leading-tight">{item.name}</h3>
-        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/50">
-          {item.flag} {item.country}
-        </span>
+        {item.countries ? (
+          <div className="flex flex-wrap gap-1.5" aria-label={`Países atendidos: ${item.country}`}>
+            {item.countries.map((country) => (
+              <span key={country.name} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/50">
+                {country.flag} {country.name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/50">
+            {item.flag} {item.country}
+          </span>
+        )}
       </div>
       <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">{item.description}</p>
     </div>
@@ -43,7 +53,8 @@ const SourcesDialog = ({ open, onOpenChange, defaultTab = "sources" }: Props) =>
       (i) =>
         i.name.toLowerCase().includes(q) ||
         i.country.toLowerCase().includes(q) ||
-        i.description.toLowerCase().includes(q),
+        i.description.toLowerCase().includes(q) ||
+        i.searchTerms?.some((term) => term.toLowerCase().includes(q)),
     );
   };
 
