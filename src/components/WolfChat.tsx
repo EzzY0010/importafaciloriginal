@@ -307,16 +307,28 @@ const WolfChat: React.FC = () => {
     if (!voiceEnabled || !('speechSynthesis' in window) || !text.trim()) return;
     window.speechSynthesis.cancel();
     const cleanText = text.replace(/https?:\/\/\S+/g, '').replace(/[*_#`]/g, '').replace(/\s+/g, ' ').trim();
-    // Android Chrome costuma interromper utterances muito longas. Quebramos
-    // em frases/trechos curtos e encadeamos cada parte no evento onend.
-    const chunks = cleanText.match(/.{1,180}(?:\s+|$)/g) ?? [cleanText];
+    const voices = window.speechSynthesis.getVoices();
+    const brazilianVoices = voices.filter((voice) => /^pt-BR/i.test(voice.lang));
+    const preferredVoice = brazilianVoices.sort((a, b) => {
+      const preferred = /google|microsoft|luciana|francisca|fernanda/i;
+      return Number(preferred.test(b.name)) - Number(preferred.test(a.name));
+    })[0] ?? voices.find((voice) => /^pt/i.test(voice.lang));
+    // Android Chrome pode cortar utterances muito longas. Primeiro preservamos
+    // frases naturais; só quebramos por palavras quando uma frase é extensa.
+    const chunks = cleanText
+      .split(/(?<=[.!?])\s+/)
+      .flatMap((sentence) => sentence.match(/.{1,220}(?:\s+|$)/g) ?? [sentence])
+      .map((chunk) => chunk.trim())
+      .filter(Boolean);
     let index = 0;
     const speakNext = () => {
       if (index >= chunks.length || !voiceEnabled) return;
       const utterance = new SpeechSynthesisUtterance(chunks[index++].trim());
       utterance.lang = 'pt-BR';
-      utterance.rate = 1;
-      utterance.pitch = 1;
+      if (preferredVoice) utterance.voice = preferredVoice;
+      utterance.rate = 0.94;
+      utterance.pitch = 1.04;
+      utterance.volume = 0.96;
       utterance.onend = speakNext;
       utterance.onerror = () => { index = chunks.length; };
       window.speechSynthesis.speak(utterance);
