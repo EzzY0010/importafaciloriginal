@@ -45,7 +45,7 @@ const PlanCard = ({ plan, onChoose }: { plan: (typeof PLANS)[number]; onChoose: 
           {excluded ? <X className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" /> : <Check className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" />} {feature}
         </li>;
       })}
-      <li className="flex items-start gap-2 text-[11px] font-semibold text-hero-foreground"><Headset className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {plan.support}</li>
+      {plan.id !== "autonomo" && <li className="flex items-start gap-2 text-[11px] font-semibold text-hero-foreground"><Headset className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {plan.support}</li>}
     </ul>
     <Button onClick={() => onChoose(plan.id)} className={`w-full min-h-11 h-auto py-2.5 font-bold whitespace-normal leading-tight text-xs sm:text-sm ${plan.highlight ? "bg-gold text-gold-foreground hover:bg-gold/90" : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20"}`}>Escolher</Button>
   </div>
