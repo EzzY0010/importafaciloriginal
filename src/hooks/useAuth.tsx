@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkPaymentStatus = async (userId: string, client: SupabaseClient<Database>) => {
     const { data, error } = await client
       .from('profiles')
-      .select('has_paid, has_minicourse, legacy_access, plan_expires_at')
+      .select('has_paid, has_minicourse, legacy_access, plan_expires_at, created_at')
       .eq('id', userId)
       .maybeSingle();
 
@@ -56,15 +56,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) {
       const { data: legacyData } = await client
         .from('profiles')
-        .select('has_paid, has_minicourse, plan_expires_at')
+        .select('has_paid, has_minicourse, plan_expires_at, created_at')
         .eq('id', userId)
         .maybeSingle();
 
       const paid = legacyData?.has_paid ?? false;
       const expiresAt = legacyData?.plan_expires_at ?? null;
+      const legacyCutoff = Date.parse('2026-10-05T00:00:00Z');
+      const wasCreatedBeforeNewPlans = !!legacyData?.created_at
+        && Date.parse(legacyData.created_at) < legacyCutoff;
       setHasPaid(paid);
       setHasMinicourse(legacyData?.has_minicourse ?? false);
-      setLegacyAccess(paid && !expiresAt);
+      setLegacyAccess(paid && (wasCreatedBeforeNewPlans || !expiresAt));
       setPlanExpiresAt(expiresAt);
       setNowTick(Date.now());
       return;
@@ -74,7 +77,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setHasMinicourse(data?.has_minicourse ?? false);
     // Contas antigas sem vencimento continuam permanentes mesmo antes de
     // serem marcadas explicitamente pela migration.
-    setLegacyAccess(data?.legacy_access ?? (data?.has_paid === true && !data?.plan_expires_at));
+    const legacyCutoff = Date.parse('2026-10-05T00:00:00Z');
+    const wasCreatedBeforeNewPlans = !!data?.created_at
+      && Date.parse(data.created_at) < legacyCutoff;
+    setLegacyAccess(data?.legacy_access === true || (
+      data?.has_paid === true && (wasCreatedBeforeNewPlans || !data?.plan_expires_at)
+    ));
     setPlanExpiresAt(data?.plan_expires_at ?? null);
     setNowTick(Date.now());
   };
