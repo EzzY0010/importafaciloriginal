@@ -26,6 +26,16 @@ export const PLAN_FEATURES = [
 
 export const PLANS: Plan[] = [
   {
+    id: "autonomo",
+    name: "Acesso ao Site (plano mensal)",
+    price: 34.99,
+    period: "/mês · 30 dias",
+    description: "Somente acesso ao site e ao grupo de importação. Não contém acompanhamento nem suporte do ADM para dúvidas sobre importação. As dúvidas são tiradas somente na interação com o grupo.",
+    support: "Sem suporte do ADM",
+    durationDays: 30,
+    features: ["Site completo", "Acesso ao grupo de importação", "Sem acompanhamento", "Sem suporte do ADM"],
+  },
+  {
     id: "mensal",
     name: "Mentoria (plano mensal)",
     price: 97,
@@ -60,16 +70,6 @@ export const PLANS: Plan[] = [
     durationDays: 365,
     highlight: true,
     features: PLAN_FEATURES,
-  },
-  {
-    id: "autonomo",
-    name: "Acesso ao Site (plano mensal)",
-    price: 34.99,
-    period: "/mês · 30 dias",
-    description: "Somente acesso ao site e ao grupo de importação. Não contém acompanhamento nem suporte do ADM para dúvidas sobre importação. As dúvidas são tiradas somente na interação com o grupo.",
-    support: "Sem suporte do ADM",
-    durationDays: 30,
-    features: ["Site completo", "Acesso ao grupo de importação", "Sem acompanhamento", "Sem suporte do ADM"],
   },
 ];
 
