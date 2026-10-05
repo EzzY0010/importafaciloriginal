@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check, Crown, Smartphone, MessageCircle, Loader2 } from "lucide-react";
+import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check, X, Crown, Smartphone, MessageCircle, Loader2 } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +26,30 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { getSupabaseClient } from "@/lib/backend";
 
+const PlanCard = ({ plan, onChoose }: { plan: (typeof PLANS)[number]; onChoose: (id: string) => void }) => (
+  <div className={`relative flex flex-col p-5 rounded-2xl border transition-all ${plan.highlight ? "bg-gold/10 border-gold/60 shadow-[0_0_40px_hsl(43_80%_55%_/_0.25)] scale-[1.02]" : "bg-hero-foreground/5 border-hero-foreground/15 hover:border-gold/40"}`}>
+    {plan.highlight && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-gold-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 whitespace-nowrap"><Crown className="w-3 h-3" /> Melhor custo-benefício</div>}
+    <h3 className="font-bold text-hero-foreground text-base mb-1">{plan.name}</h3>
+    <p className="text-xs text-hero-foreground/60 min-h-[32px]">{plan.description}</p>
+    <div className="my-4">
+      {plan.previousPrice && <p className="text-xs text-hero-foreground/60 line-through">De R$ {plan.previousPrice.toFixed(2).replace('.', ',')}</p>}
+      <div className="flex items-baseline gap-1"><span className="text-2xl sm:text-3xl font-extrabold text-gold">R$ {plan.price.toFixed(2).replace(".", ",")}</span></div>
+      {getDiscountPercent(plan) && <span className="inline-block text-[10px] bg-gold text-gold-foreground rounded-full px-2 py-0.5 mt-1">-{getDiscountPercent(plan)}%</span>}
+      <span className="text-[11px] text-hero-foreground/60">{plan.period}</span>
+      {plan.monthlyEquivalent && <p className="text-xs font-semibold text-gold/90 mt-1">{plan.monthlyEquivalent}</p>}
+    </div>
+    <ul className="space-y-1.5 mb-4 flex-1">
+      {plan.features.map((feature) => {
+        const excluded = feature.startsWith("Sem ");
+        return <li key={feature} className={`flex items-start gap-2 text-[11px] ${excluded ? "text-hero-foreground/50" : "text-hero-foreground/80"}`}>
+          {excluded ? <X className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" /> : <Check className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" />} {feature}
+        </li>;
+      })}
+      <li className="flex items-start gap-2 text-[11px] font-semibold text-hero-foreground"><Headset className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {plan.support}</li>
+    </ul>
+    <Button onClick={() => onChoose(plan.id)} className={`w-full min-h-11 h-auto py-2.5 font-bold whitespace-normal leading-tight text-xs sm:text-sm ${plan.highlight ? "bg-gold text-gold-foreground hover:bg-gold/90" : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20"}`}>Escolher</Button>
+  </div>
+);
 
 const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
@@ -314,62 +338,12 @@ const LandingPage = () => {
             </p>
           </div>
 
-          <div className="max-w-sm mx-auto w-full mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <MinicursoBuyCard variant="hero" />
+            {PLANS.filter((plan) => plan.id === "autonomo").map((plan) => <PlanCard key={plan.id} plan={plan} onChoose={goToPlan} />)}
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.id}
-                className={`relative flex flex-col p-5 rounded-2xl border transition-all ${
-                  plan.highlight
-                    ? "bg-gold/10 border-gold/60 shadow-[0_0_40px_hsl(43_80%_55%_/_0.25)] scale-[1.02]"
-                    : "bg-hero-foreground/5 border-hero-foreground/15 hover:border-gold/40"
-                }`}
-              >
-                {plan.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-gold-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 whitespace-nowrap">
-                    <Crown className="w-3 h-3" /> Melhor custo-benefício
-                  </div>
-                )}
-                <h3 className="font-bold text-hero-foreground text-base mb-1">{plan.name}</h3>
-                <p className="text-xs text-hero-foreground/60 min-h-[32px]">{plan.description}</p>
-                    <div className="my-4">
-                      {plan.previousPrice && <p className="text-xs text-hero-foreground/60 line-through">De R$ {plan.previousPrice.toFixed(2).replace('.', ',')}</p>}
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-2xl sm:text-3xl font-extrabold text-gold">
-                      R$ {plan.price.toFixed(2).replace(".", ",")}
-                    </span>
-                  </div>
-                  {getDiscountPercent(plan) && <span className="inline-block text-[10px] bg-gold text-gold-foreground rounded-full px-2 py-0.5 mt-1">-{getDiscountPercent(plan)}%</span>}
-                  <span className="text-[11px] text-hero-foreground/60">{plan.period}</span>
-                  {plan.monthlyEquivalent && (
-                    <p className="text-xs font-semibold text-gold/90 mt-1">{plan.monthlyEquivalent}</p>
-                  )}
-                </div>
-                <ul className="space-y-1.5 mb-4 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className={`flex items-start gap-2 text-[11px] ${f.startsWith('Sem ') ? 'text-hero-foreground/50' : 'text-hero-foreground/80'}`}>
-                      <Check className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {f}
-                    </li>
-                  ))}
-                  <li className="flex items-start gap-2 text-[11px] font-semibold text-hero-foreground">
-                    <Headset className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {plan.support}
-                  </li>
-                </ul>
-                <Button
-                  onClick={() => goToPlan(plan.id)}
-                  className={`w-full min-h-11 h-auto py-2.5 font-bold whitespace-normal leading-tight text-xs sm:text-sm ${
-                    plan.highlight
-                      ? "bg-gold text-gold-foreground hover:bg-gold/90"
-                      : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20"
-                  }`}
-                >
-                  Escolher
-                </Button>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {PLANS.filter((plan) => plan.id !== "autonomo").map((plan) => <PlanCard key={plan.id} plan={plan} onChoose={goToPlan} />)}
           </div>
 
           <p className="text-center text-xs text-hero-foreground/60">
