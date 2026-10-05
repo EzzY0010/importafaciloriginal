@@ -100,7 +100,7 @@ serve(async (req) => {
         const days = PLAN_DAYS[planId] ?? null;
         let baseTime = Date.now();
         if (userId) {
-          const { data: cur } = await adminClient.from('profiles').select('plan_expires_at').eq('id', userId).maybeSingle();
+          const { data: cur } = await adminClient.from('profiles').select('plan_expires_at, legacy_access').eq('id', userId).maybeSingle();
           if (cur?.plan_expires_at) baseTime = Math.max(baseTime, new Date(cur.plan_expires_at).getTime());
         }
         const expiresAt = days
@@ -110,7 +110,7 @@ serve(async (req) => {
         if (userId) {
           // Mark user as paid
           const { error: profileError } = await adminClient.from('profiles')
-            .update({ has_paid: true, plan_type: planId, plan_expires_at: expiresAt })
+            .update({ has_paid: true, plan_type: planId, plan_expires_at: cur?.legacy_access ? null : expiresAt })
             .eq('id', userId);
 
           if (profileError) {

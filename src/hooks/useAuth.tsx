@@ -147,9 +147,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Regra única: (legacy E pago) OU (pago E vencimento futuro)
+  // Contas legadas permanecem ativas para sempre; compras novas respeitam a validade do plano.
   const hasAccess =
-    hasPaid && (legacyAccess || (!!planExpiresAt && new Date(planExpiresAt).getTime() > nowTick));
+    legacyAccess || (hasPaid && !!planExpiresAt && new Date(planExpiresAt).getTime() > nowTick);
 
   const signIn = async (email: string, password: string) => {
     const client = await getSupabaseClient();

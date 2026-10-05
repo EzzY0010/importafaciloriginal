@@ -29,10 +29,14 @@ Deno.serve(async (req) => {
 
     await admin.from("payments").update({ status: "approved" }).eq("id", pay.id);
     const planId = pay.external_reference.split("_")[1] ?? "mensal";
-    const { data: cur } = await admin.from("profiles").select("plan_expires_at").eq("id", pay.user_id).maybeSingle();
+    const { data: cur } = await admin.from("profiles").select("plan_expires_at, legacy_access").eq("id", pay.user_id).maybeSingle();
     const base = Math.max(Date.now(), cur?.plan_expires_at ? new Date(cur.plan_expires_at).getTime() : 0);
     const expires = new Date(base + (DAYS[planId] ?? 30) * 864e5).toISOString();
-    const { error } = await admin.from("profiles").update({ has_paid: true, plan_type: planId, plan_expires_at: expires }).eq("id", pay.user_id);
+    const { error } = await admin.from("profiles").update({
+      has_paid: true,
+      plan_type: planId,
+      plan_expires_at: cur?.legacy_access ? null : expires,
+    }).eq("id", pay.user_id);
     console.log("[appcnpay-webhook] acesso liberado", pay.user_id, planId, error ?? "");
     return new Response("OK");
   } catch (e) {
