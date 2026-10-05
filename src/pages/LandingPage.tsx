@@ -213,15 +213,6 @@ const LandingPage = () => {
             <LeadCaptureInline scrollToPlansId="plans-section" />
           </div>
 
-          {!user && (
-            <button
-              onClick={() => navigate("/login")}
-              className="mx-auto block text-sm text-hero-foreground/70 hover:text-gold underline underline-offset-4 transition-colors"
-            >
-              Já tenho conta — entrar
-            </button>
-          )}
-
           <button onClick={scrollToManifesto} className="mx-auto block animate-bounce text-gold/60 hover:text-gold transition-colors mt-8" aria-label="Rolar para baixo">
             <ChevronDown className="w-8 h-8" />
           </button>

@@ -193,6 +193,14 @@ const LeadCaptureInline = ({ scrollToPlansId }: { scrollToPlansId?: string }) =>
         )}
       </Button>
 
+      <button
+        type="button"
+        onClick={() => navigate("/login")}
+        className="mx-auto block text-xs text-hero-foreground/70 hover:text-gold underline underline-offset-4 transition-colors"
+      >
+        Já tenho conta — entrar
+      </button>
+
       <div className="flex items-start gap-2 text-[11px] text-hero-foreground/60">
         <ShieldCheck className="w-3.5 h-3.5 text-gold flex-shrink-0 mt-0.5" />
         <span>Seus dados ficam salvos no nosso painel para liberar seu acesso e dar suporte VIP.</span>
