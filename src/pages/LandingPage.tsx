@@ -156,7 +156,7 @@ const LandingPage = () => {
   ];
 
   const offerItems = [
-    "Ecossistema Completo (EUA, China e Europa)",
+    "Ecossistema Completo (EUA, China, Europa, Reino Unido e Dubai)",
     "IA Especialista + Calculadora Pro + Busca Global",
     "Mais de 15 Fontes Secretas de Garimpo",
     "Grupo no WhatsApp + Suporte VIP",
