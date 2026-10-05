@@ -89,10 +89,11 @@ serve(async (req) => {
     const { messages, conversationId, userId } = await req.json();
     
     const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
-    if (!GROQ_API_KEY) {
-      console.error('GROQ_API_KEY ausente nas variáveis de ambiente do Supabase.');
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GROQ_API_KEY && !GEMINI_API_KEY) {
+      console.error('Nenhum provedor de IA configurado no Supabase.');
       return new Response(
-        JSON.stringify({ error: 'Configuração pendente: GROQ_API_KEY não encontrada nas variáveis de ambiente do Supabase' }),
+        JSON.stringify({ error: 'ai_unavailable', message: 'A inteligência artificial está temporariamente indisponível.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -227,12 +228,8 @@ serve(async (req) => {
 
     if (useVisionModel) {
       const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-      if (!GEMINI_API_KEY) {
-        console.error('AI provider: gemini (image) — GOOGLE_GEMINI_API_KEY ausente');
-        return visionFallbackResponse();
-      }
-
-      try {
+      if (GEMINI_API_KEY) {
+        try {
         // Normaliza imagens (data URL ou URL http) para inline_data base64.
         const toInlineData = async (url: string) => {
           if (url.startsWith('data:')) {
@@ -257,7 +254,7 @@ serve(async (req) => {
 
         if (inlineParts.length === 0) {
           console.error('AI provider: gemini (image) — nenhuma imagem válida no payload');
-          return visionFallbackResponse();
+          throw new Error('Nenhuma imagem válida para o Gemini');
         }
 
         // Contexto textual curto da conversa, para manter a continuidade.
@@ -311,7 +308,7 @@ serve(async (req) => {
 
         if (!geminiText) {
           console.error('AI provider: gemini (image) — sem texto de resposta', { lastErr });
-          return visionFallbackResponse();
+          throw new Error(`Gemini sem resposta: ${lastErr}`);
         }
 
         console.log('AI provider: gemini (image) respondeu', {
@@ -345,8 +342,12 @@ serve(async (req) => {
         });
       } catch (geminiErr) {
         console.error('Gemini vision exception:', (geminiErr as Error)?.message);
-        return visionFallbackResponse();
+        console.warn('AI provider: gemini (image) falhou; tentando fallback visual no Groq');
       }
+      } else {
+        console.error('AI provider: gemini (image) — GOOGLE_GEMINI_API_KEY ausente');
+      }
+      console.log('AI provider: vision fallback chain continuará no Groq');
     }
 
     console.log('AI provider: groq (texto)', { provider: 'groq' });
@@ -401,6 +402,58 @@ serve(async (req) => {
         ...historyForText,
         ...normalizedIncoming,
       ];
+    }
+
+    const streamTextResponse = (text: string, provider: string, model: string) => {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(ctrl) {
+          for (let i = 0; i < text.length; i += 400) {
+            ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: text.slice(i, i + 400) }, finish_reason: null }] })}\n\n`));
+          }
+          ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: 'stop' }] })}\n\n`));
+          ctrl.enqueue(encoder.encode('data: [DONE]\n\n'));
+          ctrl.close();
+        },
+      });
+      console.log('AI fallback respondeu', { provider, model, charCount: text.length });
+      return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' } });
+    };
+
+    const tryGeminiTextFallback = async (): Promise<Response | null> => {
+      if (!GEMINI_API_KEY || useVisionModel) return null;
+      const system = apiMessages.find((message: any) => message.role === 'system')?.content ?? FULL_SYSTEM_PROMPT;
+      const contents = apiMessages
+        .filter((message: any) => message.role !== 'system')
+        .map((message: any) => ({
+          role: message.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: String(message.content ?? '') }],
+        }));
+      for (const model of ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ system_instruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature: 0.7, maxOutputTokens: 2048 } }),
+          });
+          if (!res.ok) {
+            console.warn('AI fallback Gemini falhou', { model, status: res.status });
+            continue;
+          }
+          const json = await res.json();
+          const text = (json?.candidates?.[0]?.content?.parts ?? []).map((part: any) => part?.text ?? '').join('').trim();
+          if (text) return streamTextResponse(text, 'gemini', model);
+        } catch (error) {
+          console.warn('AI fallback Gemini erro de rede', { model, message: (error as Error)?.message });
+        }
+      }
+      return null;
+    };
+
+    if (!GROQ_API_KEY) {
+      const fallback = await tryGeminiTextFallback();
+      if (fallback) return fallback;
+      return new Response(JSON.stringify({ error: 'ai_unavailable', message: 'Os provedores de IA estão temporariamente indisponíveis.' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Groq depreca modelos de visão com frequência. Descobrimos os modelos
@@ -538,6 +591,8 @@ serve(async (req) => {
           payloadKb: approximatePayloadKb,
           timeoutMs: 90000,
         });
+        const fallback = await tryGeminiTextFallback();
+        if (fallback) return fallback;
         return new Response(
           JSON.stringify({ error: 'timeout', message: 'A análise da imagem demorou mais que o esperado. Tente reenviar uma foto mais leve ou mais nítida.' }),
           { status: 408, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -551,6 +606,8 @@ serve(async (req) => {
         incomingImageCount: incomingImageUrls.length,
         payloadKb: approximatePayloadKb,
       });
+      const fallback = await tryGeminiTextFallback();
+      if (fallback) return fallback;
       return new Response(
         JSON.stringify({ error: 'network_error', message: 'Falha de rede ao conectar com a IA.' }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -582,6 +639,11 @@ serve(async (req) => {
         incomingImageCount: incomingImageUrls.length,
         payloadKb: approximatePayloadKb,
       });
+
+      if ((!useVisionModel && [401, 402, 403, 404, 408, 429].includes(response.status)) || response.status >= 500) {
+        const fallback = await tryGeminiTextFallback();
+        if (fallback) return fallback;
+      }
 
       // Visão: se nenhum modelo aceitou a imagem, devolve a mensagem amigável
       // em vez do erro genérico.

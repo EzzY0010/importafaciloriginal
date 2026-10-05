@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Send, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag, Camera } from 'lucide-react';
+import { Send, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag, Camera, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import wolfLogo from '@/assets/wolf-logo-clean.png';
 import StrategyButtons from './StrategyButtons';
 import { backendKey, backendUrl, getSupabaseClient, isBackendConfigured } from '@/lib/backend';
@@ -24,6 +24,23 @@ interface Conversation {
   title: string;
   created_at: string;
 }
+
+interface SpeechRecognitionEventLike extends Event {
+  results: { length: number; [index: number]: { [index: number]: { transcript: string } } };
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
 interface GarimpoProduct {
   link: string;
@@ -221,6 +238,9 @@ const WolfChat: React.FC = () => {
   const [showStrategies, setShowStrategies] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   // Evita condição de corrida: só o pedido mais recente pode escrever na tela
   const requestSeqRef = useRef(0);
   const activeControllerRef = useRef<AbortController | null>(null);
@@ -230,6 +250,11 @@ const WolfChat: React.FC = () => {
       loadConversations();
     }
   }, [user]);
+
+  useEffect(() => () => {
+    recognitionRef.current?.stop();
+    window.speechSynthesis?.cancel();
+  }, []);
 
   // Tutorial interativo: preenche o campo com a sugestão tocada pelo usuário
   useEffect(() => {
@@ -276,6 +301,51 @@ const WolfChat: React.FC = () => {
     }
 
     return client;
+  };
+
+  const speakText = (text: string) => {
+    if (!voiceEnabled || !('speechSynthesis' in window) || !text.trim()) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(
+      text.replace(/https?:\/\/\S+/g, '').replace(/[*_#`]/g, '').replace(/\s+/g, ' ').trim(),
+    );
+    utterance.lang = 'pt-BR';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const toggleVoiceInput = () => {
+    const Recognition = (window as Window & { SpeechRecognition?: SpeechRecognitionConstructor; webkitSpeechRecognition?: SpeechRecognitionConstructor }).SpeechRecognition
+      ?? (window as Window & { webkitSpeechRecognition?: SpeechRecognitionConstructor }).webkitSpeechRecognition;
+    if (!Recognition) {
+      toast({ title: 'Microfone indisponível', description: 'Use Chrome ou Edge com permissão para o microfone.', variant: 'destructive' });
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const recognition = new Recognition();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.onresult = (event) => {
+      const transcript = Array.from({ length: event.results.length }, (_, index) => event.results[index]?.[0]?.transcript ?? '').join(' ');
+      if (transcript.trim()) setInput(transcript.trim());
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+    recognition.onerror = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+      toast({ title: 'Não consegui ouvir', description: 'Verifique a permissão do microfone e tente novamente.', variant: 'destructive' });
+    };
+    recognitionRef.current = recognition;
+    setIsListening(true);
+    recognition.start();
   };
 
   const loadConversations = async () => {
@@ -600,6 +670,7 @@ const WolfChat: React.FC = () => {
         paintAssistant();
       }
 
+      speakText(assistantMessage);
       await saveMessage(convId, 'assistant', assistantMessage);
       window.dispatchEvent(new CustomEvent('wolf-chat-answered'));
 
@@ -862,6 +933,18 @@ const WolfChat: React.FC = () => {
             >
               <Camera className="h-5 w-5" />
             </Button>
+            <Button
+              type="button"
+              variant={isListening ? 'destructive' : 'outline'}
+              size="icon"
+              onClick={toggleVoiceInput}
+              disabled={isLoading}
+              title={isListening ? 'Parar de ouvir' : 'Falar com o Lobo'}
+              aria-label={isListening ? 'Parar de ouvir' : 'Falar com o Lobo'}
+              className="rounded-xl border-border"
+            >
+              {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            </Button>
             <Input
               data-tour="chat-input"
               value={input}
@@ -871,6 +954,22 @@ const WolfChat: React.FC = () => {
               disabled={isLoading}
               className="flex-1 rounded-xl border-border focus-visible:ring-primary"
             />
+            <Button
+              type="button"
+              variant={voiceEnabled ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => {
+                setVoiceEnabled((enabled) => {
+                  if (enabled) window.speechSynthesis?.cancel();
+                  return !enabled;
+                });
+              }}
+              title={voiceEnabled ? 'Desativar resposta falada' : 'Ativar resposta falada'}
+              aria-label={voiceEnabled ? 'Desativar resposta falada' : 'Ativar resposta falada'}
+              className="rounded-xl border-border"
+            >
+              {voiceEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+            </Button>
             <Button 
               data-tour="chat-send"
               onClick={() => sendMessage()} 
