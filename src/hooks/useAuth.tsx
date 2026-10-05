@@ -44,15 +44,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const checkPaymentStatus = async (userId: string, client: SupabaseClient<Database>) => {
-    const { data } = await client
+    const { data, error } = await client
       .from('profiles')
       .select('has_paid, has_minicourse, legacy_access, plan_expires_at')
       .eq('id', userId)
       .maybeSingle();
 
+    // Compatibilidade emergencial: bancos que ainda não receberam a migration
+    // não possuem legacy_access. Nesse caso, lemos o schema antigo e tratamos
+    // contas pagas sem vencimento como legadas, sem alterar o banco.
+    if (error) {
+      const { data: legacyData } = await client
+        .from('profiles')
+        .select('has_paid, has_minicourse, plan_expires_at')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const paid = legacyData?.has_paid ?? false;
+      const expiresAt = legacyData?.plan_expires_at ?? null;
+      setHasPaid(paid);
+      setHasMinicourse(legacyData?.has_minicourse ?? false);
+      setLegacyAccess(paid && !expiresAt);
+      setPlanExpiresAt(expiresAt);
+      setNowTick(Date.now());
+      return;
+    }
+
     setHasPaid(data?.has_paid ?? false);
     setHasMinicourse(data?.has_minicourse ?? false);
-    setLegacyAccess(data?.legacy_access ?? false);
+    // Contas antigas sem vencimento continuam permanentes mesmo antes de
+    // serem marcadas explicitamente pela migration.
+    setLegacyAccess(data?.legacy_access ?? (data?.has_paid === true && !data?.plan_expires_at));
     setPlanExpiresAt(data?.plan_expires_at ?? null);
     setNowTick(Date.now());
   };
