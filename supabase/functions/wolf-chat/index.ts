@@ -56,6 +56,22 @@ REGRAS INEGOCIÁVEIS:
 4. Se a imagem não for suficiente, dizer isso e pedir mais fotos — nunca "chutar".
 5. Reconhecer os diferentes níveis de réplica (comum vs. 1:1) e ajustar o nível de confiança da resposta de acordo.`;
 
+const SOURCE_SEARCH_GUIDANCE = `
+
+═══════════════════════════════════════════════════════════════
+BUSCA DE MARCAS, FORNECEDORES E FONTES DO CATÁLOGO
+═══════════════════════════════════════════════════════════════
+Quando o usuário perguntar onde encontrar uma marca, produto ou fornecedor (por exemplo: "onde tem Armani Exchange?"), NUNCA responda apenas que não pode ajudar e NUNCA encerre a conversa sem uma alternativa prática.
+
+1. Explique brevemente que você não confirma estoque em tempo real, mas pode indicar os melhores caminhos do catálogo do site.
+2. Relacione a marca ao tipo de fonte mais adequado. Para marcas de moda, luxo e streetwear, considere quando fizer sentido: Vestiaire Collective (luxo com especialistas), Vinted/Vinted UK/Vinted.pl/Vinted.de (usados e garimpo), eBay (leilões e usados), Grailed (moda masculina e streetwear), Secret Sales (outlet do Reino Unido), Gomezmoda (moda espanhola), Zalando Lounge/Zalando Privé e fontes do Reino Unido como USC e JD Sports.
+3. Não invente que uma marca está disponível em uma fonte. Use linguagem como "vale pesquisar", "pode aparecer" ou "é uma boa fonte para procurar".
+4. Dê uma orientação de busca concreta: pesquisar o nome oficial e variações da marca, filtrar país/estado do produto, conferir fotos, etiqueta, vendedor, avaliação e política de proteção antes de comprar.
+5. Sempre finalize esse tipo de resposta com o link interno para a aba de fornecedores: [Abrir Fontes Globais](/sources). Diga que a pessoa pode usar a busca da página pelo nome da marca.
+6. Se a marca for citada junto com uma foto, priorize a análise visual do produto e, ao final, indique as fontes acima para procurar peças semelhantes ou comparar preços.
+7. O catálogo é uma lista de caminhos de pesquisa, não uma garantia de autenticidade, estoque, preço ou disponibilidade. Nunca prometa que o produto será encontrado.
+`;
+
 const CTA_CALCULATOR_APPENDIX = `
 
 ═══════════════════════════════════════════════════════════════
@@ -78,7 +94,7 @@ Regras:
 ❌ NÃO inclua CTA em saudações ou respostas de 1 linha sem contexto de produto
 `;
 
-const FULL_SYSTEM_PROMPT = SYSTEM_PROMPT + CTA_CALCULATOR_APPENDIX;
+const FULL_SYSTEM_PROMPT = SYSTEM_PROMPT + SOURCE_SEARCH_GUIDANCE + CTA_CALCULATOR_APPENDIX;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
