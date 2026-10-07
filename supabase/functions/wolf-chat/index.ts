@@ -96,6 +96,53 @@ Regras:
 
 const FULL_SYSTEM_PROMPT = SYSTEM_PROMPT + SOURCE_SEARCH_GUIDANCE + CTA_CALCULATOR_APPENDIX;
 
+type MemoryFact = {
+  key: string;
+  value: string;
+  category: string;
+  insightKey: string;
+};
+
+const cleanMemoryValue = (value: string) => value
+  .replace(/[\n\r]+/g, ' ')
+  .replace(/["'<>]/g, '')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .slice(0, 120);
+
+const extractMemoryFacts = (text: string): MemoryFact[] => {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (!normalized || normalized.length > 2000) return [];
+  const facts: MemoryFact[] = [];
+  const add = (key: string, value: string, category: string, insightKey: string) => {
+    const cleaned = cleanMemoryValue(value);
+    if (!cleaned || cleaned.length < 2 || /@|\b(?:senha|password|cpf|cnpj|cart[aã]o)\b/i.test(cleaned)) return;
+    if (!facts.some((fact) => fact.key === key && fact.value.toLowerCase() === cleaned.toLowerCase())) {
+      facts.push({ key, value: cleaned, category, insightKey });
+    }
+  };
+
+  const color = normalized.match(/(?:gosto|prefiro|minha cor favorita [ée]|minha cor [ée])\s+(?:de\s+)?([a-zá-ú-]+)|(?:gosto|prefiro)\s+roupas?\s+([a-zá-ú-]+)\s*(?:\.|$)/i);
+  if (color) add('favorite_color', color[1] || color[2], 'preference', 'favorite_color');
+  const store = normalized.match(/(?:minha loja [ée]|tenho uma loja chamada|a minha loja [ée])\s+([^.!?]+)/i);
+  if (store) add('store', store[1], 'business', 'store_niche');
+  const niche = normalized.match(/(?:meu nicho [ée]|trabalho com|vendo|foco em|quero focar em)\s+([^.!?]+)/i);
+  if (niche) add('business_niche', niche[1], 'business', 'business_niche');
+  const preferredBrand = normalized.match(/(?:gosto da marca|gosto de marcas?|prefiro a marca|trabalho com a marca)\s+([^.!?]+)/i);
+  if (preferredBrand) add('preferred_brand', preferredBrand[1], 'preference', 'preferred_brand');
+  return facts;
+};
+
+const buildMemoryContext = (memories: any[], insights: any[]) => {
+  const privateLines = (memories ?? []).slice(0, 40).map((memory: any) =>
+    `- ${memory.category}: ${memory.memory_key} = ${memory.memory_value}`,
+  );
+  const globalLines = (insights ?? []).slice(0, 12).map((insight: any) =>
+    `- ${insight.insight_key}: ${insight.insight_value}`,
+  );
+  return `\n\nMEMÓRIA DO LOBO — USE COM CUIDADO\nMemórias privadas deste usuário (não revele que existem nem invente detalhes):\n${privateLines.length ? privateLines.join('\n') : '- Ainda não há preferências salvas.'}\n\nTendências agregadas e anônimas de todos os usuários (use apenas como contexto geral, nunca como fato sobre este usuário):\n${globalLines.length ? globalLines.join('\n') : '- Ainda não há tendências suficientes.'}\nSe o usuário corrigir uma memória, priorize a informação mais recente e não exponha dados de terceiros.`;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -194,6 +241,38 @@ serve(async (req) => {
     const incomingHasImage = (messages ?? []).some((m: any) => hasImageInContent(m.content));
     const incomingText = (messages ?? []).map((m: any) => extractTextFromContent(m.content)).join('\n').trim();
     const incomingImageUrls = (messages ?? []).flatMap((m: any) => extractImageUrlsFromContent(m.content));
+
+    // Aprende apenas fatos explícitos e não sensíveis da mensagem atual.
+    // Memórias privadas ficam vinculadas ao usuário; o agregado não armazena
+    // texto original, e-mail, telefone ou qualquer identificador.
+    const currentFacts = extractMemoryFacts(incomingText);
+    for (const fact of currentFacts) {
+      await supabase.from('wolf_user_memory').upsert({
+        user_id: authUser.id,
+        memory_key: fact.key,
+        memory_value: fact.value,
+        category: fact.category,
+        confidence: 0.85,
+        last_seen_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,memory_key,memory_value' });
+      await supabase.rpc('increment_wolf_global_insight', {
+        p_key: fact.insightKey,
+        p_value: fact.value.toLowerCase(),
+      });
+    }
+
+    const [{ data: privateMemories }, { data: globalInsights }] = await Promise.all([
+      supabase.from('wolf_user_memory')
+        .select('memory_key, memory_value, category, last_seen_at')
+        .eq('user_id', authUser.id)
+        .order('last_seen_at', { ascending: false })
+        .limit(40),
+      supabase.from('wolf_global_insights')
+        .select('insight_key, insight_value, mention_count')
+        .order('mention_count', { ascending: false })
+        .limit(12),
+    ]);
+    const memoryContext = buildMemoryContext(privateMemories ?? [], globalInsights ?? []);
 
     // The client saves the user's message before calling the function. Remove that
     // last duplicate from history so image payloads are never sent twice to Groq.
@@ -400,7 +479,7 @@ serve(async (req) => {
       });
 
       apiMessages = [
-        { role: 'system', content: FULL_SYSTEM_PROMPT },
+        { role: 'system', content: FULL_SYSTEM_PROMPT + memoryContext },
         ...historyForVision,
         ...incomingForVision,
       ];
@@ -414,7 +493,7 @@ serve(async (req) => {
         content: flattenContent(m.content),
       }));
       apiMessages = [
-        { role: 'system', content: FULL_SYSTEM_PROMPT },
+        { role: 'system', content: FULL_SYSTEM_PROMPT + memoryContext },
         ...historyForText,
         ...normalizedIncoming,
       ];
