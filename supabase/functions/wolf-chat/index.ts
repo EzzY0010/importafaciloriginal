@@ -130,6 +130,29 @@ const extractMemoryFacts = (text: string): MemoryFact[] => {
   if (niche) add('business_niche', niche[1], 'business', 'business_niche');
   const preferredBrand = normalized.match(/(?:gosto da marca|gosto de marcas?|prefiro a marca|trabalho com a marca)\s+([^.!?]+)/i);
   if (preferredBrand) add('preferred_brand', preferredBrand[1], 'preference', 'preferred_brand');
+
+  // Contexto comercial explícito: as recomendações devem acompanhar o mix
+  // real da loja, sem tratar todos os lojistas como se fossem iguais.
+  const focusBrands = normalized.match(/(?:minha loja (?:é|e) focada em|minha loja vende mais|vendo principalmente|trabalho principalmente com|meu foco (?:é|e))\s+([^.!?]+)/i);
+  if (focusBrands) add('store_focus_brands_or_categories', focusBrands[1], 'business', 'store_focus');
+
+  const category = normalized.match(/(?:minha categoria principal (?:é|e)|meu produto principal (?:é|e))\s+([^.!?]+)/i);
+  if (category) add('main_product_category', category[1], 'business', 'main_product_category');
+
+  if (/(?:foco|focada?|priorizo|prioridade).{0,35}(?:lucro|margem)|(?:modelo|estratégia).{0,25}(?:lucro|margem)/i.test(normalized)) {
+    add('sales_strategy', 'margem alta / lucro por peça', 'business', 'sales_strategy');
+  }
+  if (/(?:foco|focada?|priorizo|prioridade).{0,35}(?:giro|volume)|(?:giro|volume|quantidade|rotatividade).{0,40}(?:peças|vendas|vender)/i.test(normalized)) {
+    add('sales_strategy', 'giro / alto volume', 'business', 'sales_strategy');
+  }
+
+  const volume = normalized.match(/(?:vendo|giro|volume|quantidade).{0,35}?(\d{1,5})\s*(?:peças|unidades|vendas)/i);
+  if (volume) add('typical_sales_volume', `${volume[1]} peças por ciclo`, 'business', 'typical_sales_volume');
+  const margin = normalized.match(/(?:lucro|margem).{0,25}?(?:de\s*)?(\d{1,3})\s*(?:%|por cento)/i);
+  if (margin) add('target_margin', `${margin[1]}%`, 'business', 'target_margin');
+
+  const audience = normalized.match(/(?:vendo para|meu público (?:é|e)|meu cliente (?:é|e)|atendo)\s+([^.!?]+)/i);
+  if (audience) add('target_audience', audience[1], 'business', 'target_audience');
   return facts;
 };
 
@@ -140,7 +163,7 @@ const buildMemoryContext = (memories: any[], insights: any[]) => {
   const globalLines = (insights ?? []).slice(0, 12).map((insight: any) =>
     `- ${insight.insight_key}: ${insight.insight_value}`,
   );
-  return `\n\nMEMÓRIA DO LOBO — USE COM CUIDADO\nMemórias privadas deste usuário (não revele que existem nem invente detalhes):\n${privateLines.length ? privateLines.join('\n') : '- Ainda não há preferências salvas.'}\n\nTendências agregadas e anônimas de todos os usuários (use apenas como contexto geral, nunca como fato sobre este usuário):\n${globalLines.length ? globalLines.join('\n') : '- Ainda não há tendências suficientes.'}\nSe o usuário corrigir uma memória, priorize a informação mais recente e não exponha dados de terceiros.`;
+  return `\n\nMEMÓRIA DO LOBO — USE COM CUIDADO\nMemórias privadas deste usuário (não revele que existem nem invente detalhes):\n${privateLines.length ? privateLines.join('\n') : '- Ainda não há preferências salvas.'}\n\nREGRAS DE PERSONALIZAÇÃO\n- Priorize as memórias privadas deste usuário ao recomendar marcas, categorias, fornecedores, países e estratégias de compra.\n- Se houver marcas ou categorias principais da loja, adapte exemplos e sugestões a esse mix.\n- Diferencie estratégia de giro/alto volume de estratégia de margem alta; não recomende volume quando o usuário prioriza lucro por peça, nem margem quando ele prioriza giro.\n- Use tendências coletivas somente para complementar a resposta quando forem relevantes; nunca trate uma tendência coletiva como preferência deste usuário.\n- Se uma memória estiver ausente ou ambígua, faça uma pergunta curta em vez de inventar.\n\nTendências agregadas e anônimas de todos os usuários (use apenas como contexto geral, nunca como fato sobre este usuário):\n${globalLines.length ? globalLines.join('\n') : '- Ainda não há tendências suficientes.'}\nSe o usuário corrigir uma memória, priorize a informação mais recente e não exponha dados de terceiros.`;
 };
 
 serve(async (req) => {
