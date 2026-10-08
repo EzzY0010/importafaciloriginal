@@ -4,7 +4,7 @@ project_id = "ujwsbmjnpvzfvcjorlxl"
 verify_jwt = false
 
 [functions.mercadopago-create-preference]
-verify_jwt = false
+verify_jwt = true
 
 [functions.mercadopago-webhook]
 verify_jwt = false

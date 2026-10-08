@@ -55,7 +55,15 @@ const Dashboard = () => {
         title: t('paymentSuccess'),
         description: t('paymentSuccessDesc'),
       });
-      refreshPaymentStatus();
+      let cancelled = false;
+      const waitForWebhook = async () => {
+        for (let attempt = 0; attempt < 10 && !cancelled; attempt += 1) {
+          await refreshPaymentStatus();
+          if (attempt < 9) await new Promise((resolve) => window.setTimeout(resolve, 3000));
+        }
+      };
+      void waitForWebhook();
+      return () => { cancelled = true; };
     } else if (paymentStatus === 'failure') {
       toast({
         title: t('paymentFailed'),

@@ -2,130 +2,159 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const PLAN_DAYS: Record<string, number> = {
+  autonomo: 30,
+  mensal: 30,
+  trimestral: 90,
+  anual: 365,
+};
+const LEGACY_ACCOUNT_CUTOFF = Date.parse("2026-10-05T00:00:00Z");
+
+const ok = () => new Response("OK", { status: 200, headers: corsHeaders });
+const retry = (message: string) => {
+  console.error(`[mercadopago-webhook] ${message}`);
+  return new Response(message, { status: 500, headers: corsHeaders });
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const url = new URL(req.url);
-    const topic = url.searchParams.get('topic') || url.searchParams.get('type');
-    const id = url.searchParams.get('id') || url.searchParams.get('data.id');
+    const queryTopic = url.searchParams.get("topic") || url.searchParams.get("type");
+    const queryId = url.searchParams.get("id") || url.searchParams.get("data.id");
 
-    let body: any = {};
+    let body: Record<string, any> = {};
     try {
-      body = await req.json();
+      const parsed = await req.json();
+      if (parsed && typeof parsed === "object") body = parsed;
     } catch {
-      // Body might be empty for some notifications
+      // Mercado Pago também envia notificações com body vazio e dados na query.
     }
 
-    console.log('Webhook received:', { topic, id, body });
+    const topic = queryTopic || body.type || body.topic || body.action?.split(".")[0];
+    const paymentId = queryId || body.data?.id || body.id;
 
-    // Handle payment notification
-    if (topic === 'payment' || body.type === 'payment') {
-      const paymentId = id || body.data?.id;
-      
-      if (!paymentId) {
-        console.log('No payment ID found');
-        return new Response('OK', { status: 200, headers: corsHeaders });
-      }
+    if (topic && topic !== "payment" && !String(body.action ?? "").startsWith("payment.")) return ok();
+    if (!paymentId) return ok();
 
-      const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
-      
-      // Get payment details from Mercado Pago
-      const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const accessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+    if (!supabaseUrl || !serviceRoleKey || !accessToken) return retry("payment configuration is incomplete");
 
-      const paymentData = await mpResponse.json();
-      console.log('Payment data:', JSON.stringify(paymentData));
+    // A confirmação vem do próprio Mercado Pago: buscar o pagamento evita liberar
+    // acesso com um webhook forjado ou com status apenas informado no body.
+    const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(String(paymentId))}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!mpResponse.ok) return retry(`Mercado Pago lookup failed: ${mpResponse.status}`);
 
-      if (paymentData.status === 'approved') {
-        const adminClient = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
+    const paymentData = await mpResponse.json();
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const externalReference = String(paymentData.external_reference ?? "");
+    const status = String(paymentData.status ?? "pending");
 
-        const externalRef: string = paymentData.external_reference ?? '';
+    console.log("[mercadopago-webhook] notification", {
+      paymentId: String(paymentId),
+      status,
+      externalReference,
+    });
 
-        // ---- Minicurso PDF + Desafios (external_reference: minicurso:<email>:<ts>) ----
-        if (externalRef.startsWith('minicurso:')) {
-          const email = externalRef.split(':')[1]?.toLowerCase() ?? '';
-          const { error: purchaseError } = await adminClient.from('purchases')
-            .update({
-              status: 'approved',
-              mercadopago_id: paymentId.toString(),
-            })
-            .eq('external_reference', externalRef);
+    if (externalReference.startsWith("minicurso:")) {
+      if (status !== "approved") return ok();
+      const email = externalReference.split(":")[1]?.trim().toLowerCase() ?? "";
+      const { error: purchaseError } = await adminClient
+        .from("purchases")
+        .update({ status: "approved", mercadopago_id: String(paymentId) })
+        .eq("external_reference", externalReference);
+      if (purchaseError) return retry(`minicurso purchase update failed: ${purchaseError.message}`);
 
-          if (purchaseError) console.error('Error updating purchase:', purchaseError);
-          const { error: profileError } = await adminClient.from('profiles')
-            .update({ has_minicourse: true })
-            .ilike('email', email);
-          if (profileError) console.error('Error marking minicurso access:', profileError);
-          console.log(`Minicurso liberado para ${email}`);
-
-          return new Response('OK', { status: 200, headers: corsHeaders });
-        }
-
-        // Update payment record
-        const { error: paymentError } = await adminClient.from('payments')
-          .update({
-            status: 'approved',
-            mercadopago_id: paymentId.toString(),
-            payment_method: paymentData.payment_type_id
-          })
-          .eq('external_reference', paymentData.external_reference);
-
-        if (paymentError) {
-          console.error('Error updating payment:', paymentError);
-        }
-
-        // Extract user_id / plan from external_reference (format: userId_planId_timestamp)
-        const refParts: string[] = (paymentData.external_reference ?? '').split('_');
-        const userId = refParts[0];
-        const planId = refParts.length >= 3 ? refParts[1] : 'mensal';
-
-        const PLAN_DAYS: Record<string, number | null> = {
-          mensal: 30,
-          trimestral: 90,
-          anual: 365,
-        };
-        const days = PLAN_DAYS[planId] ?? null;
-        let baseTime = Date.now();
-        if (userId) {
-          const { data: cur } = await adminClient.from('profiles').select('plan_expires_at, legacy_access').eq('id', userId).maybeSingle();
-          if (cur?.plan_expires_at) baseTime = Math.max(baseTime, new Date(cur.plan_expires_at).getTime());
-        }
-        const expiresAt = days
-          ? new Date(baseTime + days * 24 * 60 * 60 * 1000).toISOString()
-          : null;
-        
-        if (userId) {
-          // Mark user as paid
-          const { error: profileError } = await adminClient.from('profiles')
-            .update({ has_paid: true, plan_type: planId, plan_expires_at: cur?.legacy_access ? null : expiresAt })
-            .eq('id', userId);
-
-          if (profileError) {
-            console.error('Error updating profile:', profileError);
-          } else {
-            console.log(`User ${userId} marked as paid`);
-          }
-        }
-      }
+      const { error: profileError } = await adminClient
+        .from("profiles")
+        .update({ has_minicourse: true })
+        .ilike("email", email);
+      if (profileError) return retry(`minicurso profile update failed: ${profileError.message}`);
+      return ok();
     }
 
-    return new Response('OK', { status: 200, headers: corsHeaders });
+    let paymentQuery = adminClient
+      .from("payments")
+      .select("id,user_id,external_reference,amount,status")
+      .eq("mercadopago_id", String(paymentId))
+      .maybeSingle();
 
+    if (externalReference) {
+      paymentQuery = adminClient
+        .from("payments")
+        .select("id,user_id,external_reference,amount,status")
+        .eq("external_reference", externalReference)
+        .maybeSingle();
+    }
+
+    const { data: localPayment, error: paymentLookupError } = await paymentQuery;
+    if (paymentLookupError) return retry(`local payment lookup failed: ${paymentLookupError.message}`);
+    if (!localPayment) {
+      // ACK unknown payments to avoid an endless provider retry. They cannot unlock
+      // anything because there is no locally-created pending record to reconcile.
+      console.warn("[mercadopago-webhook] payment has no local pending record", String(paymentId));
+      return ok();
+    }
+
+    const amount = Number(paymentData.transaction_amount);
+    if (status === "approved" && Number.isFinite(amount) && Math.abs(amount - Number(localPayment.amount)) > 0.01) {
+      return retry(`amount mismatch for payment ${String(paymentId)}`);
+    }
+
+    const { error: paymentUpdateError } = await adminClient
+      .from("payments")
+      .update({
+        status,
+        mercadopago_id: String(paymentId),
+        payment_method: paymentData.payment_type_id ?? "mercadopago",
+      })
+      .eq("id", localPayment.id);
+    if (paymentUpdateError) return retry(`payment update failed: ${paymentUpdateError.message}`);
+
+    if (status !== "approved") return ok();
+
+    const referenceParts = String(localPayment.external_reference || externalReference).split("_");
+    const planId = PLAN_DAYS[referenceParts[1]] ? referenceParts[1] : "mensal";
+    const userId = localPayment.user_id;
+
+    const { data: profile, error: profileLookupError } = await adminClient
+      .from("profiles")
+      .select("plan_expires_at,legacy_access,created_at")
+      .eq("id", userId)
+      .maybeSingle();
+    if (profileLookupError) return retry(`profile lookup failed: ${profileLookupError.message}`);
+    if (!profile) return retry(`profile not found for user ${userId}`);
+
+    const isLegacy = profile.legacy_access === true
+      || (!!profile.created_at && Date.parse(profile.created_at) < LEGACY_ACCOUNT_CUTOFF);
+    const currentExpiry = profile.plan_expires_at ? Date.parse(profile.plan_expires_at) : 0;
+    const baseTime = Math.max(Date.now(), Number.isFinite(currentExpiry) ? currentExpiry : 0);
+    const expiresAt = isLegacy
+      ? null
+      : new Date(baseTime + PLAN_DAYS[planId] * 24 * 60 * 60 * 1000).toISOString();
+
+    const { error: profileUpdateError } = await adminClient
+      .from("profiles")
+      .update({
+        has_paid: true,
+        plan_type: planId,
+        plan_expires_at: expiresAt,
+      })
+      .eq("id", userId);
+    if (profileUpdateError) return retry(`profile update failed: ${profileUpdateError.message}`);
+
+    console.log("[mercadopago-webhook] access released", { userId, planId, isLegacy });
+    return ok();
   } catch (error) {
-    console.error('Webhook error:', error);
-    return new Response('Error', { status: 500, headers: corsHeaders });
+    return retry(error instanceof Error ? error.message : "unexpected webhook error");
   }
 });

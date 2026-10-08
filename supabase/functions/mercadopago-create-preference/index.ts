@@ -2,134 +2,131 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+type Plan = { price: number; title: string };
+
+const PLAN_PRICES: Record<string, Plan> = {
+  autonomo: { price: 34.99, title: "ImportaFácil - Acesso ao Site" },
+  mensal: { price: 97, title: "ImportaFácil - Mentoria Mensal" },
+  trimestral: { price: 239, title: "ImportaFácil - Mentoria Trimestral" },
+  anual: { price: 499, title: "ImportaFácil - Mentoria Anual" },
+};
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const PLAN_PRICES: Record<string, { price: number; title: string }> = {
-      mensal: { price: 97, title: 'ImportaFácil - Plano Mensal' },
-      trimestral: { price: 239, title: 'ImportaFácil - Plano Trimestral' },
-      anual: { price: 499, title: 'ImportaFácil - Plano Anual' },
-    };
-
-    let planId = 'anual';
+    let planId = "anual";
     try {
       const body = await req.json();
-      if (body?.planId && PLAN_PRICES[body.planId]) planId = body.planId;
-    } catch { /* no body */ }
+      if (typeof body?.planId === "string" && PLAN_PRICES[body.planId]) planId = body.planId;
+    } catch {
+      // A ausência de body usa o plano anual por compatibilidade.
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const accessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+    const authorization = req.headers.get("Authorization");
+
+    if (!authorization || !anonKey || !serviceRoleKey || !accessToken) {
+      console.error("Mercado Pago configuration/authentication is incomplete");
+      return json({ error: "Payment configuration error" }, 500);
+    }
+
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authorization } },
+    });
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+
+    if (authError || !user?.id || !user.email) {
+      console.error("Auth error while creating Mercado Pago preference:", authError);
+      return json({ error: "Unauthorized" }, 401);
+    }
+
     const plan = PLAN_PRICES[planId];
-
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
-    if (!accessToken) {
-      console.error('Missing MERCADO_PAGO_ACCESS_TOKEN');
-      return new Response(JSON.stringify({ error: 'Payment configuration error' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     const externalReference = `${user.id}_${planId}_${Date.now()}`;
-    const origin = req.headers.get('origin') || 'https://lovable.dev';
+    const origin = req.headers.get("origin") || "https://importafaciloriginal.lovable.app";
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Create payment record
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    await adminClient.from('payments').insert({
+    const { error: insertError } = await adminClient.from("payments").insert({
       user_id: user.id,
       external_reference: externalReference,
       amount: plan.price,
-      status: 'pending'
+      status: "pending",
+      payment_method: "mercadopago",
     });
 
-    // Create Mercado Pago preference
+    if (insertError) {
+      console.error("Could not create local payment record:", insertError);
+      return json({ error: "Could not register payment" }, 500);
+    }
+
     const preferenceData = {
       items: [{
         id: `importafacil-${planId}`,
         title: plan.title,
-        description: 'Acesso completo ao ImportaFácil com IA e calculadora de importação',
+        description: "Acesso ao ImportaFácil com IA e ferramentas de importação",
         quantity: 1,
-        currency_id: 'BRL',
-        unit_price: plan.price
+        currency_id: "BRL",
+        unit_price: plan.price,
       }],
-      payer: {
-        email: user.email
-      },
+      payer: { email: user.email },
       back_urls: {
         success: `${origin}/dashboard?payment=success`,
         failure: `${origin}/dashboard?payment=failure`,
-        pending: `${origin}/dashboard?payment=pending`
+        pending: `${origin}/dashboard?payment=pending`,
       },
-      auto_return: 'approved',
+      auto_return: "approved",
       external_reference: externalReference,
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
-      statement_descriptor: 'IMPORTAFACIL'
+      notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
+      statement_descriptor: "IMPORTAFACIL",
     };
 
-    console.log('Creating preference:', JSON.stringify(preferenceData));
-
-    const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
+    const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(preferenceData)
+      body: JSON.stringify(preferenceData),
     });
-
     const mpData = await mpResponse.json();
-    console.log('MP Response:', JSON.stringify(mpData));
 
-    if (!mpResponse.ok) {
-      console.error('Mercado Pago error:', mpData);
-      return new Response(JSON.stringify({ error: 'Failed to create payment' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (!mpResponse.ok || !mpData?.id || !mpData?.init_point) {
+      console.error("Mercado Pago preference error:", mpResponse.status, mpData);
+      await adminClient.from("payments").update({ status: "failed" }).eq("external_reference", externalReference);
+      return json({ error: "Failed to create payment" }, 502);
     }
 
-    // Update payment with preference_id
-    await adminClient.from('payments')
-      .update({ preference_id: mpData.id })
-      .eq('external_reference', externalReference);
+    const { error: preferenceError } = await adminClient
+      .from("payments")
+      .update({ preference_id: String(mpData.id) })
+      .eq("external_reference", externalReference);
 
-    return new Response(JSON.stringify({
+    if (preferenceError) {
+      console.error("Could not link Mercado Pago preference:", preferenceError);
+      await adminClient.from("payments").update({ status: "failed" }).eq("external_reference", externalReference);
+      return json({ error: "Could not register payment" }, 500);
+    }
+
+    return json({
       init_point: mpData.init_point,
-      sandbox_init_point: mpData.sandbox_init_point,
-      preference_id: mpData.id
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      sandbox_init_point: mpData.sandbox_init_point ?? null,
+      preference_id: String(mpData.id),
     });
-
-  } catch (error: unknown) {
-    console.error('Error:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  } catch (error) {
+    console.error("Mercado Pago preference error:", error);
+    return json({ error: "Unexpected payment error" }, 500);
   }
 });
