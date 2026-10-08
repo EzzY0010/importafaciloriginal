@@ -22,7 +22,8 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess, planId 
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', document: '' });
-  const [pix, setPix] = useState<{ code: string; expiresAt: string | null } | null>(null);
+  const [pix, setPix] = useState<{ code: string; expiresAt: string | null; identifier: string } | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
 
   const handlePayment = () => { setPix(null); setOpen(true); };
 
@@ -41,11 +42,42 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess, planId 
         try { const b = await (error as any)?.context?.json?.(); if (b?.error) msg = b.error; } catch { /* ignore */ }
         throw new Error(msg);
       }
-      setPix({ code: data.code, expiresAt: data.expiresAt });
+      setPix({ code: data.code, expiresAt: data.expiresAt, identifier: data.identifier });
     } catch (e) {
       toast({ title: 'Erro no Pix', description: (e as Error).message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const confirmPayment = async () => {
+    if (!pix?.identifier || isChecking) return;
+    setIsChecking(true);
+    try {
+      const client = await getSupabaseClient();
+      if (!client) throw new Error('Backend indisponível');
+      // O webhook pode chegar alguns segundos depois do Pix. Consulte o
+      // registro vinculado ao usuário em vez de liberar a tela por suposição.
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const { data, error } = await client
+          .from('payments')
+          .select('status')
+          .eq('external_reference', pix.identifier)
+          .maybeSingle();
+        if (!error && data?.status === 'approved') {
+          setOpen(false);
+          onPaymentSuccess?.();
+          toast({ title: 'Pagamento confirmado', description: 'Seu acesso foi liberado.' });
+          return;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 3000));
+      }
+      toast({ title: 'Pagamento em processamento', description: 'O Pix foi recebido e estamos aguardando a confirmação automática. Tente novamente em alguns segundos.' });
+    } catch (error) {
+      console.error('[PaymentButton] payment confirmation error', error);
+      toast({ title: 'Ainda não confirmado', description: 'Não foi possível consultar a confirmação agora. Tente novamente em instantes.', variant: 'destructive' });
+    } finally {
+      setIsChecking(false);
     }
   };
 
@@ -70,7 +102,9 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ onPaymentSuccess, planId 
               <Copy className="w-4 h-4" /> Copiar código Pix
             </Button>
             <p className="text-xs text-muted-foreground">Após pagar, seu acesso é liberado automaticamente em instantes.</p>
-            <Button className="w-full" onClick={() => { setOpen(false); onPaymentSuccess?.(); }}>Já paguei</Button>
+            <Button className="w-full" onClick={confirmPayment} disabled={isChecking}>
+              {isChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Já paguei — verificar acesso'}
+            </Button>
           </div>
         )}
       </DialogContent>

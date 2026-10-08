@@ -42,6 +42,22 @@ Deno.serve(async (req) => {
     if (!validCPF(String(document ?? ""))) return json({ error: "CPF inválido." }, 400);
 
     const identifier = `${user.id}_${planId}_${Date.now()}`;
+    const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    // Registra o pedido antes de chamar a CNPY. Assim, mesmo que o callback
+    // chegue imediatamente após o pagamento, o webhook sempre encontra o
+    // usuário e consegue liberar o acesso.
+    const { error: insertError } = await admin.from("payments").insert({
+      user_id: user.id,
+      amount: plan.price,
+      external_reference: identifier,
+      status: "pending",
+      payment_method: "pix",
+    });
+    if (insertError) {
+      console.error("[appcnpay-pix] failed to create local payment", insertError);
+      return json({ error: "Não foi possível iniciar o pagamento. Tente novamente." }, 500);
+    }
+
     const payload = {
       identifier,
       amount: plan.price,
@@ -62,23 +78,19 @@ Deno.serve(async (req) => {
     });
     const data = await r.json().catch(() => ({}));
     console.log("[appcnpay-pix] status", r.status, "tx", data?.transactionId, "st", data?.status, "err", data?.message ?? data?.errorDescription);
+    const transactionId = data?.transactionId ?? data?.id ?? data?.transaction?.id ?? null;
     if (!r.ok || !data?.pix?.code) {
+      await admin.from("payments").update({ status: "failed" }).eq("external_reference", identifier);
       return json({ error: "Não foi possível gerar o Pix, tente novamente.", detail: data?.message ?? data?.errorDescription }, 502);
     }
 
-    const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { error } = await admin.from("payments").insert({
-      user_id: user.id,
-      amount: plan.price,
-      external_reference: identifier,
-      status: "pending",
-      payment_method: "pix",
-      mercadopago_id: data.transactionId,
-      preference_id: data.webhookToken ?? null,
-    });
-    if (error) console.error("[appcnpay-pix] insert error", error);
+    const { error: updateError } = await admin.from("payments").update({
+      mercadopago_id: transactionId,
+      preference_id: data.webhookToken ?? data.token ?? null,
+    }).eq("external_reference", identifier);
+    if (updateError) console.error("[appcnpay-pix] failed to attach provider transaction", updateError);
 
-    return json({ transactionId: data.transactionId, code: data.pix.code, image: data.pix.image ?? null, expiresAt: data.pix.expiresAt ?? null, amount: plan.price });
+    return json({ identifier, transactionId, code: data.pix.code, image: data.pix.image ?? null, expiresAt: data.pix.expiresAt ?? null, amount: plan.price });
   } catch (e) {
     console.error("[appcnpay-pix] error", e);
     return json({ error: "Não foi possível gerar o Pix, tente novamente." }, 500);
