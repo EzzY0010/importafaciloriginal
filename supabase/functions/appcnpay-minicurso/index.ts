@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-public-key": Deno.env.get("APPCNPAY_PUBLIC_KEY")!,
-        "x-secret-key": Deno.env.get("APPCNPAY_PRIVATE_KEY")!,
+        "x-public-key": Deno.env.get("APPCNPAY_MINICURSO_PUBLIC_KEY")!,
+        "x-secret-key": Deno.env.get("APPCNPAY_MINICURSO_PRIVATE_KEY")!,
       },
       body: JSON.stringify({
         identifier,
