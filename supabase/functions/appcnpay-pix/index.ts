@@ -5,33 +5,11 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type PlanConfig = { name: string; price: number; publicKey: string; privateKey: string };
-
-const PLAN_ENV: Record<string, { name: string; price: number; publicKey: string; privateKey: string }> = {
-  mensal: {
-    name: "Mentoria (plano mensal)",
-    price: 97,
-    publicKey: "APPCNPAY_MENSAL_PUBLIC_KEY",
-    privateKey: "APPCNPAY_MENSAL_PRIVATE_KEY",
-  },
-  trimestral: {
-    name: "Mentoria (plano trimestral)",
-    price: 239,
-    publicKey: "APPCNPAY_TRIMESTRAL_PUBLIC_KEY",
-    privateKey: "APPCNPAY_TRIMESTRAL_PRIVATE_KEY",
-  },
-  anual: {
-    name: "Mentoria (plano anual)",
-    price: 499,
-    publicKey: "APPCNPAY_ANUAL_PUBLIC_KEY",
-    privateKey: "APPCNPAY_ANUAL_PRIVATE_KEY",
-  },
-  autonomo: {
-    name: "Acesso ao Site + grupo (plano mensal)",
-    price: 34.99,
-    publicKey: "APPCNPAY_SITE_GRUPO_PUBLIC_KEY",
-    privateKey: "APPCNPAY_SITE_GRUPO_PRIVATE_KEY",
-  },
+const PLANS: Record<string, { name: string; price: number; keyPrefix: string }> = {
+  mensal: { name: "Mentoria (plano mensal)", price: 97, keyPrefix: "APPCNPAY_MENSAL" },
+  trimestral: { name: "Mentoria (plano trimestral)", price: 239, keyPrefix: "APPCNPAY_TRIMESTRAL" },
+  anual: { name: "Mentoria (plano anual)", price: 499, keyPrefix: "APPCNPAY_ANUAL" },
+  autonomo: { name: "Acesso ao Site (plano mensal)", price: 34.99, keyPrefix: "APPCNPAY_SITE_GRUPO" },
 };
 
 const json = (b: unknown, s = 200) =>
@@ -58,20 +36,23 @@ Deno.serve(async (req) => {
     if (!user?.email) return json({ error: "Faça login para gerar o Pix." }, 401);
 
     const { planId, name, phone, document } = await req.json();
-    const plan = PLAN_ENV[String(planId)] as PlanConfig | undefined;
+    const plan = PLANS[planId];
     if (!plan) return json({ error: "Plano inválido." }, 400);
     if (!name || String(name).trim().length < 3) return json({ error: "Informe seu nome completo." }, 400);
     if (!validCPF(String(document ?? ""))) return json({ error: "CPF inválido." }, 400);
 
-    const publicKey = Deno.env.get(plan.publicKey);
-    const privateKey = Deno.env.get(plan.privateKey);
-    if (!publicKey || !privateKey) {
-      console.error("[appcnpay-pix] missing credentials", { planId, publicKey: plan.publicKey, privateKey: plan.privateKey });
-      return json({ error: "As chaves CN Pay desta oferta ainda não foram configuradas." }, 503);
+    const publicKey = Deno.env.get(`${plan.keyPrefix}_PUBLIC_KEY`);
+    const secretKey = Deno.env.get(`${plan.keyPrefix}_PRIVATE_KEY`);
+    if (!publicKey || !secretKey) {
+      console.error("[appcnpay-pix] missing credentials for", planId);
+      return json({ error: "Pagamento temporariamente indisponível para este plano." }, 503);
     }
 
     const identifier = `${user.id}_${planId}_${Date.now()}`;
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    // Registra o pedido antes de chamar a CNPY. Assim, mesmo que o callback
+    // chegue imediatamente após o pagamento, o webhook sempre encontra o
+    // usuário e consegue liberar o acesso.
     const { error: insertError } = await admin.from("payments").insert({
       user_id: user.id,
       amount: plan.price,
@@ -89,17 +70,21 @@ Deno.serve(async (req) => {
       amount: plan.price,
       client: { name: String(name).trim(), email: user.email, phone: String(phone ?? ""), document: String(document) },
       products: [{ id: planId, name: plan.name, quantity: 1, price: plan.price }],
-      metadata: { provider: "ImportaFacil", orderId: identifier, planId },
+      metadata: { provider: "ImportaFacil", orderId: identifier },
       callbackUrl: `${url}/functions/v1/appcnpay-webhook`,
     };
 
     const r = await fetch("https://painel.appcnpay.com/api/v1/gateway/pix/receive", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-public-key": publicKey, "x-secret-key": privateKey },
+      headers: {
+        "Content-Type": "application/json",
+        "x-public-key": publicKey,
+        "x-secret-key": secretKey,
+      },
       body: JSON.stringify(payload),
     });
     const data = await r.json().catch(() => ({}));
-    console.log("[appcnpay-pix] status", r.status, "plan", planId, "tx", data?.transactionId, "st", data?.status);
+    console.log("[appcnpay-pix] status", r.status, "tx", data?.transactionId, "st", data?.status, "err", data?.message ?? data?.errorDescription);
     const transactionId = data?.transactionId ?? data?.id ?? data?.transaction?.id ?? null;
     if (!r.ok || !data?.pix?.code) {
       await admin.from("payments").update({ status: "failed" }).eq("external_reference", identifier);
@@ -112,7 +97,7 @@ Deno.serve(async (req) => {
     }).eq("external_reference", identifier);
     if (updateError) console.error("[appcnpay-pix] failed to attach provider transaction", updateError);
 
-    return json({ identifier, transactionId, planId, code: data.pix.code, image: data.pix.image ?? null, expiresAt: data.pix.expiresAt ?? null, amount: plan.price });
+    return json({ identifier, transactionId, code: data.pix.code, image: data.pix.image ?? null, expiresAt: data.pix.expiresAt ?? null, amount: plan.price });
   } catch (e) {
     console.error("[appcnpay-pix] error", e);
     return json({ error: "Não foi possível gerar o Pix, tente novamente." }, 500);
