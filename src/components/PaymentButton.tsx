@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, CheckCircle } from "lucide-react";
 import { getSupabaseClient } from "@/lib/backend";
+import PixCheckoutDialog from "@/components/PixCheckoutDialog";
 import { getPlan, type PlanId } from "@/config/plans";
 
 interface PaymentButtonProps {
@@ -17,54 +18,36 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ planId = "anual", compact
   const { toast } = useToast();
   const plan = getPlan(planId);
 
+  const [open, setOpen] = useState(false);
+
   const handlePayment = async () => {
     if (isLoading) return;
     setIsLoading(true);
-
-    try {
-      const client = await getSupabaseClient();
-      const session = client ? (await client.auth.getSession()).data.session : null;
-      if (!client || !session) {
-        throw new Error("Você precisa estar logado para fazer o pagamento.");
-      }
-
-      const { data, error } = await client.functions.invoke("mercadopago-create-preference", {
-        body: { planId: plan.id },
-      });
-      if (error) {
-        let detail = "Não foi possível iniciar o pagamento.";
-        try {
-          const responseBody = await (error as any)?.context?.json?.();
-          if (responseBody?.error) detail = responseBody.error;
-        } catch {
-          // Mantém uma mensagem amigável quando a resposta não é JSON.
-        }
-        throw new Error(detail);
-      }
-
-      const checkoutUrl = data?.init_point;
-      if (!checkoutUrl) throw new Error("Link do Mercado Pago indisponível.");
-      window.location.assign(checkoutUrl);
-    } catch (error) {
-      console.error("[PaymentButton] Mercado Pago error", error);
-      toast({
-        title: "Não foi possível iniciar o pagamento",
-        description: error instanceof Error ? error.message : "Tente novamente em instantes.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
+    const client = await getSupabaseClient();
+    const session = client ? (await client.auth.getSession()).data.session : null;
+    setIsLoading(false);
+    if (!session) {
+      toast({ title: "Faça login", description: "Você precisa estar logado para fazer o pagamento.", variant: "destructive" });
+      return;
     }
+    setOpen(true);
   };
+
+  const dialog = (
+    <PixCheckoutDialog open={open} onOpenChange={setOpen} functionName="appcnpay-pix" title={plan.name} amount={plan.price} extraBody={{ planId: plan.id }} />
+  );
 
   if (compact) {
     return (
+      <>{dialog}
       <Button onClick={handlePayment} disabled={isLoading} className="w-full font-bold gap-2">
-        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CreditCard className="w-4 h-4" /> Pagar com Mercado Pago</>}
-      </Button>
+        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CreditCard className="w-4 h-4" /> Pagar com Pix</>}
+      </Button></>
     );
   }
 
   return (
+    <>{dialog}
     <Card className="w-full max-w-md mx-auto bg-white text-foreground border-border">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl flex items-center justify-center gap-2 text-foreground">
@@ -90,12 +73,12 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ planId = "anual", compact
         </div>
 
         <Button onClick={handlePayment} disabled={isLoading} className="w-full text-lg py-6" size="lg">
-          {isLoading ? <><Loader2 className="h-5 w-5 animate-spin mr-2" />Processando...</> : <><CreditCard className="h-5 w-5 mr-2" />PAGAR COM MERCADO PAGO</>}
+          {isLoading ? <><Loader2 className="h-5 w-5 animate-spin mr-2" />Processando...</> : <><CreditCard className="h-5 w-5 mr-2" />PAGAR COM PIX</>}
         </Button>
 
-        <p className="text-xs text-center text-muted-foreground">Pagamento seguro processado pelo Mercado Pago</p>
+        <p className="text-xs text-center text-muted-foreground">Pagamento seguro via Pix</p>
       </CardContent>
-    </Card>
+    </Card></>
   );
 };
 
