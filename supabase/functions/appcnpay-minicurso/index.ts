@@ -42,7 +42,8 @@ Deno.serve(async (req) => {
 
     const publicKey = Deno.env.get("APPCNPAY_MINICURSO_PUBLIC_KEY");
     const secretKey = Deno.env.get("APPCNPAY_MINICURSO_PRIVATE_KEY");
-    if (!publicKey || !secretKey) {
+    const offerId = Deno.env.get(`APPCNPAY_MINICURSO_OFFER_ID`);
+    if (!publicKey || !secretKey || !offerId) {
       console.error("[appcnpay-minicurso] missing credentials");
       return json({ error: "Pagamento temporariamente indisponível." }, 503);
     }
@@ -67,8 +68,9 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         identifier,
         amount: PRODUCT.price,
+        offerId,
         client: { name: String(name).trim(), email, phone: String(phone ?? ""), document: String(document) },
-        products: [{ id: PRODUCT.id, name: PRODUCT.name, quantity: 1, price: PRODUCT.price }],
+        products: [{ id: PRODUCT.id, name: PRODUCT.name, quantity: 1, offerId, price: PRODUCT.price }],
         metadata: { provider: "ImportaFacil", orderId: identifier, product: "minicurso" },
         callbackUrl: `${url}/functions/v1/appcnpay-webhook`,
       }),

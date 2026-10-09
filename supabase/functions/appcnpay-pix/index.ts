@@ -43,7 +43,8 @@ Deno.serve(async (req) => {
 
     const publicKey = Deno.env.get(`${plan.keyPrefix}_PUBLIC_KEY`);
     const secretKey = Deno.env.get(`${plan.keyPrefix}_PRIVATE_KEY`);
-    if (!publicKey || !secretKey) {
+    const offerId = Deno.env.get(`${plan.keyPrefix}_OFFER_ID`);
+    if (!publicKey || !secretKey || !offerId) {
       console.error("[appcnpay-pix] missing credentials for", planId);
       return json({ error: "Pagamento temporariamente indisponível para este plano." }, 503);
     }
@@ -56,6 +57,7 @@ Deno.serve(async (req) => {
     const { error: insertError } = await admin.from("payments").insert({
       user_id: user.id,
       amount: plan.price,
+      offerId,
       external_reference: identifier,
       status: "pending",
       payment_method: "pix",
@@ -69,7 +71,7 @@ Deno.serve(async (req) => {
       identifier,
       amount: plan.price,
       client: { name: String(name).trim(), email: user.email, phone: String(phone ?? ""), document: String(document) },
-      products: [{ id: planId, name: plan.name, quantity: 1, price: plan.price }],
+      products: [{ id: planId, name: plan.name, quantity: 1, offerId, price: plan.price }],
       metadata: { provider: "ImportaFacil", orderId: identifier },
       callbackUrl: `${url}/functions/v1/appcnpay-webhook`,
     };
