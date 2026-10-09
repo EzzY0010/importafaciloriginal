@@ -29,8 +29,8 @@ const PLAN_ENV: Record<string, { name: string; price: number; publicKey: string;
   autonomo: {
     name: "Acesso ao Site + grupo (plano mensal)",
     price: 34.99,
-    publicKey: "APPCNPAY_AUTONOMO_PUBLIC_KEY",
-    privateKey: "APPCNPAY_AUTONOMO_PRIVATE_KEY",
+    publicKey: "APPCNPAY_SITE_GRUPO_PUBLIC_KEY",
+    privateKey: "APPCNPAY_SITE_GRUPO_PRIVATE_KEY",
   },
 };
 
