@@ -40,6 +40,13 @@ Deno.serve(async (req) => {
     if (!name || String(name).trim().length < 3) return json({ error: "Informe seu nome completo." }, 400);
     if (!validCPF(String(document ?? ""))) return json({ error: "CPF inválido." }, 400);
 
+    const publicKey = Deno.env.get("APPCNPAY_MINICURSO_PUBLIC_KEY");
+    const secretKey = Deno.env.get("APPCNPAY_MINICURSO_PRIVATE_KEY");
+    if (!publicKey || !secretKey) {
+      console.error("[appcnpay-minicurso] missing credentials");
+      return json({ error: "Pagamento temporariamente indisponível." }, 503);
+    }
+
     const identifier = `minicurso_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { error: insertError } = await admin.from("purchases").insert({
@@ -54,8 +61,8 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-public-key": Deno.env.get("APPCNPAY_PUBLIC_KEY")!,
-        "x-secret-key": Deno.env.get("APPCNPAY_PRIVATE_KEY")!,
+        "x-public-key": publicKey,
+        "x-secret-key": secretKey,
       },
       body: JSON.stringify({
         identifier,

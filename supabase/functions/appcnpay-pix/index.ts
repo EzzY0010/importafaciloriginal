@@ -5,11 +5,11 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PLANS: Record<string, { name: string; price: number }> = {
-  mensal: { name: "Mentoria (plano mensal)", price: 97 },
-  trimestral: { name: "Mentoria (plano trimestral)", price: 239 },
-  anual: { name: "Mentoria (plano anual)", price: 499 },
-  autonomo: { name: "Acesso ao Site (plano mensal)", price: 34.99 },
+const PLANS: Record<string, { name: string; price: number; keyPrefix: string }> = {
+  mensal: { name: "Mentoria (plano mensal)", price: 97, keyPrefix: "APPCNPAY_MENSAL" },
+  trimestral: { name: "Mentoria (plano trimestral)", price: 239, keyPrefix: "APPCNPAY_TRIMESTRAL" },
+  anual: { name: "Mentoria (plano anual)", price: 499, keyPrefix: "APPCNPAY_ANUAL" },
+  autonomo: { name: "Acesso ao Site (plano mensal)", price: 34.99, keyPrefix: "APPCNPAY_SITE_GRUPO" },
 };
 
 const json = (b: unknown, s = 200) =>
@@ -41,6 +41,13 @@ Deno.serve(async (req) => {
     if (!name || String(name).trim().length < 3) return json({ error: "Informe seu nome completo." }, 400);
     if (!validCPF(String(document ?? ""))) return json({ error: "CPF inválido." }, 400);
 
+    const publicKey = Deno.env.get(`${plan.keyPrefix}_PUBLIC_KEY`);
+    const secretKey = Deno.env.get(`${plan.keyPrefix}_PRIVATE_KEY`);
+    if (!publicKey || !secretKey) {
+      console.error("[appcnpay-pix] missing credentials for", planId);
+      return json({ error: "Pagamento temporariamente indisponível para este plano." }, 503);
+    }
+
     const identifier = `${user.id}_${planId}_${Date.now()}`;
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     // Registra o pedido antes de chamar a CNPY. Assim, mesmo que o callback
@@ -71,8 +78,8 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-public-key": Deno.env.get("APPCNPAY_PUBLIC_KEY")!,
-        "x-secret-key": Deno.env.get("APPCNPAY_PRIVATE_KEY")!,
+        "x-public-key": publicKey,
+        "x-secret-key": secretKey,
       },
       body: JSON.stringify(payload),
     });
