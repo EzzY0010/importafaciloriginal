@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { BookOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import PixCheckoutDialog from "@/components/PixCheckoutDialog";
 import { getSupabaseClient } from "@/lib/backend";
 
 export const MINICURSO = {
@@ -20,43 +18,16 @@ interface Props {
 
 const MinicursoBuyCard = ({ variant = "hero" }: Props) => {
   const [loading, setLoading] = useState(false);
-  const [emailOpen, setEmailOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [askEmail, setAskEmail] = useState(false);
 
-  const startCheckout = async (fallbackEmail?: string) => {
+  const startCheckout = async () => {
     setLoading(true);
-    try {
-      const client = await getSupabaseClient();
-      if (!client) throw new Error("Backend indisponível");
-
-      const { data: { session } } = await client.auth.getSession();
-
-      if (!session && !fallbackEmail) {
-        setEmailOpen(true);
-        return;
-      }
-
-      const { data, error } = await client.functions.invoke("create-payment-preference", {
-        body: { email: fallbackEmail ?? session?.user.email },
-        headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
-      });
-
-      if (error) throw error;
-
-      const url = data?.init_point || data?.sandbox_init_point;
-      if (!url) throw new Error("Link de pagamento indisponível");
-      window.location.href = url;
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Não foi possível iniciar o pagamento",
-        description: "Tente novamente em instantes.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    const client = await getSupabaseClient();
+    const session = client ? (await client.auth.getSession()).data.session : null;
+    setAskEmail(!session);
+    setLoading(false);
+    setOpen(true);
   };
 
   const isHero = variant === "hero";
@@ -100,29 +71,7 @@ const MinicursoBuyCard = ({ variant = "hero" }: Props) => {
         </Button>
       </div>
 
-      <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Seu e-mail</DialogTitle>
-            <DialogDescription>
-              Usamos o e-mail para liberar o acesso ao minicurso após o pagamento.
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            type="email"
-            translate="no"
-            placeholder="voce@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Button
-            disabled={loading || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)}
-            onClick={() => { setEmailOpen(false); startCheckout(email.trim().toLowerCase()); }}
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ir para o pagamento"}
-          </Button>
-        </DialogContent>
-      </Dialog>
+      <PixCheckoutDialog open={open} onOpenChange={setOpen} functionName="appcnpay-minicurso" title={MINICURSO.name} amount={MINICURSO.price} askEmail={askEmail} />
     </>
   );
 };
