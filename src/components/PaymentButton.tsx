@@ -52,7 +52,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ planId = "anual", compact
 
         <Button asChild className="w-full text-lg py-6" size="lg">
           <a href={checkoutUrl}>
-            <CreditCard className="h-5 w-5 mr-2" /> PAGAR COM CN PAY
+            <CreditCard className="h-5 w-5 mr-2" /> Pagar com CN Pay
           </a>
         </Button>
 
