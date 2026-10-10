@@ -61,10 +61,16 @@ const PixCheckoutDialog = ({ open, onOpenChange, functionName, title, amount, ex
       });
       if (err) {
         let msg = "Não foi possível gerar o Pix, tente novamente.";
-        try { const b = await (err as any)?.context?.json?.(); if (b?.error) msg = b.error; } catch { /* keep */ }
+        try {
+          const body = await (err as any)?.context?.json?.();
+          if (body?.error) msg = body.detail ? `${body.error} (${body.detail})` : body.error;
+        } catch { /* keep the fallback message */ }
         throw new Error(msg);
       }
-      if (!data?.code) throw new Error("Não foi possível gerar o Pix, tente novamente.");
+      if (!data?.code) {
+        const msg = data?.detail ? `${data.error ?? "Não foi possível gerar o Pix"} (${data.detail})` : (data?.error ?? "Não foi possível gerar o Pix, tente novamente.");
+        throw new Error(msg);
+      }
       setPix({ identifier: data.identifier, code: data.code, image: data.image });
       setStatus("pending");
     } catch (e) {
