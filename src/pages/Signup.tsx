@@ -171,7 +171,7 @@ const Signup = () => {
         <p className="text-center mt-6 text-sm text-muted-foreground">
           {t('hasAccount')}{" "}
           <Link
-            to="/"
+            to="/login"
             className="text-primary hover:text-primary/80 font-semibold transition-colors"
           >
             {t('login')}
