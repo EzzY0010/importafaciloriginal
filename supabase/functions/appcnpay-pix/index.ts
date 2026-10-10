@@ -44,6 +44,15 @@ const PLAN_ENV: Record<string, PlanConfig> = {
   },
 };
 
+// IDs públicos das ofertas informados pelo proprietário do Site Redo.
+// O Secret correspondente continua tendo prioridade quando configurado.
+const OFFER_ID_FALLBACKS: Record<string, string> = {
+  mensal: "JX5U4XC",
+  trimestral: "5I0EBB2",
+  anual: "76GLDI7",
+  autonomo: "TVDJKRN",
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -87,7 +96,7 @@ Deno.serve(async (req) => {
 
     const publicKey = Deno.env.get(plan.publicKey);
     const privateKey = Deno.env.get(plan.privateKey);
-    const offerId = Deno.env.get(plan.offerId);
+    const offerId = Deno.env.get(plan.offerId) ?? OFFER_ID_FALLBACKS[String(planId)];
     if (!publicKey || !privateKey || !offerId) {
       console.error("[appcnpay-pix] missing offer configuration", {
         planId,

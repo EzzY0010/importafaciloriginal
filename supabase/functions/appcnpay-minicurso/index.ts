@@ -12,6 +12,7 @@ const PRODUCT = {
   privateKey: "APPCNPAY_MINICURSO_PRIVATE_KEY",
   offerId: "APPCNPAY_MINICURSO_OFFER_ID",
 };
+const MINICURSO_OFFER_ID_FALLBACK = "ELFF7W5";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -59,7 +60,7 @@ Deno.serve(async (req) => {
 
     const publicKey = Deno.env.get(PRODUCT.publicKey);
     const privateKey = Deno.env.get(PRODUCT.privateKey);
-    const offerId = Deno.env.get(PRODUCT.offerId);
+    const offerId = Deno.env.get(PRODUCT.offerId) ?? MINICURSO_OFFER_ID_FALLBACK;
     if (!publicKey || !privateKey || !offerId) {
       console.error("[appcnpay-minicurso] missing offer configuration", {
         publicKey: PRODUCT.publicKey,
