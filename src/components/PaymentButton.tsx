@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, CreditCard, CheckCircle } from "lucide-react";
-import { getSupabaseClient } from "@/lib/backend";
+import { CreditCard, CheckCircle } from "lucide-react";
 import { getPlan, type PlanId } from "@/config/plans";
+import { getPlanCheckoutUrl } from "@/config/checkouts";
 
 interface PaymentButtonProps {
   onPaymentSuccess?: () => void;
@@ -13,53 +12,15 @@ interface PaymentButtonProps {
 }
 
 const PaymentButton: React.FC<PaymentButtonProps> = ({ planId = "anual", compact = false }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
   const plan = getPlan(planId);
-
-  const handlePayment = async () => {
-    if (isLoading) return;
-    setIsLoading(true);
-
-    try {
-      const client = await getSupabaseClient();
-      const session = client ? (await client.auth.getSession()).data.session : null;
-      if (!client || !session) {
-        throw new Error("Você precisa estar logado para fazer o pagamento.");
-      }
-
-      const { data, error } = await client.functions.invoke("mercadopago-create-preference", {
-        body: { planId: plan.id },
-      });
-      if (error) {
-        let detail = "Não foi possível iniciar o pagamento.";
-        try {
-          const responseBody = await (error as any)?.context?.json?.();
-          if (responseBody?.error) detail = responseBody.error;
-        } catch {
-          // Mantém uma mensagem amigável quando a resposta não é JSON.
-        }
-        throw new Error(detail);
-      }
-
-      const checkoutUrl = data?.init_point;
-      if (!checkoutUrl) throw new Error("Link do Mercado Pago indisponível.");
-      window.location.assign(checkoutUrl);
-    } catch (error) {
-      console.error("[PaymentButton] Mercado Pago error", error);
-      toast({
-        title: "Não foi possível iniciar o pagamento",
-        description: error instanceof Error ? error.message : "Tente novamente em instantes.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-    }
-  };
+  const checkoutUrl = getPlanCheckoutUrl(planId);
 
   if (compact) {
     return (
-      <Button onClick={handlePayment} disabled={isLoading} className="w-full font-bold gap-2">
-        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CreditCard className="w-4 h-4" /> Pagar com Mercado Pago</>}
+      <Button asChild className="w-full font-bold gap-2">
+        <a href={checkoutUrl}>
+          <CreditCard className="w-4 h-4" /> Pagar com CN Pay
+        </a>
       </Button>
     );
   }
@@ -89,11 +50,13 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ planId = "anual", compact
           <div className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary" /><span>Histórico Salvo: Suas perguntas e planos ficam guardados.</span></div>
         </div>
 
-        <Button onClick={handlePayment} disabled={isLoading} className="w-full text-lg py-6" size="lg">
-          {isLoading ? <><Loader2 className="h-5 w-5 animate-spin mr-2" />Processando...</> : <><CreditCard className="h-5 w-5 mr-2" />PAGAR COM MERCADO PAGO</>}
+        <Button asChild className="w-full text-lg py-6" size="lg">
+          <a href={checkoutUrl}>
+            <CreditCard className="h-5 w-5 mr-2" /> PAGAR COM CN PAY
+          </a>
         </Button>
 
-        <p className="text-xs text-center text-muted-foreground">Pagamento seguro processado pelo Mercado Pago</p>
+        <p className="text-xs text-center text-muted-foreground">Pagamento seguro processado pela CN Pay</p>
       </CardContent>
     </Card>
   );

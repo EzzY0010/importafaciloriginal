@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Brain, Globe, Calculator, Headset, Infinity, Gem, Check, X, Crown, Smartphone, MessageCircle, Loader2 } from "lucide-react";
+import { ChevronDown, Brain, Globe, Calculator, Headset, Gem, Check, X, Crown, Smartphone, MessageCircle, Loader2 } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,8 +25,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { getSupabaseClient } from "@/lib/backend";
+import { getPlanCheckoutUrl } from "@/config/checkouts";
 
-const PlanCard = ({ plan, onChoose }: { plan: (typeof PLANS)[number]; onChoose: (id: string) => void }) => (
+const PlanCard = ({ plan }: { plan: (typeof PLANS)[number] }) => (
   <div className={`relative flex flex-col p-5 rounded-2xl border transition-all ${plan.highlight ? "bg-gold/10 border-gold/60 shadow-[0_0_40px_hsl(43_80%_55%_/_0.25)] scale-[1.02]" : "bg-hero-foreground/5 border-hero-foreground/15 hover:border-gold/40"}`}>
     {plan.highlight && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-gold-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 whitespace-nowrap"><Crown className="w-3 h-3" /> Melhor custo-benefício</div>}
     <h3 className="font-bold text-hero-foreground text-base mb-1">{plan.name}</h3>
@@ -47,7 +48,9 @@ const PlanCard = ({ plan, onChoose }: { plan: (typeof PLANS)[number]; onChoose: 
       })}
       {plan.id !== "autonomo" && <li className="flex items-start gap-2 text-[11px] font-semibold text-hero-foreground"><Headset className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {plan.support}</li>}
     </ul>
-    <Button onClick={() => onChoose(plan.id)} className={`w-full min-h-11 h-auto py-2.5 font-bold whitespace-normal leading-tight text-xs sm:text-sm ${plan.highlight ? "bg-gold text-gold-foreground hover:bg-gold/90" : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20"}`}>Escolher</Button>
+    <Button asChild className={`w-full min-h-11 h-auto py-2.5 font-bold whitespace-normal leading-tight text-xs sm:text-sm ${plan.highlight ? "bg-gold text-gold-foreground hover:bg-gold/90" : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20"}`}>
+      <a href={getPlanCheckoutUrl(plan.id)}>Escolher</a>
+    </Button>
   </div>
 );
 
@@ -120,16 +123,6 @@ const LandingPage = () => {
     window.open("https://chat.whatsapp.com/FISWT8vu8SX8RqymoUirJZ?s=cl&p=a&mlu=4&ilr=4", "_blank", "noopener,noreferrer");
   };
 
-
-  const goToPlan = (planId: string) => {
-    // If already logged in, go straight to dashboard payment area
-    if (user) {
-      navigate(`/dashboard?plan=${planId}`);
-      return;
-    }
-    sessionStorage.setItem("selected_plan", planId);
-    navigate("/signup");
-  };
 
   const deliverables = [
     {
@@ -331,10 +324,10 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <MinicursoBuyCard variant="hero" />
-            {PLANS.filter((plan) => plan.id === "autonomo").map((plan) => <PlanCard key={plan.id} plan={plan} onChoose={goToPlan} />)}
+            {PLANS.filter((plan) => plan.id === "autonomo").map((plan) => <PlanCard key={plan.id} plan={plan} />)}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {PLANS.filter((plan) => plan.id !== "autonomo").map((plan) => <PlanCard key={plan.id} plan={plan} onChoose={goToPlan} />)}
+            {PLANS.filter((plan) => plan.id !== "autonomo").map((plan) => <PlanCard key={plan.id} plan={plan} />)}
           </div>
 
           <p className="text-center text-xs text-hero-foreground/60">
