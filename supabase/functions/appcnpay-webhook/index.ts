@@ -8,6 +8,24 @@ const DAYS: Record<string, number> = {
 };
 
 const PAID_WORDS = ["COMPLETED", "PAID", "APPROVED", "CONFIRMED", "SUCCEEDED", "SUCCESS", "SETTLED"];
+const OFFER_TO_PLAN: Record<string, string> = {
+  // IDs atuais e IDs usados nos links hospedados anteriormente.
+  JX5U4XC: "mensal",
+  "5I0EBB2": "trimestral",
+  "76GLDI7": "anual",
+  TVDJKRN: "autonomo",
+  "038EXW7": "mensal",
+  "2J657HL": "trimestral",
+  "1DUNPV5": "anual",
+  QN950TS: "autonomo",
+};
+const AMOUNT_TO_PLAN: Record<string, string> = {
+  "14.99": "minicurso",
+  "34.99": "autonomo",
+  "97": "mensal",
+  "239": "trimestral",
+  "499": "anual",
+};
 const norm = (value: unknown) => (value === undefined || value === null ? "" : String(value).trim());
 
 const asObjects = (body: any) => {
@@ -66,6 +84,9 @@ Deno.serve(async (req) => {
     const identifier = norm(firstValue(objects, [
       "identifier", "orderId", "order_id", "external_reference", "externalReference", "reference", "orderReference",
     ]));
+    const offerId = norm(firstValue(objects, [
+      "offerId", "offer_id", "offer", "offerCode", "offer_code", "productId", "product_id", "productCode", "product_code",
+    ]));
     const email = firstEmail(objects);
     const statusValues = objects.flatMap((object) => [
       object?.status,
@@ -92,6 +113,7 @@ Deno.serve(async (req) => {
     console.log("[appcnpay-webhook] recebido", {
       transactionId,
       identifier: resolvedIdentifier,
+      offerId,
       email: resolvedEmail ? "present" : "missing",
       status: statusValues.slice(0, 5),
       isPaid,
@@ -182,9 +204,11 @@ Deno.serve(async (req) => {
         .maybeSingle();
       payment = data;
     }
+    let matchedProfileId: string | null = null;
     if (!payment && resolvedEmail) {
       const { data: profile } = await admin.from("profiles").select("id").ilike("email", resolvedEmail).maybeSingle();
       if (profile?.id) {
+        matchedProfileId = profile.id;
         const { data } = await admin.from("payments")
           .select("*")
           .eq("payment_method", "pix")
@@ -198,8 +222,48 @@ Deno.serve(async (req) => {
     }
 
     if (!payment) {
-      console.warn("[appcnpay-webhook] pagamento não encontrado", { transactionId, identifier: resolvedIdentifier, email: !!resolvedEmail });
-      // 2xx evita que a CN Pay repita indefinidamente um evento impossível de associar.
+      if (!resolvedEmail) {
+        console.warn("[appcnpay-webhook] pagamento não encontrado e callback sem e-mail", { transactionId, identifier: resolvedIdentifier });
+        return new Response("OK");
+      }
+
+      // Checkout hospedado: o cliente pode pagar antes de criar a conta.
+      // Guardamos a aprovação por e-mail para o trigger da migration vinculá-la no cadastro.
+      const reference = resolvedIdentifier || `cnpy_${transactionId || crypto.randomUUID()}`;
+      const planFromReference = String(reference).split("_").find((part) => DAYS[part]);
+      const planId = planFromReference || OFFER_TO_PLAN[offerId] || AMOUNT_TO_PLAN[providerAmount.toFixed(2)] || "mensal";
+      const { error: claimError } = await admin.from("payments").upsert({
+        user_id: matchedProfileId,
+        customer_email: resolvedEmail,
+        external_reference: reference,
+        status: "approved",
+        amount: Number.isFinite(providerAmount) && providerAmount > 0 ? providerAmount : 0,
+        payment_method: "pix",
+        mercadopago_id: transactionId || null,
+        plan_type: planId,
+      }, { onConflict: "external_reference" });
+      if (claimError) {
+        console.error("[appcnpay-webhook] failed to store payment claim", claimError);
+        return new Response("Error", { status: 500 });
+      }
+
+      if (matchedProfileId) {
+        const { data: currentProfile } = await admin.from("profiles")
+          .select("plan_expires_at, legacy_access")
+          .eq("id", matchedProfileId)
+          .maybeSingle();
+        const expiresAt = new Date(Date.now() + DAYS[planId] * 864e5).toISOString();
+        const { error: profileError } = await admin.from("profiles").update({
+          has_paid: true,
+          plan_type: planId,
+          plan_expires_at: currentProfile?.legacy_access ? null : expiresAt,
+        }).eq("id", matchedProfileId);
+        if (profileError) {
+          console.error("[appcnpay-webhook] claimed profile update failed", profileError);
+          return new Response("Error", { status: 500 });
+        }
+      }
+      console.log("[appcnpay-webhook] aprovação guardada por e-mail", { email: "present", planId, transactionId });
       return new Response("OK");
     }
     if (Number.isFinite(providerAmount) && providerAmount > 0 && Math.abs(providerAmount - Number(payment.amount)) > 0.01) {
@@ -209,7 +273,44 @@ Deno.serve(async (req) => {
     if (payment.status === "approved") return new Response("OK");
 
     const parts = String(payment.external_reference ?? "").split("_");
-    const planId = DAYS[parts[1]] ? parts[1] : "mensal";
+    const planId = (DAYS[parts[1]] ? parts[1] : payment.plan_type) || OFFER_TO_PLAN[offerId] || "mensal";
+    if (!payment.user_id) {
+      if (!matchedProfileId && (resolvedEmail || payment.customer_email)) {
+        const { data: profile } = await admin.from("profiles")
+          .select("id")
+          .ilike("email", resolvedEmail || payment.customer_email)
+          .maybeSingle();
+        matchedProfileId = profile?.id ?? null;
+      }
+      if (matchedProfileId) {
+        const { data: currentProfile } = await admin.from("profiles")
+          .select("plan_expires_at, legacy_access")
+          .eq("id", matchedProfileId)
+          .maybeSingle();
+        const expiresAt = new Date(Date.now() + DAYS[planId] * 864e5).toISOString();
+        const { error: profileError } = await admin.from("profiles").update({
+          has_paid: true,
+          plan_type: planId,
+          plan_expires_at: currentProfile?.legacy_access ? null : expiresAt,
+        }).eq("id", matchedProfileId);
+        if (profileError) {
+          console.error("[appcnpay-webhook] profile claim update failed", profileError);
+          return new Response("Error", { status: 500 });
+        }
+      }
+      const { error: claimError } = await admin.from("payments").update({
+        status: "approved",
+        user_id: matchedProfileId,
+        customer_email: resolvedEmail || payment.customer_email,
+        plan_type: planId,
+        mercadopago_id: transactionId || payment.mercadopago_id,
+      }).eq("id", payment.id);
+      if (claimError) {
+        console.error("[appcnpay-webhook] payment claim update failed", claimError);
+        return new Response("Error", { status: 500 });
+      }
+      return new Response("OK");
+    }
     const { data: currentProfile } = await admin.from("profiles")
       .select("plan_expires_at, legacy_access")
       .eq("id", payment.user_id)
