@@ -170,38 +170,44 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          customer_email: string | null
           external_reference: string
           id: string
           mercadopago_id: string | null
           payment_method: string | null
+          plan_type: string | null
           preference_id: string | null
           status: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           amount: number
           created_at?: string
+          customer_email?: string | null
           external_reference: string
           id?: string
           mercadopago_id?: string | null
           payment_method?: string | null
+          plan_type?: string | null
           preference_id?: string | null
           status?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           amount?: number
           created_at?: string
+          customer_email?: string | null
           external_reference?: string
           id?: string
           mercadopago_id?: string | null
           payment_method?: string | null
+          plan_type?: string | null
           preference_id?: string | null
           status?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
