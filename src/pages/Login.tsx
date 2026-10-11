@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
@@ -45,14 +45,8 @@ const Login = () => {
   const [resetLoading, setResetLoading] = useState(false);
   const { toast } = useToast();
   const { t } = useLanguage();
-  const { signIn, user } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
