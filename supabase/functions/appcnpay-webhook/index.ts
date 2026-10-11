@@ -1,83 +1,245 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Fixed callback URL for every CN Pay Pix transaction (plans and minicourse).
-const DAYS: Record<string, number> = { mensal: 30, trimestral: 90, anual: 365, autonomo: 30 };
-const PAID = ["COMPLETED", "PAID", "APPROVED", "CONFIRMED"];
+const DAYS: Record<string, number> = {
+  mensal: 30,
+  trimestral: 90,
+  anual: 365,
+  autonomo: 30,
+};
+
+const PAID_WORDS = ["COMPLETED", "PAID", "APPROVED", "CONFIRMED", "SUCCEEDED", "SUCCESS", "SETTLED"];
+const norm = (value: unknown) => (value === undefined || value === null ? "" : String(value).trim());
+
+const asObjects = (body: any) => {
+  const objects: any[] = [];
+  const visit = (value: any, depth = 0) => {
+    if (!value || typeof value !== "object" || depth > 4 || objects.includes(value)) return;
+    objects.push(value);
+    for (const child of Object.values(value)) visit(child, depth + 1);
+  };
+  visit(body);
+  return objects;
+};
+
+const firstValue = (objects: any[], keys: string[]) => {
+  for (const object of objects) {
+    for (const key of keys) {
+      const value = object?.[key];
+      if (value !== undefined && value !== null && norm(value) !== "") return value;
+    }
+  }
+  return "";
+};
+
+const firstEmail = (objects: any[]) => {
+  for (const object of objects) {
+    for (const key of ["email", "payerEmail", "customerEmail", "buyerEmail"]) {
+      const value = norm(object?.[key]).toLowerCase();
+      if (value.includes("@")) return value;
+    }
+  }
+  return "";
+};
+
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
+  });
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("OK");
+
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("[appcnpay-webhook] Supabase service configuration is incomplete");
+      return new Response("Error", { status: 500 });
+    }
+
     const body: any = await req.json().catch(() => ({}));
-    const tx = body.transaction ?? body.data ?? body;
-    const transactionId = tx.id ?? tx.transactionId ?? body.transactionId ?? body.id;
-    const identifier = tx.identifier ?? body.identifier ?? tx.orderId ?? body.orderId
-      ?? tx.external_reference ?? body.external_reference ?? tx.metadata?.orderId ?? body.metadata?.orderId;
-    const status = String(tx.status ?? tx.transactionStatus ?? body.status ?? body.event ?? "").toUpperCase();
-    const token = body.token ?? body.webhookToken ?? req.headers.get("x-webhook-token");
-    console.log("[appcnpay-webhook]", { transactionId, identifier, status, hasToken: !!token });
+    const objects = asObjects(body);
+    const transactionId = norm(firstValue(objects, [
+      "transactionId", "transaction_id", "paymentId", "payment_id", "chargeId", "charge_id", "id",
+    ]));
+    const identifier = norm(firstValue(objects, [
+      "identifier", "orderId", "order_id", "external_reference", "externalReference", "reference", "orderReference",
+    ]));
+    const email = firstEmail(objects);
+    const statusValues = objects.flatMap((object) => [
+      object?.status,
+      object?.transactionStatus,
+      object?.transaction_status,
+      object?.paymentStatus,
+      object?.payment_status,
+      object?.state,
+      object?.event,
+      object?.eventType,
+      object?.type,
+    ]).map(norm).filter(Boolean);
+    const isPaid = statusValues.some((status) => PAID_WORDS.some((word) => status.toUpperCase().includes(word)))
+      || objects.some((object) => object?.paid === true || object?.confirmed === true || object?.isPaid === true);
+    const providerAmountRaw = firstValue(objects, ["amount", "value", "paidAmount", "paid_amount", "total"]);
+    const providerAmount = Number(providerAmountRaw);
 
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const isPaid = PAID.some((s) => status.includes(s));
+    // Alguns callbacks colocam os dados de pedido somente dentro de metadata/customData.
+    const metadata = objects.find((object) => object?.orderId || object?.external_reference || object?.identifier || object?.email);
+    const resolvedIdentifier = identifier || norm(metadata?.orderId ?? metadata?.external_reference ?? metadata?.identifier);
+    const resolvedEmail = email || norm(metadata?.email).toLowerCase();
+    const token = norm(body.token ?? body.webhookToken ?? req.headers.get("x-webhook-token"));
 
-    // ---- Minicurso (purchases table) ----
+    console.log("[appcnpay-webhook] recebido", {
+      transactionId,
+      identifier: resolvedIdentifier,
+      email: resolvedEmail ? "present" : "missing",
+      status: statusValues.slice(0, 5),
+      isPaid,
+      hasToken: !!token,
+    });
+
+    // Nunca libera uma cobrança que não foi marcada como paga pela CN Pay.
+    if (!isPaid) return new Response("OK");
+
+    const admin = createClient(supabaseUrl, serviceRoleKey);
+
+    // ---- Minicurso ----
     let purchase: any = null;
-    if (identifier && String(identifier).startsWith("minicurso_")) {
-      const { data } = await admin.from("purchases").select("*").eq("external_reference", String(identifier)).maybeSingle();
-      purchase = data;
-    } else if (!identifier && transactionId) {
-      const { data } = await admin.from("purchases").select("*").eq("product", "minicurso")
-        .like("external_reference", "minicurso\\_%").eq("mercadopago_id", String(transactionId)).maybeSingle();
+    if (resolvedIdentifier) {
+      const { data } = await admin.from("purchases")
+        .select("*")
+        .eq("external_reference", resolvedIdentifier)
+        .maybeSingle();
       purchase = data;
     }
+    if (!purchase && transactionId) {
+      const { data } = await admin.from("purchases")
+        .select("*")
+        .eq("product", "minicurso")
+        .eq("mercadopago_id", transactionId)
+        .maybeSingle();
+      purchase = data;
+    }
+    if (!purchase && resolvedEmail) {
+      const { data } = await admin.from("purchases")
+        .select("*")
+        .eq("product", "minicurso")
+        .ilike("email", resolvedEmail)
+        .neq("status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      purchase = data;
+    }
+
     if (purchase) {
-      if (purchase.mercadopago_id && transactionId && String(transactionId) !== purchase.mercadopago_id) {
-        console.warn("[appcnpay-webhook] minicurso transação divergente"); return new Response("Forbidden", { status: 403 });
+      if (Number.isFinite(providerAmount) && providerAmount > 0 && Math.abs(providerAmount - Number(purchase.amount)) > 0.01) {
+        console.error("[appcnpay-webhook] minicurso amount mismatch", { expected: purchase.amount, received: providerAmount });
+        return new Response("Forbidden", { status: 403 });
       }
-      if (!isPaid || purchase.status === "approved") return new Response("OK");
+      if (purchase.status === "approved") return new Response("OK");
+
       let userId = purchase.user_id;
       if (!userId) {
-        const { data: prof } = await admin.from("profiles").select("id").ilike("email", purchase.email).maybeSingle();
-        userId = prof?.id ?? null;
+        const { data: profile } = await admin.from("profiles").select("id").ilike("email", purchase.email).maybeSingle();
+        userId = profile?.id ?? null;
       }
-      const { error: pErr } = await admin.from("purchases").update({ status: "approved", user_id: userId }).eq("id", purchase.id);
-      if (pErr) { console.error("[appcnpay-webhook] purchase update failed", pErr); return new Response("Error", { status: 500 }); }
-      if (userId) await admin.from("profiles").update({ has_minicourse: true }).eq("id", userId);
-      console.log("[appcnpay-webhook] minicurso liberado", purchase.id);
+      const { error: purchaseError } = await admin.from("purchases").update({
+        status: "approved",
+        user_id: userId,
+        mercadopago_id: transactionId || purchase.mercadopago_id,
+      }).eq("id", purchase.id);
+      if (purchaseError) {
+        console.error("[appcnpay-webhook] purchase update failed", purchaseError);
+        return new Response("Error", { status: 500 });
+      }
+      if (userId) {
+        const { error: profileError } = await admin.from("profiles").update({ has_minicourse: true }).eq("id", userId);
+        if (profileError) {
+          console.error("[appcnpay-webhook] minicurso profile update failed", profileError);
+          return new Response("Error", { status: 500 });
+        }
+      }
+      console.log("[appcnpay-webhook] minicurso liberado", purchase.id, userId ?? "sem-conta");
       return new Response("OK");
     }
 
-    // ---- Plans (payments table) ----
-    let pay: any = null;
-    if (identifier) {
-      const { data } = await admin.from("payments").select("*").eq("payment_method", "pix").eq("external_reference", String(identifier)).maybeSingle();
-      pay = data;
+    // ---- Planos ----
+    let payment: any = null;
+    if (resolvedIdentifier) {
+      const { data } = await admin.from("payments")
+        .select("*")
+        .eq("payment_method", "pix")
+        .eq("external_reference", resolvedIdentifier)
+        .maybeSingle();
+      payment = data;
     }
-    if (!pay && transactionId) {
-      const { data } = await admin.from("payments").select("*").eq("payment_method", "pix").eq("mercadopago_id", String(transactionId)).maybeSingle();
-      pay = data;
+    if (!payment && transactionId) {
+      const { data } = await admin.from("payments")
+        .select("*")
+        .eq("payment_method", "pix")
+        .eq("mercadopago_id", transactionId)
+        .maybeSingle();
+      payment = data;
     }
-    if (!pay) { console.warn("[appcnpay-webhook] pagamento não encontrado"); return new Response("OK"); }
-    if (pay.preference_id && token && token !== pay.preference_id) {
-      console.warn("[appcnpay-webhook] token inválido"); return new Response("Forbidden", { status: 403 });
+    if (!payment && resolvedEmail) {
+      const { data: profile } = await admin.from("profiles").select("id").ilike("email", resolvedEmail).maybeSingle();
+      if (profile?.id) {
+        const { data } = await admin.from("payments")
+          .select("*")
+          .eq("payment_method", "pix")
+          .eq("user_id", profile.id)
+          .neq("status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        payment = data;
+      }
     }
-    if (!isPaid || pay.status === "approved") return new Response("OK");
 
-    const planId = pay.external_reference.split("_")[1] ?? "mensal";
-    const { data: cur } = await admin.from("profiles").select("plan_expires_at, legacy_access").eq("id", pay.user_id).maybeSingle();
-    const base = Math.max(Date.now(), cur?.plan_expires_at ? new Date(cur.plan_expires_at).getTime() : 0);
-    const expires = new Date(base + (DAYS[planId] ?? 30) * 864e5).toISOString();
+    if (!payment) {
+      console.warn("[appcnpay-webhook] pagamento não encontrado", { transactionId, identifier: resolvedIdentifier, email: !!resolvedEmail });
+      // 2xx evita que a CN Pay repita indefinidamente um evento impossível de associar.
+      return new Response("OK");
+    }
+    if (Number.isFinite(providerAmount) && providerAmount > 0 && Math.abs(providerAmount - Number(payment.amount)) > 0.01) {
+      console.error("[appcnpay-webhook] plan amount mismatch", { expected: payment.amount, received: providerAmount });
+      return new Response("Forbidden", { status: 403 });
+    }
+    if (payment.status === "approved") return new Response("OK");
+
+    const parts = String(payment.external_reference ?? "").split("_");
+    const planId = DAYS[parts[1]] ? parts[1] : "mensal";
+    const { data: currentProfile } = await admin.from("profiles")
+      .select("plan_expires_at, legacy_access")
+      .eq("id", payment.user_id)
+      .maybeSingle();
+    const base = Math.max(Date.now(), currentProfile?.plan_expires_at ? new Date(currentProfile.plan_expires_at).getTime() : 0);
+    const expiresAt = new Date(base + DAYS[planId] * 864e5).toISOString();
+
     const { error: profileError } = await admin.from("profiles").update({
-      has_paid: true, plan_type: planId, plan_expires_at: cur?.legacy_access ? null : expires,
-    }).eq("id", pay.user_id);
-    if (profileError) { console.error("[appcnpay-webhook] profile update failed", profileError); return new Response("Error", { status: 500 }); }
+      has_paid: true,
+      plan_type: planId,
+      plan_expires_at: currentProfile?.legacy_access ? null : expiresAt,
+    }).eq("id", payment.user_id);
+    if (profileError) {
+      console.error("[appcnpay-webhook] profile update failed", profileError);
+      return new Response("Error", { status: 500 });
+    }
+
     const { error: paymentError } = await admin.from("payments").update({
-      status: "approved", mercadopago_id: transactionId ? String(transactionId) : pay.mercadopago_id,
-    }).eq("id", pay.id);
-    if (paymentError) { console.error("[appcnpay-webhook] payment update failed", paymentError); return new Response("Error", { status: 500 }); }
-    console.log("[appcnpay-webhook] acesso liberado", pay.user_id, planId);
+      status: "approved",
+      mercadopago_id: transactionId || payment.mercadopago_id,
+    }).eq("id", payment.id);
+    if (paymentError) {
+      console.error("[appcnpay-webhook] payment update failed", paymentError);
+      return new Response("Error", { status: 500 });
+    }
+
+    console.log("[appcnpay-webhook] acesso liberado", { userId: payment.user_id, planId, paymentId: payment.id });
     return new Response("OK");
-  } catch (e) {
-    console.error("[appcnpay-webhook] error", e);
-    return new Response("Error", { status: 500 });
+  } catch (error) {
+    console.error("[appcnpay-webhook] error", error);
+    return jsonResponse({ error: "Webhook processing failed" }, 500);
   }
 });
