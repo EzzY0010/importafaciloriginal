@@ -16,6 +16,7 @@ export const SOURCES: SourceItem[] = [
   { name: "Taobao", url: "https://www.taobao.com", country: "China", flag: "🇨🇳", description: "O maior varejo interno chinês." },
   { name: "Vinted", url: "https://www.vinted.com", country: "Europa", flag: "🇪🇺", description: "Roupas e moda usada/vintage com garimpo premium." },
   { name: "Depop", url: "https://www.depop.com", country: "Estados Unidos", flag: "🇺🇸", description: "Vitrine de streetwear jovem e peças raras.", searchTerms: ["EUA", "USA"] },
+  { name: "Poshmark", url: "https://poshmark.com", country: "Estados Unidos", flag: "🇺🇸", description: "Marketplace americano de moda nova e usada, com garimpo de grifes e streetwear.", searchTerms: ["EUA", "USA"] },
   { name: "Vestiaire Collective", url: "https://www.vestiairecollective.com", country: "França", flag: "🇫🇷", description: "Luxo de elite certificado por especialistas." },
   { name: "Wallapop", url: "https://es.wallapop.com", country: "Espanha", flag: "🇪🇸", description: "Eletrônicos e desapegos locais espanhóis." },
   { name: "Milanuncios", url: "https://www.milanuncios.com", country: "Espanha", flag: "🇪🇸", description: "Classificados gerais para todo tipo de garimpo." },
