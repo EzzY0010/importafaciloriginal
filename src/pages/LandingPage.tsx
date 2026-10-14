@@ -23,6 +23,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
+import homeScreenPreview from "@/assets/importafacil-home-preview.webp";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
@@ -182,28 +183,15 @@ const SectionHeading = ({ eyebrow, title, accent, description }: { eyebrow: stri
 );
 
 const ProductPreview = () => (
-  <div className="overflow-hidden rounded-2xl border border-hero-foreground/10 bg-[#0b1018] shadow-2xl" aria-label="Prévia visual ilustrativa da tela do Lobo das Importações">
-    <div className="flex items-center gap-1.5 border-b border-white/5 bg-white/[0.025] px-3 py-2.5">
-      <span className="h-1.5 w-1.5 rounded-full bg-red-400/80" /><span className="h-1.5 w-1.5 rounded-full bg-amber-300/80" /><span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80" />
-      <span className="ml-2 truncate text-[9px] font-medium text-white/45">importafacil.app / lobo-ia</span>
-    </div>
-    <div className="space-y-3 p-3 sm:p-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-[10px] font-semibold text-white/85"><span className="rounded-lg bg-gold/15 p-1.5 text-gold"><Brain className="h-3.5 w-3.5" /></span> Lobo das Importações</div>
-        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-[8px] font-semibold text-emerald-300">Análise pronta</span>
-      </div>
-      <div className="grid grid-cols-[64px_1fr] gap-3 rounded-xl border border-white/7 bg-white/[0.025] p-2.5">
-        <div className="flex h-[70px] items-center justify-center rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 text-white/40"><PackageSearch className="h-7 w-7" /></div>
-        <div className="min-w-0 space-y-1.5">
-          <p className="truncate text-[10px] font-semibold text-white/85">Produto analisado por foto</p>
-          <p className="text-[8px] leading-relaxed text-white/45">Identificação, busca de marcas e estimativa de margem em um só lugar.</p>
-          <div className="flex items-center gap-1 text-[8px] font-semibold text-gold"><Sparkles className="h-3 w-3" /> Análise inteligente</div>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-lg border border-white/5 bg-white/[0.025] p-2"><p className="text-[8px] text-white/40">Busca de marcas</p><p className="mt-1 text-[9px] font-semibold text-white/80">Resultados globais</p></div>
-        <div className="rounded-lg border border-gold/15 bg-gold/[0.06] p-2"><p className="text-[8px] text-white/40">Margem estimada</p><p className="mt-1 text-[9px] font-semibold text-gold">Simule antes de comprar</p></div>
-      </div>
+  <div className="overflow-hidden rounded-2xl border border-hero-foreground/10 bg-[#0b1018] p-3 shadow-2xl" aria-label="Captura da tela inicial do ImportaFácil">
+    <p className="mb-2 text-center text-[9px] font-medium uppercase tracking-wider text-hero-foreground/40">Tela inicial · experiência mobile</p>
+    <div className="flex h-[340px] items-center justify-center overflow-hidden rounded-xl bg-black/40 p-2">
+      <img
+        src={homeScreenPreview}
+        alt="Tela inicial do ImportaFácil no celular, com análise de produto, fontes de garimpo e ferramentas rápidas"
+        loading="lazy"
+        className="h-full w-auto max-w-full rounded-lg object-contain"
+      />
     </div>
   </div>
 );
@@ -443,7 +431,7 @@ const LandingPage = () => {
               <div className="px-1 pb-1 pt-5"><div className="mb-2 flex items-center gap-2"><Calculator className="h-4 w-4 text-gold" /><h3 className="text-sm font-bold">Calculadora &amp; Precificação</h3></div><p className="text-xs leading-relaxed text-hero-foreground/60">Conversor de moedas e simulador de frete e custos internacionais para planejar a precificação.</p></div>
             </article>
           </div>
-          <p className="mt-4 text-center text-[10px] text-hero-foreground/35">Pré-visualizações ilustrativas das ferramentas do ecossistema.</p>
+          <p className="mt-4 text-center text-[10px] text-hero-foreground/35">A tela inicial é a captura enviada; as prévias de fontes e calculadora permanecem ilustrativas.</p>
         </div>
       </section>
 
