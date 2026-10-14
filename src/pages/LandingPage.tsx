@@ -95,7 +95,9 @@ const landingPlans: LandingPlan[] = [
     priceNote: "Valor atualizado de R$ 97,00 para R$ 147,99/mês",
     checkoutUrl: getPlanCheckoutUrl("mensal"),
     features: [
-      "Todos os recursos do plano Site",
+      "Todos os recursos da mentoria",
+      "Todos os recursos do site",
+      "Acesso ao grupo do WhatsApp",
       "Mais de 15 Fontes de Garimpo",
       "Acompanhamento na Primeira Importação",
       "Suporte Prioritário em até 24h",
@@ -111,7 +113,9 @@ const landingPlans: LandingPlan[] = [
     badge: "Melhor custo-benefício",
     checkoutUrl: getPlanCheckoutUrl("anual"),
     features: [
-      "Todos os recursos de mentoria",
+      "Todos os recursos da mentoria",
+      "Todos os recursos do site",
+      "Acesso ao grupo do WhatsApp",
       "Mais de 15 Fontes de Garimpo",
       "Acompanhamento na Primeira Importação",
       "Suporte Prioritário em até 24h",
