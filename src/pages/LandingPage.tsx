@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Brain, Globe, Calculator, Headset, Gem, Check, X, Crown, Smartphone, MessageCircle, Loader2 } from "lucide-react";
+import { ChevronDown, Brain, Globe, Calculator, Headset, Gem, Check, X, Crown, Smartphone, MessageCircle, Loader2, ShieldAlert, PackageSearch, CircleDollarSign, Clock3 } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
-import { PLANS, getDiscountPercent } from "@/config/plans";
+import type { PlanId } from "@/config/plans";
 import MinicursoBuyCard from "@/components/MinicursoBuyCard";
+import PlatformShowcase from "@/components/PlatformShowcase";
 import {
   Dialog,
   DialogContent,
@@ -27,17 +28,83 @@ import { useToast } from "@/hooks/use-toast";
 import { getSupabaseClient } from "@/lib/backend";
 import { getPlanCheckoutUrl } from "@/config/checkouts";
 
-const PlanCard = ({ plan }: { plan: (typeof PLANS)[number] }) => (
-  <div className={`relative flex flex-col p-5 rounded-2xl border transition-all ${plan.highlight ? "bg-gold/10 border-gold/60 shadow-[0_0_40px_hsl(43_80%_55%_/_0.25)] scale-[1.02]" : "bg-hero-foreground/5 border-hero-foreground/15 hover:border-gold/40"}`}>
+type LandingPlan = {
+  id: string;
+  checkoutPlan: PlanId;
+  name: string;
+  price: number;
+  previousPrice?: number;
+  period: string;
+  description: string;
+  features: string[];
+  support?: string;
+  highlight?: boolean;
+};
+
+const landingPlans: LandingPlan[] = [
+  {
+    id: "site",
+    checkoutPlan: "autonomo",
+    name: "Acesso ao Site · Mensal",
+    price: 34.99,
+    period: "/mês",
+    description: "Ferramentas essenciais e fontes principais para garimpar com mais autonomia.",
+    features: [
+      "IA Especialista em Importação",
+      "Busca Global Copia e Cola",
+      "Calculadora Pro",
+      "Fontes Principais de Garimpo",
+      "Acesso ao Grupo do WhatsApp",
+      "Suporte para dúvidas da plataforma em até 48h",
+    ],
+  },
+  {
+    id: "mentoria-mensal",
+    checkoutPlan: "mensal",
+    name: "Mentoria · Mensal",
+    price: 147.99,
+    period: "/mês",
+    description: "Todos os recursos do site, com orientação para colocar sua primeira importação em prática.",
+    features: [
+      "IA Especialista em Importação",
+      "Busca Global Copia e Cola",
+      "Calculadora Pro",
+      "Mais de 15 Fontes de Garimpo",
+      "Acompanhamento na Primeira Importação",
+      "Acesso ao Grupo do WhatsApp",
+    ],
+    support: "Suporte prioritário em até 24h",
+  },
+  {
+    id: "mentoria-vip",
+    checkoutPlan: "anual",
+    name: "Mentoria VIP · Vitalício",
+    price: 499,
+    previousPrice: 799,
+    period: "à vista · pagamento único",
+    description: "Acesso para sempre a todos os recursos de mentoria e acompanhamento.",
+    features: [
+      "Todos os recursos da Mentoria",
+      "Mais de 15 Fontes de Garimpo",
+      "Acompanhamento na Primeira Importação",
+      "Acesso ao Grupo do WhatsApp",
+      "Acesso vitalício à plataforma",
+    ],
+    support: "Suporte prioritário em até 24h",
+    highlight: true,
+  },
+];
+
+const PlanCard = ({ plan }: { plan: LandingPlan }) => (
+  <div className={`relative flex flex-col p-5 rounded-2xl border transition-all ${plan.highlight ? "bg-gold/10 border-gold/60 shadow-[0_0_40px_hsl(43_80%_55%_/_0.25)]" : "bg-hero-foreground/5 border-hero-foreground/15 hover:border-gold/40"}`}>
     {plan.highlight && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-gold-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 whitespace-nowrap"><Crown className="w-3 h-3" /> Melhor custo-benefício</div>}
     <h3 className="font-bold text-hero-foreground text-base mb-1">{plan.name}</h3>
     <p className="text-xs text-hero-foreground/60 min-h-[32px]">{plan.description}</p>
     <div className="my-4">
       {plan.previousPrice && <p className="text-xs text-hero-foreground/60 line-through">De R$ {plan.previousPrice.toFixed(2).replace('.', ',')}</p>}
       <div className="flex items-baseline gap-1"><span className="text-2xl sm:text-3xl font-extrabold text-gold">R$ {plan.price.toFixed(2).replace(".", ",")}</span></div>
-      {getDiscountPercent(plan) && <span className="inline-block text-[10px] bg-gold text-gold-foreground rounded-full px-2 py-0.5 mt-1">-{getDiscountPercent(plan)}%</span>}
-      <span className="text-[11px] text-hero-foreground/60">{plan.period}</span>
-      {plan.monthlyEquivalent && <p className="text-xs font-semibold text-gold/90 mt-1">{plan.monthlyEquivalent}</p>}
+      {plan.previousPrice && <span className="inline-block text-[10px] bg-gold text-gold-foreground rounded-full px-2 py-0.5 mt-1">-{Math.round((1 - plan.price / plan.previousPrice) * 100)}%</span>}
+      <span className="mt-1 block text-[11px] text-hero-foreground/60">{plan.period}</span>
     </div>
     <ul className="space-y-1.5 mb-4 flex-1">
       {plan.features.map((feature) => {
@@ -46,10 +113,10 @@ const PlanCard = ({ plan }: { plan: (typeof PLANS)[number] }) => (
           {excluded ? <X className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" /> : <Check className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" />} {feature}
         </li>;
       })}
-      {plan.id !== "autonomo" && <li className="flex items-start gap-2 text-[11px] font-semibold text-hero-foreground"><Headset className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {plan.support}</li>}
+      {plan.support && <li className="flex items-start gap-2 text-[11px] font-semibold text-hero-foreground"><Headset className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {plan.support}</li>}
     </ul>
     <Button asChild className={`w-full min-h-11 h-auto py-2.5 font-bold whitespace-normal leading-tight text-xs sm:text-sm ${plan.highlight ? "bg-gold text-gold-foreground hover:bg-gold/90" : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/20"}`}>
-      <a href={getPlanCheckoutUrl(plan.id)}>Escolher</a>
+      <a href={getPlanCheckoutUrl(plan.checkoutPlan)}>Escolher plano</a>
     </Button>
   </div>
 );
@@ -130,7 +197,7 @@ const LandingPage = () => {
       title: "🧠 IA Especialista em Importação",
       desc: (
         <>
-          <span className="font-bold text-hero-foreground">Chega de cair em golpes ou comprar réplicas baratas.</span> Nossa inteligência artificial faz um <span className="font-semibold text-hero-foreground">raio-x completo do produto através de uma foto</span>. Ela analisa a originalidade, detalha o material, estima o peso para o frete e identifica Collabs exclusivas para você <span className="font-semibold text-gold">errar zero vezes</span>.
+          <span className="font-bold text-hero-foreground">Pesquise com mais informação antes de decidir.</span> A IA ajuda a analisar produtos por foto, buscar referências de marcas e estimar peso e margem. Use esses dados como apoio à sua avaliação de fornecedores e oportunidades.
         </>
       ),
     },
@@ -154,10 +221,10 @@ const LandingPage = () => {
     },
     {
       icon: <Gem className="w-6 h-6" />,
-      title: "💎 Mais de 15 Fontes de Garimpo",
+      title: "🌍 Acesso às Fontes Globais",
       desc: (
         <>
-          <span className="font-bold text-hero-foreground">Não fique preso apenas a roupas.</span> Te damos o caminho das pedras com <span className="font-semibold text-gold">mais de 15 fontes secretas de garimpo</span> para você encontrar os itens mais desejados e exclusivos do mercado global.
+          <span className="font-bold text-hero-foreground">Pesquise em diferentes mercados.</span> Acesse fontes de garimpo da <span className="font-semibold text-hero-foreground">China, Europa e Estados Unidos</span>, organizadas para ajudar você a encontrar produtos e fornecedores — com acesso ampliado conforme o plano.
         </>
       ),
     },
@@ -178,6 +245,26 @@ const LandingPage = () => {
     "Mais de 15 Fontes Secretas de Garimpo",
     "Grupo no WhatsApp + Suporte VIP",
   ];
+
+  const marketProblems = [
+    { icon: <ShieldAlert className="h-5 w-5" />, title: "Medo de golpes", text: "Dificuldade para avaliar vendedores, produtos e sinais de risco antes de comprar." },
+    { icon: <PackageSearch className="h-5 w-5" />, title: "Fornecedores ruins", text: "Tempo perdido procurando fontes confiáveis em vários países e plataformas." },
+    { icon: <CircleDollarSign className="h-5 w-5" />, title: "Taxas surpresa", text: "Custos de frete, câmbio e importação que aparecem tarde demais no processo." },
+    { icon: <Calculator className="h-5 w-5" />, title: "Margem no escuro", text: "Falta de ferramentas simples para estimar o custo final e o lucro antes do pedido." },
+    { icon: <Clock3 className="h-5 w-5" />, title: "Processos manuais", text: "Traduções, buscas e cálculos repetitivos que consomem tempo e geram erros." },
+  ];
+
+  const anchorItems = [
+    { label: "Quem Somos", target: "manifesto-section" },
+    { label: "O Que Resolvemos", target: "problem-section" },
+    { label: "O Que Entregamos", target: "deliverables-section" },
+    { label: "Por Dentro", target: "inside-section" },
+    { label: "Planos", target: "plans-section" },
+  ];
+
+  const scrollToSection = (target: string) => {
+    document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <div translate="no" className="bg-hero text-hero-foreground">
@@ -212,47 +299,74 @@ const LandingPage = () => {
         </div>
       </section>
 
+      <nav aria-label="Navegação da landing page" className="sticky top-3 z-30 mx-auto max-w-6xl px-3">
+        <div className="pointer-events-auto mx-auto flex w-fit max-w-full gap-1.5 overflow-x-auto rounded-full border border-hero-foreground/15 bg-hero/90 p-1.5 shadow-xl shadow-black/20 backdrop-blur-xl sm:gap-2 sm:p-2">
+          {anchorItems.map((item) => (
+            <button
+              key={item.target}
+              type="button"
+              onClick={() => scrollToSection(item.target)}
+              className="shrink-0 rounded-full border border-hero-foreground/10 bg-hero-foreground/[0.04] px-4 py-2 text-xs font-semibold text-hero-foreground/75 transition-all hover:border-gold/50 hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
       {/* ── 2. O Manifesto do Lobo ── */}
-      <section id="manifesto-section" className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
+      <section id="manifesto-section" className="scroll-mt-20 flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
         <div className="max-w-3xl mx-auto w-full space-y-5">
           <div className="text-center mb-6">
-            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">O Manifesto do Lobo</p>
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Conheça a plataforma</p>
             <h2 className="text-2xl sm:text-3xl font-bold">
-              A <span className="text-gold">Mentalidade de Lucro</span>
+              Quem <span className="text-gold">Somos</span>
             </h2>
           </div>
-          <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
-            O <span className="font-bold text-gold">ImportaFácil</span> centraliza conhecimento, ferramentas e fontes para você importar com mais praticidade, sem precisar comprar vários cursos separados.
+          <p className="text-center text-sm leading-relaxed text-hero-foreground/75 sm:text-base">
+            O <span className="font-bold text-gold">ImportaFácil</span> é uma plataforma que centraliza conhecimento, ferramentas e inteligência de garimpo internacional para importadores. Reunimos recursos para pesquisar oportunidades, comparar custos e tomar decisões com mais informação — em um só lugar.
           </p>
+          <div className="grid gap-3 pt-3 sm:grid-cols-3">
+            {[["Conhecimento", "Conteúdo para orientar cada etapa da pesquisa."], ["Ferramentas", "Recursos práticos para agilizar seu processo."], ["Inteligência global", "Fontes e referências para garimpar além das fronteiras."]].map(([title, text]) => (
+              <div key={title} className="rounded-2xl border border-hero-foreground/10 bg-hero-foreground/[0.035] p-4 text-center">
+                <p className="text-sm font-bold text-gold">{title}</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-hero-foreground/60">{text}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── 3. O Problema do Mercado ── */}
-      <section className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
-        <div className="max-w-3xl mx-auto w-full space-y-6">
-          <div className="text-center mb-4">
-            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">A Quebra de Objeção</p>
+      <section id="problem-section" className="scroll-mt-20 flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+        <div className="mx-auto w-full max-w-5xl space-y-7">
+          <div className="mb-4 text-center">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gold/80 sm:text-sm">Os desafios de quem importa</p>
             <h2 className="text-2xl sm:text-3xl font-bold">
-              O Problema do <span className="text-gold">Mercado</span>
+              O Que <span className="text-gold">Resolvemos</span>
             </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-hero-foreground/65">A importação não precisa ser um processo baseado em tentativa e erro.</p>
           </div>
-          <div className="p-5 sm:p-6 rounded-2xl bg-destructive/10 border border-destructive/30">
-            <h3 className="font-bold text-base sm:text-lg mb-2 text-hero-foreground">❌ O erro comum</h3>
-            <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
-              Gastar <span className="font-bold">centenas de reais</span> comprando 3 ou 4 cursos diferentes para tentar aprender a importar de lugares diferentes.
-            </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {marketProblems.map((item) => (
+              <div key={item.title} className="flex items-start gap-3 rounded-2xl border border-hero-foreground/10 bg-hero-foreground/[0.035] p-4 transition-colors hover:border-red-300/25">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-400/10 text-red-200">{item.icon}</span>
+                <span>
+                  <span className="block text-sm font-bold text-hero-foreground">{item.title}</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-hero-foreground/60">{item.text}</span>
+                </span>
+              </div>
+            ))}
           </div>
-          <div className="p-5 sm:p-6 rounded-2xl bg-gold/10 border border-gold/30">
-            <h3 className="font-bold text-base sm:text-lg mb-2 text-gold">✅ A nossa solução</h3>
-            <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
-              Uma <span className="font-bold text-hero-foreground">plataforma única, do básico ao avançado</span>. Você aprende a encontrar, validar e lucrar com produtos do mundo inteiro, com <span className="font-semibold text-hero-foreground">ferramentas automatizadas</span> que aceleram o seu resultado.
-            </p>
+          <div className="flex items-start gap-3 rounded-2xl border border-gold/25 bg-gold/[0.07] p-5 sm:items-center">
+            <Check className="mt-0.5 h-5 w-5 shrink-0 text-gold sm:mt-0" />
+            <p className="text-sm leading-relaxed text-hero-foreground/80"><span className="font-bold text-gold">Uma estrutura integrada:</span> pesquisa, ferramentas e conhecimento reunidos para ajudar você a decidir com mais clareza em cada etapa.</p>
           </div>
         </div>
       </section>
 
       {/* ── 4. O Que Entregamos ── */}
-      <section id="deliverables-section" className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
+      <section id="deliverables-section" className="scroll-mt-20 flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
         <div className="max-w-3xl mx-auto w-full">
           <div className="text-center mb-8">
             <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Os Pilares do Seu Sucesso</p>
@@ -276,17 +390,28 @@ const LandingPage = () => {
         </div>
       </section>
 
+      <section id="inside-section" className="scroll-mt-20 flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+        <div className="mx-auto w-full max-w-6xl space-y-8">
+          <div className="text-center">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gold/80 sm:text-sm">Explore o ecossistema</p>
+            <h2 className="text-2xl font-bold sm:text-3xl">Por Dentro <span className="text-gold">do Site</span></h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-hero-foreground/65">Conheça algumas das ferramentas reunidas para apoiar sua pesquisa e planejamento de importação.</p>
+          </div>
+          <PlatformShowcase />
+        </div>
+      </section>
+
       {/* ── 5. Oferta Irrecusável ── */}
       <section className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
         <div className="max-w-2xl mx-auto w-full space-y-6 text-center">
           <div>
             <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Ancoragem de Valor</p>
             <h2 className="text-2xl sm:text-3xl font-bold">
-              Oferta <span className="text-gold">Irrecusável</span>
+              Um ecossistema <span className="text-gold">à sua medida</span>
             </h2>
           </div>
           <p className="text-sm sm:text-base text-hero-foreground/85 leading-relaxed">
-            Você <span className="font-bold text-hero-foreground">não vai pagar uma assinatura mensal</span> para ter acesso a tudo isso. Nós acreditamos na <span className="font-semibold text-gold">liberdade de escala</span>.
+            Escolha a forma de acesso que combina com seu momento: minicurso, plano mensal ou mentoria com acompanhamento.
           </p>
 
           <div className="p-5 sm:p-6 rounded-2xl bg-hero-foreground/5 border border-gold/30 text-left space-y-3">
@@ -310,24 +435,21 @@ const LandingPage = () => {
       </section>
 
       {/* ── 6. Planos de Pagamento ── */}
-      <section id="plans-section" className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
-        <div className="max-w-5xl mx-auto w-full space-y-8">
+      <section id="plans-section" className="scroll-mt-20 flex flex-col items-center justify-center px-4 sm:px-6 py-16 snap-start relative z-10">
+        <div className="max-w-6xl mx-auto w-full space-y-8">
           <div className="text-center">
             <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Escolha seu plano</p>
             <h2 className="text-2xl sm:text-3xl font-bold">
               Planos <span className="text-gold">Sob Medida</span>
             </h2>
             <p className="text-sm sm:text-base text-hero-foreground/70 mt-2 max-w-2xl mx-auto">
-              Quatro caminhos, um único ecossistema. Escolha entre mentoria completa ou acesso autônomo ao site.
+              Comece pelo conteúdo focado na Vinted, use as ferramentas do site ou escolha um plano com mentoria.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <MinicursoBuyCard variant="hero" />
-            {PLANS.filter((plan) => plan.id === "autonomo").map((plan) => <PlanCard key={plan.id} plan={plan} />)}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {PLANS.filter((plan) => plan.id !== "autonomo").map((plan) => <PlanCard key={plan.id} plan={plan} />)}
+            {landingPlans.map((plan) => <PlanCard key={plan.id} plan={plan} />)}
           </div>
 
           <p className="text-center text-xs text-hero-foreground/60">
