@@ -26,6 +26,14 @@ const AMOUNT_TO_PLAN: Record<string, string> = {
   "239": "trimestral",
   "499": "anual",
 };
+// O Marketplace é um add-on independente; não deve alterar o plano ImportaFácil.
+const MARKETPLACE_PRODUCT_IDS = new Set([
+  "cmurrm9vm0ajg01odwguw4157",
+  "cmurrm9vq0ajh01od22uhv1e7",
+  "cmvb3gavv06s201pv1hlv57w7",
+  "cmvb3gavz06s301pvcyhiyeam",
+]);
+const MARKETPLACE_OFFER_IDS = new Set(["SEBR6W4", "IYQNX79", "GK7N7X5", "WS6F4X9"]);
 const norm = (value: unknown) => (value === undefined || value === null ? "" : String(value).trim());
 
 const asObjects = (body: any) => {
@@ -87,6 +95,7 @@ Deno.serve(async (req) => {
     const offerId = norm(firstValue(objects, [
       "offerId", "offer_id", "offer", "offerCode", "offer_code", "productId", "product_id", "productCode", "product_code",
     ]));
+    const productId = norm(firstValue(objects, ["productId", "product_id", "productCode", "product_code"]));
     const email = firstEmail(objects);
     const statusValues = objects.flatMap((object) => [
       object?.status,
@@ -122,6 +131,20 @@ Deno.serve(async (req) => {
 
     // Nunca libera uma cobrança que não foi marcada como paga pela CN Pay.
     if (!isPaid) return new Response("OK");
+
+    // Uma compra do add-on Marketplace não concede nem renova acesso ao site ImportaFácil.
+    // A entrega/licença da extensão é gerenciada separadamente do plano principal.
+    if (
+      MARKETPLACE_OFFER_IDS.has(offerId.toUpperCase()) ||
+      MARKETPLACE_PRODUCT_IDS.has(productId.toLowerCase())
+    ) {
+      console.log("[appcnpay-webhook] add-on Marketplace confirmado sem alterar o plano ImportaFácil", {
+        transactionId,
+        productId,
+        offerId,
+      });
+      return new Response("OK");
+    }
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
