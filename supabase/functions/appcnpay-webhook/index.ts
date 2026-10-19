@@ -27,6 +27,7 @@ const AMOUNT_TO_PLAN: Record<string, string> = {
   "499": "anual",
 };
 const SPOTIFY_AMOUNTS = new Set(["14.90", "39.90", "89.90"]);
+const SPOTIFY_OFFER_CODES = new Set(["IXI6L7V", "19V3ZDU", "NINH4BT"]);
 const norm = (value: unknown) => (value === undefined || value === null ? "" : String(value).trim());
 
 const asObjects = (body: any) => {
@@ -126,7 +127,7 @@ Deno.serve(async (req) => {
 
     // As ofertas Spotify são resgatadas manualmente pelo WhatsApp e não concedem
     // acesso à plataforma ImportaFácil. Não as deixe cair no fallback mensal abaixo.
-    if (Number.isFinite(providerAmount) && SPOTIFY_AMOUNTS.has(providerAmount.toFixed(2))) {
+    if (SPOTIFY_OFFER_CODES.has(offerId) || (Number.isFinite(providerAmount) && SPOTIFY_AMOUNTS.has(providerAmount.toFixed(2)))) {
       console.log("[appcnpay-webhook] compra Spotify aprovada; resgate via WhatsApp", {
         transactionId,
         offerId,
