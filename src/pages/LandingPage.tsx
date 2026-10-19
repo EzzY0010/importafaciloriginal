@@ -46,6 +46,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { getSupabaseClient } from "@/lib/backend";
 import { CN_PAY_CHECKOUTS, getPlanCheckoutUrl } from "@/config/checkouts";
+import SpotifyPlans from "@/components/SpotifyPlans";
 
 type LandingPlan = {
   title: string;
@@ -365,6 +366,7 @@ const LandingPage = () => {
             ["O Que Entregamos", "#o-que-entregamos"],
             ["Por Dentro", "#por-dentro"],
             ["Planos", "#plans-section"],
+            ["Spotify Premium", "#spotify-premium"],
           ].map(([label, href]) => (
             <a key={href} href={href} className="shrink-0 rounded-full border border-hero-foreground/10 bg-hero-foreground/[0.035] px-4 py-2 text-xs font-semibold text-hero-foreground/70 transition-all hover:border-gold/40 hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
               {label}
@@ -450,6 +452,8 @@ const LandingPage = () => {
           </p>
         </div>
       </section>
+
+      <SpotifyPlans />
 
       {/* ── 7. Números Virtuais SMS & Grupo VIP ── */}
       <section className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">

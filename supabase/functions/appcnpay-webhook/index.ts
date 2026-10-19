@@ -26,6 +26,7 @@ const AMOUNT_TO_PLAN: Record<string, string> = {
   "239": "trimestral",
   "499": "anual",
 };
+const SPOTIFY_AMOUNTS = new Set(["14.90", "39.90", "89.90"]);
 const norm = (value: unknown) => (value === undefined || value === null ? "" : String(value).trim());
 
 const asObjects = (body: any) => {
@@ -122,6 +123,17 @@ Deno.serve(async (req) => {
 
     // Nunca libera uma cobrança que não foi marcada como paga pela CN Pay.
     if (!isPaid) return new Response("OK");
+
+    // As ofertas Spotify são resgatadas manualmente pelo WhatsApp e não concedem
+    // acesso à plataforma ImportaFácil. Não as deixe cair no fallback mensal abaixo.
+    if (Number.isFinite(providerAmount) && SPOTIFY_AMOUNTS.has(providerAmount.toFixed(2))) {
+      console.log("[appcnpay-webhook] compra Spotify aprovada; resgate via WhatsApp", {
+        transactionId,
+        offerId,
+        amount: providerAmount.toFixed(2),
+      });
+      return new Response("OK");
+    }
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
