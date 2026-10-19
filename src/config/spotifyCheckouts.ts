@@ -11,4 +11,4 @@ export const SPOTIFY_OFFER_IDS = {
 export type SpotifyPlanId = keyof typeof SPOTIFY_OFFER_IDS;
 
 export const getSpotifyCheckoutUrl = (planId: SpotifyPlanId) =>
-  `${CN_PAY_CHECKOUT_BASE}${encodeURIComponent(SPOTIFY_OFFER_IDS[planId])}`;
+  `${CN_PAY_CHECKOUT_BASE}${encodeURIComponent(SPOTIFY_OFFER_IDS[planId])}&lang=pt-BR`;
