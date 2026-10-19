@@ -90,7 +90,7 @@ const landingPlans: LandingPlan[] = [
   },
   {
     title: "Mentoria Mensal",
-    description: "Ferramentas da plataforma com acompanhamento mais próximo. Na compra desse plano, você ganha um mês de Spotify Premium individual como brinde.",
+    description: "Na compra desse plano, você ganha um mês de Spotify Premium individual como brinde.",
     price: "197,90",
     period: "/mês",
     checkoutUrl: getPlanCheckoutUrl("mensal"),
@@ -106,7 +106,7 @@ const landingPlans: LandingPlan[] = [
   },
   {
     title: "Mentoria VIP Vitalícia",
-    description: "Todos os recursos da mentoria, com acesso para sempre. Na compra desse plano, você ganha o Spotify Premium anual individual como brinde.",
+    description: "Na compra desse plano, você ganha o Spotify Premium anual individual como brinde.",
     price: "499,00",
     period: "à vista · pagamento único",
     previousPrice: "799,00",
