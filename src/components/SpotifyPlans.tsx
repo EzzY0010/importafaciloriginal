@@ -1,125 +1,113 @@
-import { ArrowRight, BadgeCheck, Check, Music2, ShieldCheck } from "lucide-react";
-import { getSpotifyCheckoutUrl, type SpotifyPlanId } from "@/config/spotifyCheckouts";
+import { Check, CircleDollarSign, Download, Headphones, ShieldCheck, Sparkles, Tag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SPOTIFY_CHECKOUTS } from "@/config/checkouts";
 
-type Plan = {
-  id: SpotifyPlanId;
+type SpotifyPlan = {
   title: string;
-  regularPrice: string;
+  tablePrice: string;
   price: string;
-  action: string;
+  checkoutUrl: string;
+  cta: string;
   badge?: string;
+  features: string[];
   featured?: boolean;
-  benefits: string[];
 };
 
-const plans: Plan[] = [
+const spotifyPlans: SpotifyPlan[] = [
   {
-    id: "month",
     title: "Spotify Individual - 1 Mês",
-    regularPrice: "R$ 23,90",
-    price: "R$ 14,90",
-    action: "Comprar 1 Mês",
-    benefits: ["🚫 Zero anúncios", "⬇️ Download offline", "🎧 Qualidade máxima", "🛡️ Garantia de 30 dias"],
+    tablePrice: "23,90",
+    price: "14,90",
+    checkoutUrl: SPOTIFY_CHECKOUTS.monthly,
+    cta: "Comprar 1 Mês",
+    features: ["Zero anúncios", "Download offline", "Qualidade máxima", "Garantia de 30 dias"],
   },
   {
-    id: "quarter",
     title: "Spotify Individual - 3 Meses",
-    regularPrice: "R$ 72,00",
-    price: "R$ 39,90",
-    action: "Comprar 3 Meses",
+    tablePrice: "72,00",
+    price: "39,90",
+    checkoutUrl: SPOTIFY_CHECKOUTS.quarterly,
+    cta: "Comprar 3 Meses",
     badge: "Mais Popular",
     featured: true,
-    benefits: ["🚫 Zero anúncios", "⬇️ Download offline", "💰 Economia de mais de R$ 30", "🛡️ Garantia de 90 dias"],
+    features: ["Zero anúncios", "Download offline", "Economia de mais de R$ 30", "Garantia de 90 dias"],
   },
   {
-    id: "year",
     title: "Spotify Individual - 1 Ano",
-    regularPrice: "R$ 239,00",
-    price: "R$ 89,90",
-    action: "Comprar Plano Anual",
+    tablePrice: "239,00",
+    price: "89,90",
+    checkoutUrl: SPOTIFY_CHECKOUTS.annual,
+    cta: "Comprar Plano Anual",
     badge: "Maior Economia",
-    benefits: ["🚫 Zero anúncios o ano todo", "⬇️ Download offline", "⚡ Sai R$ 7,49/mês", "🛡️ Garantia de 12 meses"],
+    features: ["Zero anúncios o ano todo", "Download offline", "Sai R$ 7,49/mês", "Garantia de 12 meses"],
   },
 ];
 
+const featureIcons = [CircleDollarSign, Download, Headphones, ShieldCheck];
+
 const SpotifyPlans = () => (
-  <section id="spotify-premium" className="relative z-10 scroll-mt-24 bg-[#07110d] px-5 py-20 text-white sm:px-6 sm:py-24">
+  <section id="spotify-plans" className="relative z-10 border-y border-hero-foreground/10 bg-hero-foreground/[0.025] px-5 py-20 sm:px-6 sm:py-24">
     <div className="mx-auto max-w-7xl">
       <div className="mx-auto mb-10 max-w-2xl text-center">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#1ed760]/25 bg-[#1ed760]/10 px-3 py-1.5 text-xs font-semibold text-[#1ed760]">
-          <Music2 className="h-4 w-4" aria-hidden="true" /> Spotify Premium
-        </div>
-        <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Curta sua música <span className="text-[#1ed760]">sem limites</span></h2>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-white/65 sm:text-base">Escolha o período ideal e aproveite sua experiência Premium.</p>
+        <p className="mb-3 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-green-400 sm:text-xs">
+          <Sparkles className="h-4 w-4" /> Oferta especial
+        </p>
+        <h2 className="text-3xl font-extrabold tracking-tight text-hero-foreground sm:text-4xl">
+          Spotify Premium <span className="text-green-400">sem anúncios.</span>
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-hero-foreground/65 sm:text-base">
+          Escolha seu período, conclua o pagamento seguro pelo CN Pay e resgate sua conta pelo WhatsApp.
+        </p>
       </div>
 
-      <div className="grid items-stretch gap-5 md:grid-cols-3">
-        {plans.map((plan) => {
-          const checkoutUrl = getSpotifyCheckoutUrl(plan.id);
-          return (
-            <article
-              key={plan.id}
-              className={`relative flex h-full flex-col rounded-3xl border p-6 transition-transform duration-200 hover:-translate-y-1 ${
-                plan.featured
-                  ? "border-[#1ed760]/70 bg-gradient-to-b from-[#12351f] to-[#0c1710] shadow-[0_16px_55px_-24px_rgba(30,215,96,.55)] md:scale-[1.03]"
-                  : "border-white/10 bg-white/[0.035] hover:border-[#1ed760]/40"
-              }`}
-            >
-              {plan.badge && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#1ed760] px-4 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#06210f] shadow-lg">
-                  {plan.badge}
-                </span>
-              )}
-              <div className="mb-6 flex items-center gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#1ed760]/15 text-[#1ed760]">
-                  <Music2 className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <h3 className="text-base font-bold leading-snug sm:text-lg">{plan.title}</h3>
+      <div className="grid items-stretch gap-5 lg:grid-cols-3">
+        {spotifyPlans.map((plan) => (
+          <article
+            key={plan.title}
+            className={`relative flex h-full flex-col rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${
+              plan.featured
+                ? "border-green-400/60 bg-gradient-to-b from-green-400/[0.13] to-hero-foreground/[0.035] shadow-[0_0_42px_hsl(142_70%_45%_/_0.14)]"
+                : "border-hero-foreground/10 bg-hero-foreground/[0.035] hover:border-green-400/35"
+            }`}
+          >
+            {plan.badge && (
+              <div className="absolute -top-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-green-500 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-lg">
+                <Tag className="h-3.5 w-3.5" /> {plan.badge}
               </div>
-              <div className="mb-6 border-b border-white/10 pb-5">
-                <p className="text-sm text-white/45 line-through">{plan.regularPrice}</p>
-                <p className="mt-1 text-4xl font-extrabold tracking-tight text-white">{plan.price}</p>
-                <p className="mt-1 text-xs text-white/50">pagamento único</p>
-              </div>
-              <ul className="mb-7 flex-1 space-y-3.5">
-                {plan.benefits.map((benefit) => (
-                  <li key={benefit} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/80">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#1ed760]" aria-hidden="true" />
-                    <span>{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-              {checkoutUrl ? (
-                <a
-                  href={checkoutUrl}
-                  className={`inline-flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-bold transition-colors ${
-                    plan.featured ? "bg-[#1ed760] text-[#06210f] hover:bg-[#35e978]" : "bg-white/10 text-white hover:bg-white/15"
-                  }`}
-                  aria-label={`${plan.action} — ${plan.title}`}
-                >
-                  {plan.action}<ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  disabled
-                  className="inline-flex h-12 w-full cursor-not-allowed items-center justify-center rounded-xl bg-white/10 px-4 text-sm font-bold text-white/45"
-                  title="Configure o ID da oferta Spotify em src/config/spotifyCheckouts.ts"
-                >
-                  {plan.action}<ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-                </button>
-              )}
-              <p className="mt-3 flex items-center justify-center gap-1.5 text-[10px] text-white/45">
-                <ShieldCheck className="h-3.5 w-3.5 text-[#1ed760]" aria-hidden="true" /> Pagamento processado pela CN Pay
+            )}
+            <div className="mb-6 flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-500/15 text-green-400">
+                <Headphones className="h-5 w-5" />
+              </span>
+              <h3 className="pt-1 font-bold text-hero-foreground">{plan.title}</h3>
+            </div>
+            <div className="mb-6 border-b border-hero-foreground/10 pb-5">
+              <p className="text-xs text-hero-foreground/50 line-through">De R$ {plan.tablePrice}</p>
+              <p className="mt-1 flex items-baseline gap-2">
+                <span className="text-xs font-semibold text-hero-foreground/55">R$</span>
+                <span className="text-4xl font-extrabold tracking-tight text-green-400">{plan.price}</span>
+                <span className="text-xs text-hero-foreground/55">pagamento único</span>
               </p>
-            </article>
-          );
-        })}
+            </div>
+            <ul className="mb-7 flex-1 space-y-3">
+              {plan.features.map((feature, index) => {
+                const Icon = featureIcons[index] ?? Check;
+                return (
+                  <li key={feature} className="flex items-start gap-2.5 text-sm leading-relaxed text-hero-foreground/80">
+                    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-green-400" aria-hidden="true" />
+                    <span>{feature}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <Button asChild className="mt-auto h-12 w-full rounded-xl bg-green-600 font-bold text-white hover:bg-green-500">
+              <a href={plan.checkoutUrl} aria-label={plan.cta}>
+                {plan.cta}
+              </a>
+            </Button>
+          </article>
+        ))}
       </div>
-      <p className="mx-auto mt-7 flex max-w-3xl items-center justify-center gap-2 text-center text-xs text-white/45">
-        <BadgeCheck className="h-4 w-4 shrink-0 text-[#1ed760]" aria-hidden="true" />
-        Seus dados de pagamento são tratados diretamente no checkout da CN Pay.
-      </p>
     </div>
   </section>
 );
