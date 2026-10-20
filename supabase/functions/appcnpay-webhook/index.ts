@@ -16,15 +16,17 @@ const OFFER_TO_PLAN: Record<string, string> = {
   TVDJKRN: "autonomo",
   "038EXW7": "mensal",
   "2J657HL": "trimestral",
-  "1DUNPV5": "anual",
+  "1DUNPV5": "vitalicio",
   QN950TS: "autonomo",
 };
 const AMOUNT_TO_PLAN: Record<string, string> = {
   "14.99": "minicurso",
   "34.99": "autonomo",
-  "97": "mensal",
-  "239": "trimestral",
-  "499": "anual",
+  "97.00": "mensal",
+  "197.90": "mensal",
+  "147.90": "vitalicio",
+  "239.00": "trimestral",
+  "499.00": "vitalicio",
 };
 // O Marketplace é um add-on independente; não deve alterar o plano ImportaFácil.
 const MARKETPLACE_PRODUCT_IDS = new Set([
@@ -35,6 +37,14 @@ const MARKETPLACE_PRODUCT_IDS = new Set([
 ]);
 const MARKETPLACE_OFFER_IDS = new Set(["SEBR6W4", "IYQNX79", "GK7N7X5", "WS6F4X9"]);
 const norm = (value: unknown) => (value === undefined || value === null ? "" : String(value).trim());
+const nextPlanExpiry = (profile: { plan_expires_at?: string | null; legacy_access?: boolean | null } | null, planId: string) => {
+  if (planId === "vitalicio") return null;
+  // Legado sem prazo é vitalício; qualquer plano com data continua sujeito ao vencimento.
+  if (profile?.legacy_access === true && !profile.plan_expires_at) return null;
+  const currentExpiry = profile?.plan_expires_at ? Date.parse(profile.plan_expires_at) : 0;
+  const base = Math.max(Date.now(), Number.isFinite(currentExpiry) ? currentExpiry : 0);
+  return new Date(base + (DAYS[planId] ?? DAYS.mensal) * 864e5).toISOString();
+};
 
 const asObjects = (body: any) => {
   const objects: any[] = [];
@@ -253,7 +263,7 @@ Deno.serve(async (req) => {
       // Checkout hospedado: o cliente pode pagar antes de criar a conta.
       // Guardamos a aprovação por e-mail para o trigger da migration vinculá-la no cadastro.
       const reference = resolvedIdentifier || `cnpy_${transactionId || crypto.randomUUID()}`;
-      const planFromReference = String(reference).split("_").find((part) => DAYS[part]);
+      const planFromReference = String(reference).split("_").find((part) => DAYS[part] || part === "vitalicio");
       const planId = planFromReference || OFFER_TO_PLAN[offerId] || AMOUNT_TO_PLAN[providerAmount.toFixed(2)] || "mensal";
       const { error: claimError } = await admin.from("payments").upsert({
         user_id: matchedProfileId,
@@ -275,11 +285,12 @@ Deno.serve(async (req) => {
           .select("plan_expires_at, legacy_access")
           .eq("id", matchedProfileId)
           .maybeSingle();
-        const expiresAt = new Date(Date.now() + DAYS[planId] * 864e5).toISOString();
+        const expiresAt = nextPlanExpiry(currentProfile, planId);
         const { error: profileError } = await admin.from("profiles").update({
           has_paid: true,
           plan_type: planId,
-          plan_expires_at: currentProfile?.legacy_access ? null : expiresAt,
+          plan_expires_at: expiresAt,
+          legacy_access: planId === "vitalicio" ? true : currentProfile?.legacy_access ?? false,
         }).eq("id", matchedProfileId);
         if (profileError) {
           console.error("[appcnpay-webhook] claimed profile update failed", profileError);
@@ -296,7 +307,12 @@ Deno.serve(async (req) => {
     if (payment.status === "approved") return new Response("OK");
 
     const parts = String(payment.external_reference ?? "").split("_");
-    const planId = (DAYS[parts[1]] ? parts[1] : payment.plan_type) || OFFER_TO_PLAN[offerId] || "mensal";
+    const planFromReference = DAYS[parts[1]] || parts[1] === "vitalicio" ? parts[1] : undefined;
+    const planId = OFFER_TO_PLAN[offerId]
+      || planFromReference
+      || AMOUNT_TO_PLAN[providerAmount.toFixed(2)]
+      || payment.plan_type
+      || "mensal";
     if (!payment.user_id) {
       if (!matchedProfileId && (resolvedEmail || payment.customer_email)) {
         const { data: profile } = await admin.from("profiles")
@@ -310,11 +326,12 @@ Deno.serve(async (req) => {
           .select("plan_expires_at, legacy_access")
           .eq("id", matchedProfileId)
           .maybeSingle();
-        const expiresAt = new Date(Date.now() + DAYS[planId] * 864e5).toISOString();
+        const expiresAt = nextPlanExpiry(currentProfile, planId);
         const { error: profileError } = await admin.from("profiles").update({
           has_paid: true,
           plan_type: planId,
-          plan_expires_at: currentProfile?.legacy_access ? null : expiresAt,
+          plan_expires_at: expiresAt,
+          legacy_access: planId === "vitalicio" ? true : currentProfile?.legacy_access ?? false,
         }).eq("id", matchedProfileId);
         if (profileError) {
           console.error("[appcnpay-webhook] profile claim update failed", profileError);
@@ -338,13 +355,13 @@ Deno.serve(async (req) => {
       .select("plan_expires_at, legacy_access")
       .eq("id", payment.user_id)
       .maybeSingle();
-    const base = Math.max(Date.now(), currentProfile?.plan_expires_at ? new Date(currentProfile.plan_expires_at).getTime() : 0);
-    const expiresAt = new Date(base + DAYS[planId] * 864e5).toISOString();
+    const expiresAt = nextPlanExpiry(currentProfile, planId);
 
     const { error: profileError } = await admin.from("profiles").update({
       has_paid: true,
       plan_type: planId,
-      plan_expires_at: currentProfile?.legacy_access ? null : expiresAt,
+      plan_expires_at: expiresAt,
+      legacy_access: planId === "vitalicio" ? true : currentProfile?.legacy_access ?? false,
     }).eq("id", payment.user_id);
     if (profileError) {
       console.error("[appcnpay-webhook] profile update failed", profileError);
