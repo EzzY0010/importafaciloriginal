@@ -177,14 +177,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   // Contas legadas permanecem ativas para sempre; compras novas respeitam a validade do plano.
-  // O cadastro autenticado é a fonte final para contas antigas: mesmo que o
-  // perfil esteja incompleto, expirado ou ainda sem a migration, a conta já
-  // existente antes dos novos planos deve entrar direto nas ferramentas.
-  const isPreexistingAccount = !!user
-    && Date.parse(user.created_at) < LEGACY_ACCOUNT_CUTOFF;
+  // A data de criação, sozinha, não concede acesso: o perfil precisa ter sido
+  // marcado como legado pela migration e também ter uma compra histórica.
   const hasAccess =
-    isPreexistingAccount
-    || legacyAccess
+    legacyAccess
     || (hasPaid && !!planExpiresAt && new Date(planExpiresAt).getTime() > nowTick);
 
   const signIn = async (email: string, password: string) => {
