@@ -144,7 +144,7 @@ const LandingPlanCard = ({ plan }: { plan: LandingPlan }) => (
     </ul>
     <Button
       asChild
-      className={`mt-auto h-11 w-full rounded-xl font-bold ${plan.featured ? "bg-gold text-gold-foreground hover:bg-gold/90" : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/15"}`}
+      className="mt-auto h-11 w-full rounded-xl bg-gold font-bold text-gold-foreground shadow-[0_0_18px_hsl(43_80%_55%_/_0.16)] hover:bg-gold/90"
     >
       <a href={plan.checkoutUrl} aria-label={`Escolher ${plan.title}`}>
         Quero conhecer <ArrowRight className="ml-2 h-4 w-4" />
@@ -299,7 +299,7 @@ const LandingPage = () => {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {problems.map((problem) => (
               <article key={problem.title} className="rounded-2xl border border-hero-foreground/10 bg-hero-foreground/[0.035] p-4 transition-colors hover:border-gold/25 sm:p-5">
-                <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-red-400/10 text-red-300">{problem.icon}</span>
+                <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold">{problem.icon}</span>
                 <h3 className="mb-2 text-sm font-bold text-hero-foreground">{problem.title}</h3>
                 <p className="text-xs leading-relaxed text-hero-foreground/60">{problem.text}</p>
               </article>
@@ -349,6 +349,9 @@ const LandingPage = () => {
           <SectionHeading eyebrow="Planos" title="Escolha como quer" accent="começar." description="Do primeiro passo na Vinted ao acompanhamento completo da sua importação." />
           <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {landingPlans.map((plan) => <LandingPlanCard key={plan.title} plan={plan} />)}
+          </div>
+          <div className="mx-auto mt-8 flex max-w-2xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center text-[11px] text-hero-foreground/50">
+            <span>Pagamento processado com segurança</span><span>•</span><span>Pix e checkout online</span><span>•</span><span>Liberação após confirmação</span>
           </div>
           <p className="mx-auto mt-6 max-w-3xl text-center text-[10px] leading-relaxed text-hero-foreground/40">
             As opções e os valores exibidos nesta página são informativos. Os links de checkout continuam apontando para a configuração atual da plataforma.
