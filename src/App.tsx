@@ -23,6 +23,7 @@ const PreSignup = React.lazy(() => import("./pages/PreSignup"));
 const Sources = React.lazy(() => import("./pages/Sources"));
 const AcessoMinicurso = React.lazy(() => import("./pages/AcessoMinicurso"));
 const SpotifySuccess = React.lazy(() => import("./pages/SpotifySuccess"));
+const MoreTools = React.lazy(() => import("./pages/MoreTools"));
 
 const queryClient = new QueryClient();
 
@@ -124,6 +125,7 @@ const App = () => (
                 <Route path="/fontes" element={<Sources />} />
                 <Route path="/acesso-minicurso" element={<AcessoMinicurso />} />
                 <Route path="/sucesso" element={<SpotifySuccess />} />
+                <Route path="/ferramentas" element={<MoreTools />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/admin" element={<AdminPanel />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
