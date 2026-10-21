@@ -33,7 +33,7 @@ Alterar somente a área pública. Não modificar dashboard, pedidos, autenticaç
 
 ## Etapas
 
-- [ ] Estrutura pública: navegação, ordem da home, rota Mais Ferramentas e FAQ.
-- [ ] Hierarquia visual: dourado nos CTAs e revisão de cores secundárias.
-- [ ] Fluxo público: preço antes de captura e revisão do checkout visível.
-- [ ] Revisão final: textos públicos, build e inspeção responsiva.
+- [x] Estrutura pública: navegação, ordem da home, rota Mais Ferramentas e FAQ.
+- [x] Hierarquia visual: dourado nos CTAs e revisão de cores secundárias.
+- [x] Fluxo público: preço antes de captura e revisão do checkout visível.
+- [x] Revisão final: textos públicos, build e checagem estrutural responsiva por breakpoints Tailwind.

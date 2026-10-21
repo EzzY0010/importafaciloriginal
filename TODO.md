@@ -10,6 +10,6 @@
 
 ## Conteúdo público
 
-- [ ] Manter o dourado como cor dos CTAs principais e reduzir a competição visual entre paletas.
-- [ ] Revisar referências a Yupoo e textos públicos com tradução estranha.
-- [ ] Adicionar FAQ público com respostas curtas sobre ferramentas, planos, pagamento e acesso.
+- [x] Manter o dourado como cor dos CTAs principais e reduzir a competição visual entre paletas.
+- [x] Revisar referências a Yupoo e textos públicos com tradução estranha.
+- [x] Adicionar FAQ público com respostas curtas sobre ferramentas, planos, pagamento e acesso.
