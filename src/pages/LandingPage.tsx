@@ -24,6 +24,7 @@ import homeScreenPreview from "@/assets/importafacil-home-preview.webp";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { CN_PAY_CHECKOUTS, getPlanCheckoutUrl } from "@/config/checkouts";
+import LeadCaptureInline from "@/components/LeadCaptureInline";
 
 type LandingPlan = {
   title: string;
@@ -359,6 +360,17 @@ const LandingPage = () => {
             </article>
           </div>
           <p className="mt-4 text-center text-[10px] text-hero-foreground/35">A tela inicial é a captura enviada; as prévias de fontes e calculadora permanecem ilustrativas.</p>
+        </div>
+      </section>
+
+      <section id="lead-capture" className="relative z-10 scroll-mt-24 px-5 py-20 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.24em] text-gold/80 sm:text-xs">Um passo antes de começar</p>
+          <h2 className="text-3xl font-extrabold tracking-tight text-hero-foreground sm:text-4xl">Conte um pouco sobre o seu momento.</h2>
+          <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-hero-foreground/65 sm:text-base">Com duas etapas rápidas, entendemos o que você busca e mostramos o caminho mais claro para começar.</p>
+          <div className="mt-8">
+            <LeadCaptureInline scrollToPlansId="plans-section" />
+          </div>
         </div>
       </section>
 
