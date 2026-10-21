@@ -88,7 +88,7 @@ const STEPS: Step[] = [
     id: 'nav-sources',
     tab: 'calculator',
     selector: '[data-tour="quick-access"]',
-    title: 'Fornecedores',
+    title: 'Fontes',
     text: 'Lista de lojas confiáveis e redirecionadoras para comprar e receber no Brasil.',
   },
   {

@@ -9,14 +9,14 @@ interface BottomNavProps {
 const items = [
   { key: "home", label: "Início", icon: Home, tour: "nav-home" },
   { key: "chat", label: "IA Lobo", icon: null, tour: "ai" },
-  { key: "sources", label: "Fornecedores", icon: Package, tour: "quick-access" },
+  { key: "sources", label: "Fontes", icon: Package, tour: "quick-access" },
   { key: "calculator", label: "Calculadora", icon: Calculator, tour: "calculator" },
   { key: "profile", label: "Perfil", icon: User, tour: "nav-profile" },
 ];
 
 const BottomNav = ({ active, onSelect }: BottomNavProps) => (
   <nav className="fixed bottom-0 inset-x-0 z-50 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]">
-    <div className="max-w-3xl mx-auto grid grid-cols-5">
+    <div className="mx-auto grid max-w-3xl grid-cols-5">
       {items.map(({ key, label, icon: Icon, tour }) => {
         const isActive = active === key;
         return (
@@ -25,7 +25,8 @@ const BottomNav = ({ active, onSelect }: BottomNavProps) => (
             type="button"
             data-tour={tour}
             onClick={() => onSelect(key)}
-            className={`flex flex-col items-center gap-1 py-2 px-0.5 text-[9px] sm:text-[10px] font-medium transition-colors ${
+            aria-current={isActive ? "page" : undefined}
+            className={`flex min-w-0 flex-col items-center gap-1 px-1 py-2 text-[10px] font-semibold transition-all duration-200 ${
               isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
           >

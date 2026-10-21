@@ -156,9 +156,9 @@ const Dashboard = () => {
                 </SheetTrigger>
                 <SheetContent side="right" className="w-72">
                   <SheetHeader>
-                    <SheetTitle className="flex items-center gap-2">
+                    <SheetTitle className="flex min-w-0 items-center gap-2">
                       {isAdmin ? <Crown className="w-4 h-4 text-accent" /> : <User className="w-4 h-4" />}
-                      {user.email}
+                      <span className="min-w-0 break-all text-left text-sm font-semibold leading-tight">{user.email}</span>
                     </SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 space-y-2">

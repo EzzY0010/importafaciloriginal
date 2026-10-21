@@ -99,7 +99,7 @@ const HomeView = ({ onAnalyze, onSources, onCalculator }: HomeViewProps) => {
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { icon: Calculator, title: "Calculadora", desc: "Custos, frete e margem", action: onCalculator },
-            { icon: Globe, title: "Fornecedores", desc: "Nossa base de fontes", action: onSources },
+            { icon: Globe, title: "Fontes", desc: "Nossa base de fontes", action: onSources },
             { icon: Truck, title: "Redirecionadoras", desc: "Compare e escolha", action: onSources },
           ].map(({ icon: Icon, title, desc, action }) => (
             <button

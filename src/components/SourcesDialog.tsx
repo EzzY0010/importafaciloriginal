@@ -65,7 +65,7 @@ const SourcesDialog = ({ open, onOpenChange, defaultTab = "sources" }: Props) =>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-5 pt-5 pb-3 border-b">
-          <DialogTitle className="text-base sm:text-lg">🌎 Fornecedores & Redirecionadoras</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">🌎 Fontes & Redirecionadoras</DialogTitle>
         </DialogHeader>
         <div className="px-5 pt-3 pb-2">
           <div className="relative">
