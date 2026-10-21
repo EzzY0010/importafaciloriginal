@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
-import LanguageSelector from "@/components/LanguageSelector";
 import { translateAuthError } from "@/lib/authErrors";
-import wolfLogo from "@/assets/wolf-logo-clean.png";
+import AuthShell from "@/components/auth/AuthShell";
+import PasswordField from "@/components/auth/PasswordField";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -22,11 +22,7 @@ const Signup = () => {
   const { signUp, user } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
+  useEffect(() => { if (user) navigate("/dashboard"); }, [user, navigate]);
 
   useEffect(() => {
     try {
@@ -35,150 +31,50 @@ const Signup = () => {
       const lead = JSON.parse(raw) as { fullName?: string; email?: string };
       if (lead.fullName && !name) setName(lead.fullName);
       if (lead.email && !email) setEmail(lead.email);
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (password !== confirmPassword) {
-      toast({
-        title: t('error'),
-        description: t('passwordMismatch'),
-        variant: "destructive",
-      });
+      toast({ title: t('error'), description: t('passwordMismatch'), variant: "destructive" });
       return;
     }
-
     if (password.length < 6) {
-      toast({
-        title: t('error'),
-        description: t('passwordTooShort'),
-        variant: "destructive",
-      });
+      toast({ title: t('error'), description: t('passwordTooShort'), variant: "destructive" });
       return;
     }
-
     setIsLoading(true);
-
     const { error } = await signUp(email, password, name);
-
-    if (error) {
-      toast({
-        title: t('error'),
-        description: translateAuthError(error.message),
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: t('accountCreated'),
-        description: t('welcomeToApp'),
-      });
+    if (error) toast({ title: t('error'), description: translateAuthError(error.message), variant: "destructive" });
+    else {
+      toast({ title: t('accountCreated'), description: t('welcomeToApp') });
       navigate("/dashboard");
     }
-
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 shadow-strong animate-slide-up">
-        <div className="flex justify-end mb-4">
-          <LanguageSelector />
+    <AuthShell eyebrow="Primeiro acesso" title="Crie sua conta" description="Tenha seu espaço para acompanhar ferramentas, fontes e decisões de importação com mais clareza.">
+      <form onSubmit={handleSubmit} className="space-y-4 text-foreground">
+        <div className="space-y-2">
+          <Label htmlFor="name" className="font-semibold">{t('fullName')}</Label>
+          <Input id="name" type="text" placeholder={t('yourName')} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required className="h-12 rounded-xl focus-visible:ring-gold" />
         </div>
-        
-        <div className="flex flex-col items-center mb-8">
-          <img src={wolfLogo} alt="ImportaFácil" className="w-20 h-20 rounded-2xl mb-4 shadow-medium" />
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            {t('appName')}
-          </h1>
-          <p className="text-muted-foreground mt-2">{t('createAccount')}</p>
+        <div className="space-y-2">
+          <Label htmlFor="email" className="font-semibold">{t('email')}</Label>
+          <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required className="h-12 rounded-xl focus-visible:ring-gold" />
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-foreground font-medium">
-              {t('fullName')}
-            </Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder={t('yourName')}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="h-12 transition-all focus:shadow-soft"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-foreground font-medium">
-              {t('email')}
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="h-12 transition-all focus:shadow-soft"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-foreground font-medium">
-              {t('password')}
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="h-12 transition-all focus:shadow-soft"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className="text-foreground font-medium">
-              {t('confirmPassword')}
-            </Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="h-12 transition-all focus:shadow-soft"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-12 bg-gradient-primary hover:opacity-90 transition-all shadow-soft hover:shadow-medium font-semibold text-base"
-          >
-            {isLoading ? "..." : t('createAccountBtn')}
-          </Button>
-        </form>
-
-        <p className="text-center mt-6 text-sm text-muted-foreground">
-          {t('hasAccount')}{" "}
-          <Link
-            to="/login"
-            className="text-primary hover:text-primary/80 font-semibold transition-colors"
-          >
-            {t('login')}
-          </Link>
-        </p>
-      </Card>
-    </div>
+        <PasswordField id="password" label={t('password')} value={password} onChange={setPassword} autoComplete="new-password" />
+        <PasswordField id="confirmPassword" label={t('confirmPassword')} value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
+        <p className="flex items-center gap-2 pt-1 text-xs text-muted-foreground"><CheckCircle2 className="h-3.5 w-3.5 text-gold" /> Use pelo menos 6 caracteres.</p>
+        <Button type="submit" disabled={isLoading} className="h-12 w-full rounded-xl bg-gold font-bold text-gold-foreground shadow-lg shadow-gold/15 hover:bg-gold/90">
+          {isLoading ? "Criando conta..." : t('createAccountBtn')}<ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </form>
+      <p className="mt-6 text-center text-sm text-muted-foreground">{t('hasAccount')} <Link to="/login" className="font-bold text-primary hover:text-primary/75">{t('login')}</Link></p>
+    </AuthShell>
   );
 };
 

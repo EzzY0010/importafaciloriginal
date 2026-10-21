@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowRight, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound } from "lucide-react";
 import { getSupabaseClient } from "@/lib/backend";
+import AuthShell from "@/components/auth/AuthShell";
+import PasswordField from "@/components/auth/PasswordField";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -17,63 +16,44 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (password !== confirmPassword) {
       toast({ title: "Erro", description: "As senhas não coincidem.", variant: "destructive" });
       return;
     }
-
     if (password.length < 6) {
       toast({ title: "Erro", description: "A senha deve ter no mínimo 6 caracteres.", variant: "destructive" });
       return;
     }
-
     setIsLoading(true);
-
     const client = await getSupabaseClient();
     if (!client) {
       toast({ title: "Erro", description: "Backend indisponível no momento.", variant: "destructive" });
       setIsLoading(false);
       return;
     }
-
     const { error } = await client.auth.updateUser({ password });
-
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Sucesso!", description: "Sua senha foi atualizada." });
+    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: "Senha atualizada", description: "Sua senha foi atualizada com sucesso." });
       navigate("/dashboard");
     }
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-hero">
-      <Card className="w-full max-w-md p-8 shadow-strong animate-slide-up">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mb-4 shadow-medium">
-            <KeyRound className="w-8 h-8 text-primary-foreground" strokeWidth={2.5} />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Nova Senha</h1>
-          <p className="text-muted-foreground mt-2 text-center">Digite sua nova senha abaixo.</p>
+    <AuthShell eyebrow="Recuperação de acesso" title="Crie uma nova senha" description="Escolha uma senha segura para voltar a acessar sua conta do ImportaFácil.">
+      <form onSubmit={handleSubmit} className="space-y-5 text-foreground">
+        <div className="flex items-start gap-3 rounded-2xl border border-gold/20 bg-gold/10 p-4 text-sm text-foreground/75">
+          <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
+          <p>Use pelo menos 6 caracteres e evite uma senha que você já usa em outro serviço.</p>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-foreground font-medium">Nova Senha</Label>
-            <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-12" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className="text-foreground font-medium">Confirmar Senha</Label>
-            <Input id="confirmPassword" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="h-12" />
-          </div>
-          <Button type="submit" disabled={isLoading} className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold text-base">
-            {isLoading ? "..." : "Atualizar Senha"}
-          </Button>
-        </form>
-      </Card>
-    </div>
+        <PasswordField id="password" label="Nova senha" value={password} onChange={setPassword} autoComplete="new-password" />
+        <PasswordField id="confirmPassword" label="Confirmar nova senha" value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
+        <Button type="submit" disabled={isLoading} className="h-12 w-full rounded-xl bg-gold font-bold text-gold-foreground shadow-lg shadow-gold/15 hover:bg-gold/90">
+          {isLoading ? "Atualizando..." : "Atualizar senha"}<ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </form>
+    </AuthShell>
   );
 };
 
