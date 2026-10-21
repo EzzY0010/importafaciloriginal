@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { isBackendConfigured } from "@/lib/backend";
 import AppResilience from "@/components/AppResilience";
+import { ThemeProvider } from "next-themes";
 
 const LandingPage = React.lazy(() => import("./pages/LandingPage"));
 const Login = React.lazy(() => import("./pages/Login"));
@@ -109,9 +110,10 @@ const MockAdminPanel = () => (
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <AuthProvider>
-        <TooltipProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <LanguageProvider>
+        <AuthProvider>
+          <TooltipProvider>
           <AppResilience />
           <Toaster />
           <Sonner />
@@ -133,9 +135,10 @@ const App = () => (
               </Routes>
             </Suspense>
           </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </LanguageProvider>
+          </TooltipProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

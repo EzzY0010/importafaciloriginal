@@ -106,20 +106,6 @@ const STEPS: Step[] = [
     text: 'Abre o seu menu: idioma, ajuda e sair da conta.',
   },
   {
-    id: 'bell',
-    tab: 'calculator',
-    selector: '[data-tour="bell"]',
-    title: 'Notificações',
-    text: 'O sininho avisa sobre novidades, avisos e atualizações do app.',
-  },
-  {
-    id: 'whatsapp',
-    tab: 'calculator',
-    selector: '[data-tour="whatsapp"]',
-    title: 'Comunidade no WhatsApp',
-    text: 'Entra no grupo para falar com o suporte e com outros importadores.',
-  },
-  {
     id: 'menu',
     tab: 'calculator',
     selector: '[data-tour="menu"]',
