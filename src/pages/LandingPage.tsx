@@ -33,6 +33,7 @@ type LandingPlan = {
   previousPrice?: string;
   priceNote?: string;
   badge?: string;
+  includedBenefit?: string;
   checkoutUrl: string;
   features: string[];
   featured?: boolean;
@@ -67,11 +68,12 @@ const landingPlans: LandingPlan[] = [
   },
   {
     title: "Mentoria Mensal",
-    description: "Na compra desse plano, você ganha um mês de Spotify Premium individual como brinde.",
+    description: "Acompanhamento completo para avançar com mais segurança.",
     price: "197,90",
     period: "/mês",
     checkoutUrl: getPlanCheckoutUrl("mensal"),
     features: [
+      "Spotify Premium individual por 1 mês incluso",
       "Todos os recursos da mentoria",
       "Todos os recursos do site",
       "Acesso ao grupo do WhatsApp",
@@ -79,17 +81,19 @@ const landingPlans: LandingPlan[] = [
       "Acompanhamento na Primeira Importação",
       "Suporte Prioritário em até 24h",
     ],
+    includedBenefit: "1 mês de Spotify Premium",
     icon: <Headset className="h-5 w-5" />,
   },
   {
     title: "Mentoria VIP Vitalícia",
-    description: "Na compra desse plano, você ganha o Spotify Premium anual individual como brinde.",
+    description: "Acompanhamento completo e acesso vitalício ao ecossistema.",
     price: "499,00",
     period: "à vista · pagamento único",
     previousPrice: "799,00",
     badge: "Melhor custo-benefício",
     checkoutUrl: getPlanCheckoutUrl("anual"),
     features: [
+      "Spotify Premium individual por 1 ano incluso",
       "Todos os recursos da mentoria",
       "Todos os recursos do site",
       "Acesso ao grupo do WhatsApp",
@@ -99,6 +103,7 @@ const landingPlans: LandingPlan[] = [
       "Acesso vitalício: para sempre",
     ],
     featured: true,
+    includedBenefit: "1 ano de Spotify Premium",
     icon: <Crown className="h-5 w-5" />,
   },
 ];
@@ -134,6 +139,12 @@ const LandingPlanCard = ({ plan }: { plan: LandingPlan }) => (
         <span className="text-xs text-hero-foreground/55">{plan.period}</span>
       </p>
     </div>
+    {plan.includedBenefit && (
+      <div className="mb-5 flex items-center gap-2 rounded-xl border border-gold/25 bg-gold/10 px-3 py-2.5 text-xs font-bold text-gold">
+        <Sparkles className="h-4 w-4 shrink-0" />
+        <span>Incluso: {plan.includedBenefit}</span>
+      </div>
+    )}
     <ul className="mb-6 flex-1 space-y-3">
       {plan.features.map((feature) => (
         <li key={feature} className="flex items-start gap-2.5 text-xs leading-relaxed text-hero-foreground/80">

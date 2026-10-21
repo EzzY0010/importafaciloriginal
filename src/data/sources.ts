@@ -9,7 +9,7 @@ export type SourceItem = {
 };
 
 export const SOURCES: SourceItem[] = [
-  { name: "DHgate", url: "https://www.dhgate.com", country: "China", flag: "🇨🇳", description: "Marketplace de réplicas e atacado direto de fábrica." },
+  { name: "DHgate", url: "https://www.dhgate.com", country: "China", flag: "🇨🇳", description: "Atacado internacional com fornecedores e categorias variadas para pesquisa." },
   { name: "Catálogos de fornecedores", url: "https://x.yupoo.com", country: "China", flag: "🇨🇳", description: "Catálogos visuais de fornecedores para pesquisa e comparação de produtos; valide sempre o vendedor antes de comprar." },
   { name: "Xianyu (Taobao 2)", url: "https://2.taobao.com", country: "China", flag: "🇨🇳", description: "Desapegos chineses e produtos usados premium." },
   { name: "1688", url: "https://www.1688.com", country: "China", flag: "🇨🇳", description: "Atacado direto de fábrica a preço de custo." },
