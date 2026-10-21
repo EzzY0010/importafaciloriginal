@@ -12,8 +12,6 @@ const PLAN_DAYS: Record<string, number> = {
   trimestral: 90,
   anual: 365,
 };
-const LEGACY_ACCOUNT_CUTOFF = Date.parse("2026-10-05T00:00:00Z");
-
 const ok = () => new Response("OK", { status: 200, headers: corsHeaders });
 const retry = (message: string) => {
   console.error(`[mercadopago-webhook] ${message}`);
@@ -123,19 +121,18 @@ serve(async (req) => {
     if (status !== "approved") return ok();
 
     const referenceParts = String(localPayment.external_reference || externalReference).split("_");
-    const planId = PLAN_DAYS[referenceParts[1]] ? referenceParts[1] : "mensal";
+    const planId = PLAN_DAYS[referenceParts[1]] || referenceParts[1] === "vitalicio" ? referenceParts[1] : "mensal";
     const userId = localPayment.user_id;
 
     const { data: profile, error: profileLookupError } = await adminClient
       .from("profiles")
-      .select("plan_expires_at,legacy_access,created_at")
+      .select("plan_expires_at,legacy_access")
       .eq("id", userId)
       .maybeSingle();
     if (profileLookupError) return retry(`profile lookup failed: ${profileLookupError.message}`);
     if (!profile) return retry(`profile not found for user ${userId}`);
 
-    const isLegacy = profile.legacy_access === true
-      || (!!profile.created_at && Date.parse(profile.created_at) < LEGACY_ACCOUNT_CUTOFF);
+    const isLegacy = planId === "vitalicio" || (profile.legacy_access === true && !profile.plan_expires_at);
     const currentExpiry = profile.plan_expires_at ? Date.parse(profile.plan_expires_at) : 0;
     const baseTime = Math.max(Date.now(), Number.isFinite(currentExpiry) ? currentExpiry : 0);
     const expiresAt = isLegacy
@@ -148,6 +145,7 @@ serve(async (req) => {
         has_paid: true,
         plan_type: planId,
         plan_expires_at: expiresAt,
+        legacy_access: planId === "vitalicio" ? true : profile.legacy_access,
       })
       .eq("id", userId);
     if (profileUpdateError) return retry(`profile update failed: ${profileUpdateError.message}`);

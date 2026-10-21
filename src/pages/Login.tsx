@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,16 @@ const Login = () => {
   const { t } = useLanguage();
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("checkout") === "success") {
+      toast({
+        title: "Pagamento aprovado",
+        description: "Entre ou crie sua conta. O acesso será liberado pelo webhook após a confirmação da CNPAY.",
+      });
+    }
+  }, [searchParams, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

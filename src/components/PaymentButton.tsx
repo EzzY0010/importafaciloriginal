@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, CheckCircle } from "lucide-react";
 import { getPlan, type PlanId } from "@/config/plans";
-import { getPlanCheckoutUrl } from "@/config/checkouts";
+import { getPlanCheckoutRedirectUrl } from "@/config/checkouts";
 
 interface PaymentButtonProps {
   onPaymentSuccess?: () => void;
@@ -13,7 +13,7 @@ interface PaymentButtonProps {
 
 const PaymentButton: React.FC<PaymentButtonProps> = ({ planId = "anual", compact = false }) => {
   const plan = getPlan(planId);
-  const checkoutUrl = getPlanCheckoutUrl(planId);
+  const checkoutUrl = getPlanCheckoutRedirectUrl(planId);
 
   if (compact) {
     return (

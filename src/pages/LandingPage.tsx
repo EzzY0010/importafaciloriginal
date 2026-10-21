@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, type ReactNode } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   BookOpen,
@@ -12,12 +12,9 @@ import {
   Gem,
   Globe,
   Headset,
-  Loader2,
-  MessageCircle,
   PackageSearch,
   Search,
   ShieldAlert,
-  Smartphone,
   Sparkles,
   Truck,
   WalletCards,
@@ -26,27 +23,7 @@ import wolfLogo from "@/assets/wolf-logo-clean.png";
 import homeScreenPreview from "@/assets/importafacil-home-preview.webp";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import LeadCaptureInline from "@/components/LeadCaptureInline";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { getSupabaseClient } from "@/lib/backend";
 import { CN_PAY_CHECKOUTS, getPlanCheckoutUrl } from "@/config/checkouts";
-import SpotifyPlans from "@/components/SpotifyPlans";
 
 type LandingPlan = {
   title: string;
@@ -167,7 +144,7 @@ const LandingPlanCard = ({ plan }: { plan: LandingPlan }) => (
     </ul>
     <Button
       asChild
-      className={`mt-auto h-11 w-full rounded-xl font-bold ${plan.featured ? "bg-gold text-gold-foreground hover:bg-gold/90" : "bg-hero-foreground/10 text-hero-foreground hover:bg-hero-foreground/15"}`}
+      className="mt-auto h-11 w-full rounded-xl bg-gold font-bold text-gold-foreground shadow-[0_0_18px_hsl(43_80%_55%_/_0.16)] hover:bg-gold/90"
     >
       <a href={plan.checkoutUrl} aria-label={`Escolher ${plan.title}`}>
         Quero conhecer <ArrowRight className="ml-2 h-4 w-4" />
@@ -212,7 +189,7 @@ const SourcesPreview = () => (
         {["China", "Europa", "Estados Unidos"].map((region) => <span key={region} className="rounded-full border border-white/10 bg-white/[0.035] px-2 py-1 text-[8px] text-white/55">{region}</span>)}
       </div>
       <div className="grid grid-cols-2 gap-2">
-        {["DHgate", "Yupoo", "Xianyu", "1688", "Taobao", "Vinted"].map((source, index) => (
+        {["DHgate", "Catálogos", "Xianyu", "1688", "Taobao", "Vinted"].map((source, index) => (
           <div key={source} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/[0.025] px-2.5 py-2">
             <span className="text-[9px] font-semibold text-white/75">{source}</span><span className={`h-1.5 w-1.5 rounded-full ${index % 2 === 0 ? "bg-gold" : "bg-sky-300"}`} />
           </div>
@@ -246,72 +223,6 @@ const PricingPreview = () => (
 const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
   const navigate = useNavigate();
-
-  const [virtualService, setVirtualService] = useState<"Vinted" | "Depop" | "">("");
-  const [virtualCountry, setVirtualCountry] = useState("");
-  const [virtualPayLoading, setVirtualPayLoading] = useState(false);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (user && (hasPaid || isAdmin)) {
-      navigate("/dashboard");
-    }
-  }, [user, hasPaid, isAdmin, navigate]);
-
-  const scrollToManifesto = () => {
-    document.getElementById("quem-somos")?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const scrollToPlans = () => {
-    document.getElementById("plans-section")?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const virtualCountryOptions: Record<string, string[]> = {
-    Vinted: ["Espanha", "Reino Unido", "Portugal"],
-    Depop: ["EUA"],
-  };
-
-  const VIRTUAL_NUMBER_PRICE = 12.0;
-
-  const handleVirtualNumberPayment = async () => {
-    if (!virtualService || !virtualCountry || virtualPayLoading) return;
-    setVirtualPayLoading(true);
-    try {
-      const client = await getSupabaseClient();
-      if (!client) throw new Error("Backend indisponível");
-
-      const { data: { session } } = await client.auth.getSession();
-
-      const { data, error } = await client.functions.invoke("virtual-number-payment", {
-        body: { service: virtualService, country: virtualCountry },
-        headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
-      });
-
-      if (error) throw error;
-
-      const url = data?.init_point || data?.sandbox_init_point;
-      if (!url) throw new Error("Link de pagamento indisponível");
-      window.location.href = url;
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Não foi possível iniciar o pagamento",
-        description: "Tente novamente em instantes.",
-        variant: "destructive",
-      });
-      setVirtualPayLoading(false);
-    }
-  };
-
-  const handleServiceChange = (value: string) => {
-    setVirtualService(value as "Vinted" | "Depop");
-    setVirtualCountry("");
-  };
-
-  const openWhatsAppGroup = () => {
-    window.open("https://chat.whatsapp.com/FISWT8vu8SX8RqymoUirJZ?s=cl&p=a&mlu=4&ilr=4", "_blank", "noopener,noreferrer");
-  };
-
 
   const problems = [
     { icon: <ShieldAlert className="h-5 w-5" />, title: "Medo de golpes", text: "Dificuldade para avaliar anúncios, produtos e vendedores antes de comprar." },
@@ -348,29 +259,22 @@ const LandingPage = () => {
           <p className="mx-auto max-w-2xl text-sm leading-relaxed text-hero-foreground/70 sm:text-base lg:text-lg">
             O ImportaFácil reúne inteligência de garimpo, busca internacional e cálculo de custos para ajudar você a pesquisar e planejar suas importações.
           </p>
-          <div className="mx-auto max-w-md pt-2 text-left">
-            <LeadCaptureInline scrollToPlansId="plans-section" />
+          <div className="flex flex-col items-center justify-center gap-3 pt-2 sm:flex-row">
+            <button onClick={scrollToPlans} className="inline-flex h-12 items-center justify-center rounded-xl bg-gold px-6 text-sm font-bold text-gold-foreground shadow-[0_0_25px_hsl(43_80%_55%_/_0.22)] transition-colors hover:bg-gold/90">Ver planos e preços <ArrowRight className="ml-2 h-4 w-4" /></button>
+            <button onClick={scrollToManifesto} className="inline-flex h-12 items-center justify-center rounded-xl border border-hero-foreground/15 px-6 text-sm font-semibold text-hero-foreground/75 transition-colors hover:border-gold/40 hover:text-gold">Como funciona <ChevronDown className="ml-2 h-4 w-4" /></button>
           </div>
-          <button onClick={scrollToManifesto} className="mx-auto flex items-center gap-2 pt-3 text-xs font-medium text-hero-foreground/50 transition-colors hover:text-gold" aria-label="Conheça o ImportaFácil">
-            Conheça a plataforma <ChevronDown className="h-4 w-4 animate-bounce text-gold" />
-          </button>
+          <p className="text-xs text-hero-foreground/45">Veja o valor primeiro. Seus dados só entram quando você decidir continuar.</p>
         </div>
       </section>
 
-      <nav id="section-navigation" aria-label="Navegação da landing page" className="sticky top-0 z-30 border-y border-hero-foreground/10 bg-hero/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-3 scrollbar-thin sm:justify-center sm:px-6">
-          {[
-            ["Quem Somos", "#quem-somos"],
-            ["O Que Resolvemos", "#o-que-resolvemos"],
-            ["O Que Entregamos", "#o-que-entregamos"],
-            ["Por Dentro", "#por-dentro"],
-            ["Planos", "#plans-section"],
-            ["Spotify Premium", "#spotify-premium"],
-          ].map(([label, href]) => (
-            <a key={href} href={href} className="shrink-0 rounded-full border border-hero-foreground/10 bg-hero-foreground/[0.035] px-4 py-2 text-xs font-semibold text-hero-foreground/70 transition-all hover:border-gold/40 hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
-              {label}
-            </a>
-          ))}
+      <nav id="section-navigation" aria-label="Navegação pública" className="sticky top-0 z-30 border-y border-hero-foreground/10 bg-hero/95 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 overflow-x-auto px-4 py-3 scrollbar-thin sm:px-6">
+          <Link to="/" className="mr-auto shrink-0 text-sm font-extrabold tracking-tight text-hero-foreground">Importa<span className="text-gold">Fácil</span></Link>
+          <a href="#o-que-entregamos" className="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-hero-foreground/65 transition-colors hover:bg-gold/10 hover:text-gold">Como funciona</a>
+          <Link to="/ferramentas" className="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-hero-foreground/65 transition-colors hover:bg-gold/10 hover:text-gold">Ferramentas</Link>
+          <a href="#plans-section" className="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-hero-foreground/65 transition-colors hover:bg-gold/10 hover:text-gold">Planos</a>
+          <a href="#faq" className="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-hero-foreground/65 transition-colors hover:bg-gold/10 hover:text-gold">FAQ</a>
+          <Link to="/login" className="shrink-0 rounded-xl bg-gold px-4 py-2 text-xs font-bold text-gold-foreground transition-colors hover:bg-gold/90">Entrar</Link>
         </div>
       </nav>
 
@@ -395,7 +299,7 @@ const LandingPage = () => {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {problems.map((problem) => (
               <article key={problem.title} className="rounded-2xl border border-hero-foreground/10 bg-hero-foreground/[0.035] p-4 transition-colors hover:border-gold/25 sm:p-5">
-                <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-red-400/10 text-red-300">{problem.icon}</span>
+                <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold">{problem.icon}</span>
                 <h3 className="mb-2 text-sm font-bold text-hero-foreground">{problem.title}</h3>
                 <p className="text-xs leading-relaxed text-hero-foreground/60">{problem.text}</p>
               </article>
@@ -429,7 +333,7 @@ const LandingPage = () => {
             </article>
             <article className="group rounded-3xl border border-hero-foreground/10 bg-hero-foreground/[0.025] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 sm:p-5">
               <SourcesPreview />
-              <div className="px-1 pb-1 pt-5"><div className="mb-2 flex items-center gap-2"><Globe className="h-4 w-4 text-gold" /><h3 className="text-sm font-bold">Bases &amp; Fontes de Garimpo</h3></div><p className="text-xs leading-relaxed text-hero-foreground/60">Acesso organizado a fontes da China, Europa e EUA, incluindo DHgate, Yupoo, Xianyu, 1688, Taobao e Vinted.</p></div>
+              <div className="px-1 pb-1 pt-5"><div className="mb-2 flex items-center gap-2"><Globe className="h-4 w-4 text-gold" /><h3 className="text-sm font-bold">Bases &amp; Fontes de Garimpo</h3></div><p className="text-xs leading-relaxed text-hero-foreground/60">Acesso organizado a fontes da China, Europa e EUA, incluindo marketplaces, catálogos de fornecedores, 1688, Taobao e Vinted.</p></div>
             </article>
             <article className="group rounded-3xl border border-hero-foreground/10 bg-hero-foreground/[0.025] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 sm:p-5">
               <PricingPreview />
@@ -446,126 +350,25 @@ const LandingPage = () => {
           <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {landingPlans.map((plan) => <LandingPlanCard key={plan.title} plan={plan} />)}
           </div>
+          <div className="mx-auto mt-8 flex max-w-2xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center text-[11px] text-hero-foreground/50">
+            <span>Pagamento processado com segurança</span><span>•</span><span>Pix e checkout online</span><span>•</span><span>Liberação após confirmação</span>
+          </div>
           <p className="mx-auto mt-6 max-w-3xl text-center text-[10px] leading-relaxed text-hero-foreground/40">
             As opções e os valores exibidos nesta página são informativos. Os links de checkout continuam apontando para a configuração atual da plataforma.
           </p>
         </div>
       </section>
 
-      <SpotifyPlans />
-
-      {/* ── 7. Números Virtuais SMS & Grupo VIP ── */}
-      <section className="flex flex-col items-center justify-center px-4 sm:px-6 py-12 snap-start relative z-10">
-        <div className="max-w-3xl mx-auto w-full space-y-8">
-          <div className="text-center">
-            <p className="text-xs sm:text-sm uppercase tracking-widest text-gold/80 font-semibold mb-2">Mais Ferramentas</p>
-            <h2 className="text-2xl sm:text-3xl font-bold">
-              Números Virtuais & <span className="text-gold">Comunidade VIP</span>
-            </h2>
-            <p className="text-sm sm:text-base text-hero-foreground/70 mt-2 max-w-2xl mx-auto">
-              Tudo que você precisa para validar contas internacionais e trocar experiência com outros importadores.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Virtual Number Card */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-hero-foreground/5 border border-hero-foreground/15 hover:border-gold/40 transition-all flex flex-col">
-              <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold mb-4">
-                <Smartphone className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-hero-foreground mb-2">Números Virtuais SMS</h3>
-              <p className="text-sm text-hero-foreground/75 leading-relaxed mb-5 flex-1">
-                Gere números virtuais para verificar contas na Vinted, Depop e outras plataformas do exterior sem expor seu número pessoal.
-              </p>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="w-full bg-gold text-gold-foreground hover:bg-gold/90 font-bold h-auto py-3 rounded-xl">
-                    Gerar Número Virtual
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-hero border-hero-foreground/15 text-hero-foreground sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="text-hero-foreground">Solicitar Número Virtual</DialogTitle>
-                    <DialogDescription className="text-hero-foreground/60">
-                      Escolha o serviço e o país, pague e receba o número direto no WhatsApp.
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <div className="space-y-4 py-2">
-                    <div className="space-y-2">
-                      <Label className="text-hero-foreground">Serviço</Label>
-                      <Select value={virtualService} onValueChange={handleServiceChange}>
-                        <SelectTrigger className="bg-hero-foreground/5 border-hero-foreground/15 text-hero-foreground">
-                          <SelectValue placeholder="Selecione o serviço" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-hero border-hero-foreground/15 text-hero-foreground">
-                          <SelectItem value="Vinted">Vinted</SelectItem>
-                          <SelectItem value="Depop">Depop</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-hero-foreground">País</Label>
-                      <Select value={virtualCountry} onValueChange={setVirtualCountry} disabled={!virtualService}>
-                        <SelectTrigger className="bg-hero-foreground/5 border-hero-foreground/15 text-hero-foreground">
-                          <SelectValue placeholder={virtualService ? "Selecione o país" : "Escolha um serviço primeiro"} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-hero border-hero-foreground/15 text-hero-foreground">
-                          {virtualService &&
-                            virtualCountryOptions[virtualService].map((country) => (
-                              <SelectItem key={country} value={country}>
-                                {country}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl bg-hero-foreground/5 border border-hero-foreground/10 p-4 text-center">
-                    <p className="text-xs text-hero-foreground/60 mb-1">Valor único por número</p>
-                    <p className="text-3xl font-extrabold text-gold">
-                      R$ {VIRTUAL_NUMBER_PRICE.toFixed(2).replace(".", ",")}
-                    </p>
-                  </div>
-
-                  <Button
-                    onClick={handleVirtualNumberPayment}
-                    disabled={!virtualService || !virtualCountry || virtualPayLoading}
-                    className="w-full bg-green-600 text-white hover:bg-green-700 font-bold py-3 h-auto rounded-xl shadow-lg"
-                  >
-                    {virtualPayLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      `Pagar R$ ${VIRTUAL_NUMBER_PRICE.toFixed(2).replace(".", ",")} e Gerar Número`
-                    )}
-                  </Button>
-
-                  <p className="text-[11px] text-center text-hero-foreground/50">
-                    Pagamento seguro via Mercado Pago. Após a confirmação, você cai direto no nosso WhatsApp com o pedido pronto.
-                  </p>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {/* Free WhatsApp Group Card */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-green-950/30 border border-green-500/30 hover:border-green-500/50 transition-all flex flex-col">
-              <div className="w-12 h-12 rounded-xl bg-green-500/15 flex items-center justify-center text-green-400 mb-4">
-                <MessageCircle className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-hero-foreground mb-2">Grupo Gratuito VIP</h3>
-              <p className="text-sm text-hero-foreground/75 leading-relaxed mb-5 flex-1">
-                Entre no nosso grupo exclusivo do WhatsApp para receber dicas, novidades e fazer networking com a comunidade de importadores.
-              </p>
-              <Button
-                onClick={openWhatsAppGroup}
-                className="w-full bg-green-600 text-white hover:bg-green-700 font-bold h-auto py-3 rounded-xl shadow-[0_0_20px_hsl(142_76%_36%_/_0.3)] hover:shadow-[0_0_30px_hsl(142_76%_36%_/_0.45)] transition-all"
-              >
-                💬 Entrar no Grupo Gratuito VIP
-              </Button>
-            </div>
+      <section id="faq" className="relative z-10 scroll-mt-24 border-t border-hero-foreground/5 bg-hero-foreground/[0.018] px-5 py-20 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-4xl">
+          <SectionHeading eyebrow="Dúvidas rápidas" title="Tudo claro antes de" accent="começar." description="As respostas essenciais para conhecer a plataforma sem complicação." />
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              ["O que encontro na plataforma?", "Ferramentas para analisar produtos, pesquisar fontes internacionais e estimar custos e margem."],
+              ["Preciso preencher meus dados para ver os preços?", "Não. Os planos e preços aparecem antes. Seus dados só são solicitados quando você decidir continuar para o checkout."],
+              ["Como o acesso é liberado?", "Depois da confirmação do pagamento, o acesso é associado à sua conta e você entra pela página de login."],
+              ["Posso começar por um plano menor?", "Sim. Você pode começar pelo acesso ao site ou pelo minicurso e evoluir quando fizer sentido."],
+            ].map(([question, answer]) => <article key={question} className="rounded-2xl border border-hero-foreground/10 bg-hero-foreground/[0.035] p-5"><h3 className="text-sm font-bold text-hero-foreground">{question}</h3><p className="mt-2 text-sm leading-relaxed text-hero-foreground/60">{answer}</p></article>)}
           </div>
         </div>
       </section>
