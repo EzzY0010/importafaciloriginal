@@ -224,6 +224,13 @@ const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const scrollToPlans = () => scrollToSection("plans-section");
+  const scrollToManifesto = () => scrollToSection("quem-somos");
+
   const problems = [
     { icon: <ShieldAlert className="h-5 w-5" />, title: "Medo de golpes", text: "Dificuldade para avaliar anúncios, produtos e vendedores antes de comprar." },
     { icon: <PackageSearch className="h-5 w-5" />, title: "Fornecedores ruins", text: "Muitas fontes espalhadas e pouco contexto para encontrar boas oportunidades." },
