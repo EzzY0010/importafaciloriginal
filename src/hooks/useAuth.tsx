@@ -20,7 +20,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const LEGACY_ACCOUNT_CUTOFF = Date.parse('2026-10-05T00:00:00Z');
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -51,42 +50,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq('id', userId)
       .maybeSingle();
 
-    // Compatibilidade emergencial: bancos que ainda não receberam a migration
-    // não possuem legacy_access. Nesse caso, lemos o schema antigo e tratamos
-    // contas pagas sem vencimento como legadas, sem alterar o banco.
     if (error) {
-      const { data: legacyData } = await client
-        .from('profiles')
-        .select('has_paid, has_minicourse, plan_expires_at, created_at')
-        .eq('id', userId)
-        .maybeSingle();
-
-      const paid = legacyData?.has_paid ?? false;
-      const expiresAt = legacyData?.plan_expires_at ?? null;
-      const wasCreatedBeforeNewPlans = !!legacyData?.created_at
-        && Date.parse(legacyData.created_at) < LEGACY_ACCOUNT_CUTOFF;
-      setHasPaid(paid);
-      setHasMinicourse(legacyData?.has_minicourse ?? false);
-      setLegacyAccess(paid && (wasCreatedBeforeNewPlans || !expiresAt));
-      setPlanExpiresAt(expiresAt);
+      // Sem os campos de assinatura não é seguro conceder acesso pago.
+      console.error('[auth] falha ao consultar status do plano:', error);
+      setHasPaid(false);
+      setHasMinicourse(false);
+      setLegacyAccess(false);
+      setPlanExpiresAt(null);
       setNowTick(Date.now());
       return;
     }
 
     setHasPaid(data?.has_paid ?? false);
     setHasMinicourse(data?.has_minicourse ?? false);
-    // Contas antigas sem vencimento continuam permanentes mesmo antes de
-    // serem marcadas explicitamente pela migration.
-    const wasCreatedBeforeNewPlans = !!data?.created_at
-      && Date.parse(data.created_at) < LEGACY_ACCOUNT_CUTOFF;
-    setLegacyAccess(data?.legacy_access === true || (
-      data?.has_paid === true && (wasCreatedBeforeNewPlans || !data?.plan_expires_at)
-    ));
+    // Um prazo de expiração sempre prevalece sobre a marca de legado.
+    setLegacyAccess(data?.legacy_access === true && !data?.plan_expires_at);
     setPlanExpiresAt(data?.plan_expires_at ?? null);
     setNowTick(Date.now());
   };
 
   const refreshPaymentStatus = async () => {
+    setNowTick(Date.now());
     const client = await getSupabaseClient();
     if (user && client) {
       await checkPaymentStatus(user.id, client);
@@ -104,6 +88,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(null);
           setIsAdmin(false);
           setHasPaid(false);
+          setHasMinicourse(false);
+          setLegacyAccess(false);
+          setPlanExpiresAt(null);
           setLoading(false);
         }
         return;
@@ -131,6 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             setIsAdmin(false);
             setHasPaid(false);
+            setHasMinicourse(false);
+            setLegacyAccess(false);
+            setPlanExpiresAt(null);
           }
         });
 
@@ -171,17 +161,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     const tick = () => { refreshPaymentStatus(); };
     const id = window.setInterval(tick, 60_000);
+    const expiresAt = planExpiresAt ? Date.parse(planExpiresAt) : NaN;
+    const expiryTimer = Number.isFinite(expiresAt)
+      ? window.setTimeout(() => setNowTick(Date.now()), Math.max(0, expiresAt - Date.now()))
+      : undefined;
     window.addEventListener('subscription-expired', tick);
-    return () => { window.clearInterval(id); window.removeEventListener('subscription-expired', tick); };
+    return () => {
+      window.clearInterval(id);
+      if (expiryTimer !== undefined) window.clearTimeout(expiryTimer);
+      window.removeEventListener('subscription-expired', tick);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, planExpiresAt]);
 
-  // Contas legadas permanecem ativas para sempre; compras novas respeitam a validade do plano.
-  // A data de criação, sozinha, não concede acesso: o perfil precisa ter sido
-  // marcado como legado pela migration e também ter uma compra histórica.
+  // O acesso legado é vitalício somente sem data de vencimento.
   const hasAccess =
-    legacyAccess
-    || (hasPaid && !!planExpiresAt && new Date(planExpiresAt).getTime() > nowTick);
+    hasPaid && (
+      legacyAccess
+      || (!!planExpiresAt && new Date(planExpiresAt).getTime() > nowTick)
+    );
 
   const signIn = async (email: string, password: string) => {
     const client = await getSupabaseClient();
