@@ -45,8 +45,9 @@ const landingPlans: LandingPlan[] = [
   {
     title: "Minicurso PDF + Desafios",
     description: "Um passo a passo prático para dominar o garimpo de peças na Vinted.",
-    price: "14,99",
+    price: "9,90",
     period: "pagamento único",
+    previousPrice: "14,90",
     checkoutUrl: CN_PAY_CHECKOUTS.minicurso,
     features: ["7 PDFs com conteúdo prático", "Desafios para aplicar o que aprendeu", "Foco específico em garimpo na Vinted"],
     icon: <BookOpen className="h-5 w-5" />,
@@ -54,8 +55,9 @@ const landingPlans: LandingPlan[] = [
   {
     title: "Acesso ao Site",
     description: "As principais ferramentas para garimpar e analisar oportunidades.",
-    price: "34,99",
+    price: "19,90",
     period: "/mês",
+    previousPrice: "34,90",
     checkoutUrl: getPlanCheckoutUrl("autonomo"),
     features: [
       "IA Especialista em Importação",
