@@ -2,7 +2,6 @@ import { useEffect, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
-  BookOpen,
   Brain,
   Calculator,
   Check,
@@ -11,7 +10,6 @@ import {
   Crown,
   Gem,
   Globe,
-  Headset,
   PackageSearch,
   Search,
   ShieldAlert,
@@ -23,7 +21,7 @@ import wolfLogo from "@/assets/wolf-logo-clean.png";
 import homeScreenPreview from "@/assets/importafacil-home-preview.webp";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { CN_PAY_CHECKOUTS, getPlanCheckoutUrl } from "@/config/checkouts";
+import { getPlanCheckoutUrl } from "@/config/checkouts";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
 
 type LandingPlan = {
@@ -43,16 +41,6 @@ type LandingPlan = {
 
 const landingPlans: LandingPlan[] = [
   {
-    title: "Minicurso PDF + Desafios",
-    description: "Um passo a passo prático para dominar o garimpo de peças na Vinted.",
-    price: "9,90",
-    period: "pagamento único",
-    previousPrice: "14,90",
-    checkoutUrl: CN_PAY_CHECKOUTS.minicurso,
-    features: ["7 PDFs com conteúdo prático", "Desafios para aplicar o que aprendeu", "Foco específico em garimpo na Vinted"],
-    icon: <BookOpen className="h-5 w-5" />,
-  },
-  {
     title: "Acesso ao Site",
     description: "As principais ferramentas para garimpar e analisar oportunidades.",
     price: "19,90",
@@ -68,24 +56,6 @@ const landingPlans: LandingPlan[] = [
       "Suporte para dúvidas da plataforma em até 48h",
     ],
     icon: <Globe className="h-5 w-5" />,
-  },
-  {
-    title: "Mentoria Mensal",
-    description: "Acompanhamento completo para avançar com mais segurança.",
-    price: "197,90",
-    period: "/mês",
-    checkoutUrl: getPlanCheckoutUrl("mensal"),
-    features: [
-      "Spotify Premium individual por 1 mês incluso",
-      "Todos os recursos da mentoria",
-      "Todos os recursos do site",
-      "Acesso ao grupo do WhatsApp",
-      "Mais de 15 Fontes de Garimpo",
-      "Acompanhamento na Primeira Importação",
-      "Suporte Prioritário em até 24h",
-    ],
-    includedBenefit: "1 mês de Spotify Premium",
-    icon: <Headset className="h-5 w-5" />,
   },
   {
     title: "Mentoria VIP Vitalícia",
