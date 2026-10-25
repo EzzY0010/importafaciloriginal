@@ -21,11 +21,12 @@ import RenewalBanner from "@/components/RenewalBanner";
 import HomeView from "@/components/dashboard/HomeView";
 import BottomNav from "@/components/dashboard/BottomNav";
 import MinicursoGate from "@/components/MinicursoGate";
+import BeginnersGate from "@/components/BeginnersGate";
 import { PLANS, getDiscountPercent, type PlanId } from "@/config/plans";
 import { useTheme } from "next-themes";
 
 const Dashboard = () => {
-  const { user, isAdmin, hasAccess: subscriptionActive, hasMinicourse, signOut, loading, refreshPaymentStatus } = useAuth();
+  const { user, isAdmin, hasAccess: subscriptionActive, hasMinicourse, legacyAccess, planType, signOut, loading, refreshPaymentStatus } = useAuth();
   const { t } = useLanguage();
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
@@ -112,6 +113,7 @@ const Dashboard = () => {
   if (!user) return null;
 
   const hasAccess = subscriptionActive || isAdmin;
+  const isBeginners = hasAccess && !isAdmin && !legacyAccess && planType === "beginners";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -189,23 +191,32 @@ const Dashboard = () => {
         <div className="max-w-5xl mx-auto">
           {hasAccess ? (
             <>
-            <RenewalBanner onRenew={() => navigate('/dashboard?plan=anual')} />
-            <SourcesDialog open={sourcesOpen} onOpenChange={setSourcesOpen} />
-            {activeTab === 'home' && (
-              <HomeView
-                onAnalyze={() => setActiveTab('chat')}
-                onSources={() => setSourcesOpen(true)}
-                onCalculator={() => setActiveTab('calculator')}
-              />
-            )}
-            {activeTab === 'chat' && (
-              <div className="animate-fade-in"><WolfChat /></div>
-            )}
-            {activeTab === 'calculator' && (
-              <div className="flex flex-col items-center gap-6 animate-fade-in">
-                <CurrencyConverter />
-                <AdvancedPricingCalculator />
-              </div>
+            {isBeginners ? (
+              activeTab === 'calculator' ? (
+                <div className="flex flex-col items-center gap-6 animate-fade-in">
+                  <CurrencyConverter />
+                  <AdvancedPricingCalculator />
+                </div>
+              ) : <BeginnersGate />
+            ) : (
+              <>
+                <RenewalBanner onRenew={() => navigate('/dashboard?plan=anual')} />
+                <SourcesDialog open={sourcesOpen} onOpenChange={setSourcesOpen} />
+                {activeTab === 'home' && (
+                  <HomeView
+                    onAnalyze={() => setActiveTab('chat')}
+                    onSources={() => setSourcesOpen(true)}
+                    onCalculator={() => setActiveTab('calculator')}
+                  />
+                )}
+                {activeTab === 'chat' && <div className="animate-fade-in"><WolfChat /></div>}
+                {activeTab === 'calculator' && (
+                  <div className="flex flex-col items-center gap-6 animate-fade-in">
+                    <CurrencyConverter />
+                    <AdvancedPricingCalculator />
+                  </div>
+                )}
+              </>
             )}
             </>
           ) : hasMinicourse ? (
@@ -260,7 +271,7 @@ const Dashboard = () => {
         </div>
       </main>
 
-      {hasAccess && <BottomNav active={activeTab} onSelect={handleTabChange} />}
+      {hasAccess && <BottomNav active={activeTab} onSelect={handleTabChange} limited={isBeginners} />}
     </div>
   );
 };

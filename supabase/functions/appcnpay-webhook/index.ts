@@ -5,6 +5,7 @@ const DAYS: Record<string, number> = {
   trimestral: 90,
   anual: 365,
   autonomo: 30,
+  beginners: 30,
 };
 
 const PAID_WORDS = ["COMPLETED", "PAID", "APPROVED", "CONFIRMED", "SUCCEEDED", "SUCCESS", "SETTLED"];
@@ -18,6 +19,8 @@ const OFFER_TO_PLAN: Record<string, string> = {
   "2J657HL": "trimestral",
   "1DUNPV5": "anual",
   QN950TS: "autonomo",
+  // Oferta exclusiva do novo plano Beginners; não reutiliza 038EXW7.
+  "7UTYRCM": "beginners",
 };
 const AMOUNT_TO_PLAN: Record<string, string> = {
   "14.99": "minicurso",

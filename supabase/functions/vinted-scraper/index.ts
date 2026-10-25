@@ -212,7 +212,7 @@ serve(async (req) => {
       const { data: u } = jwt ? await sb.auth.getUser(jwt) : { data: { user: null } } as any;
       if (!u?.user) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       const [{ data: active }, { data: isAdmin }] = await Promise.all([
-        sb.rpc('has_active_access', { _user_id: u.user.id }),
+        sb.rpc('has_full_access', { _user_id: u.user.id }),
         sb.rpc('has_role', { _user_id: u.user.id, _role: 'admin' }),
       ]);
       if (!active && !isAdmin) return new Response(JSON.stringify({ error: 'subscription_expired' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

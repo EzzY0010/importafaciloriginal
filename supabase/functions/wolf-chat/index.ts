@@ -197,7 +197,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     const [{ data: active }, { data: isAdmin }] = await Promise.all([
-      supabase.rpc('has_active_access', { _user_id: authUser.id }),
+      supabase.rpc('has_full_access', { _user_id: authUser.id }),
       supabase.rpc('has_role', { _user_id: authUser.id, _role: 'admin' }),
     ]);
     if (!active && !isAdmin) {

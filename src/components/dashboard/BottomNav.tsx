@@ -4,6 +4,7 @@ import wolfLogo from "@/assets/wolf-logo-clean.png";
 interface BottomNavProps {
   active: string;
   onSelect: (key: string) => void;
+  limited?: boolean;
 }
 
 const items = [
@@ -14,10 +15,10 @@ const items = [
   { key: "profile", label: "Perfil", icon: User, tour: "nav-profile" },
 ];
 
-const BottomNav = ({ active, onSelect }: BottomNavProps) => (
+const BottomNav = ({ active, onSelect, limited = false }: BottomNavProps) => (
   <nav className="fixed bottom-0 inset-x-0 z-50 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]">
-    <div className="mx-auto grid max-w-3xl grid-cols-5">
-      {items.map(({ key, label, icon: Icon, tour }) => {
+    <div className={`mx-auto grid max-w-3xl ${limited ? "grid-cols-2" : "grid-cols-5"}`}>
+      {(limited ? items.filter(({ key }) => key === "calculator" || key === "profile") : items).map(({ key, label, icon: Icon, tour }) => {
         const isActive = active === key;
         return (
           <button

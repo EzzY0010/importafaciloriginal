@@ -22,7 +22,7 @@ import wolfLogo from "@/assets/wolf-logo-clean.png";
 import homeScreenPreview from "@/assets/importafacil-home-preview.webp";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { getPlanCheckoutUrl } from "@/config/checkouts";
+import { BEGINNERS_CHECKOUT_URL, getPlanCheckoutUrl } from "@/config/checkouts";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
 
 type LandingPlan = {
@@ -44,28 +44,19 @@ type LandingPlan = {
 
 const landingPlans: LandingPlan[] = [
   {
-    title: "Acesso ao Site",
-    description: "As principais ferramentas para garimpar e analisar oportunidades.",
-    price: "35,00",
+    title: "Importafacil Beginners",
+    description: "Calculadora Pro e grupo exclusivo com explicações passo a passo.",
+    price: "37,00",
     period: "/mês",
     features: [
-      "IA Especialista em Importação",
-      "Busca Global Copia e Cola",
       "Calculadora Pro",
-      "Fontes Principais de Garimpo",
-      "Acesso ao Grupo do WhatsApp",
-      "Suporte para dúvidas da plataforma em até 48h",
-      "Aulas de como vender e comprar na Vinted",
-      "Guia de uso da Redirect Europa",
-      "Grupo de Ofertas do Mercado Livre",
-      "Dicas de compras em outlets físicos (ex.: Só Marcas Outlet, Guarulhos)",
-      "Grupo de Networking exclusivo deste plano",
+      "Grupo exclusivo com explicações passo a passo de como funciona",
     ],
-    checkoutUrl: getPlanCheckoutUrl("autonomo"),
+    checkoutUrl: BEGINNERS_CHECKOUT_URL,
     icon: <Globe className="h-5 w-5" />,
   },
   {
-    title: "Mentoria VIP Vitalícia",
+    title: "Importafacil Elite",
     description: "Acompanhamento completo e acesso vitalício ao ecossistema.",
     price: "497,00",
     period: "à vista · pagamento único",
@@ -109,10 +100,10 @@ const landingPlans: LandingPlan[] = [
     icon: <Crown className="h-5 w-5" />,
   },
   {
-    title: "Grupo VIP Personal Shopper & Redirecionamento",
-    description: "Acesso direto a oportunidades de compra de roupas para revenda.",
+    title: "Conexão USA",
+    description: "Grupo exclusivo para lojistas, melhores produtos no melhor preço.",
     price: "120,00",
-    period: "pagamento único",
+    period: "/mês",
     features: [
       "Promoções exclusivas de roupas selecionadas",
       "Fluxo próprio de Personal Shopper",

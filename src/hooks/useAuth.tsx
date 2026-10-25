@@ -11,6 +11,7 @@ interface AuthContextType {
   hasMinicourse: boolean;
   hasAccess: boolean;
   legacyAccess: boolean;
+  planType: string | null;
   planExpiresAt: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -28,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasPaid, setHasPaid] = useState(false);
   const [hasMinicourse, setHasMinicourse] = useState(false);
   const [legacyAccess, setLegacyAccess] = useState(false);
+  const [planType, setPlanType] = useState<string | null>(null);
   const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkPaymentStatus = async (userId: string, client: SupabaseClient<Database>) => {
     const { data, error } = await client
       .from('profiles')
-      .select('has_paid, has_minicourse, legacy_access, plan_expires_at, created_at')
+      .select('has_paid, has_minicourse, legacy_access, plan_expires_at, plan_type, created_at')
       .eq('id', userId)
       .maybeSingle();
 
@@ -56,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setHasPaid(false);
       setHasMinicourse(false);
       setLegacyAccess(false);
+      setPlanType(null);
       setPlanExpiresAt(null);
       setNowTick(Date.now());
       return;
@@ -65,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setHasMinicourse(data?.has_minicourse ?? false);
     // Um prazo de expiração sempre prevalece sobre a marca de legado.
     setLegacyAccess(data?.legacy_access === true && !data?.plan_expires_at);
+    setPlanType(data?.plan_type ?? null);
     setPlanExpiresAt(data?.plan_expires_at ?? null);
     setNowTick(Date.now());
   };
@@ -90,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setHasPaid(false);
           setHasMinicourse(false);
           setLegacyAccess(false);
+          setPlanType(null);
           setPlanExpiresAt(null);
           setLoading(false);
         }
@@ -120,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setHasPaid(false);
             setHasMinicourse(false);
             setLegacyAccess(false);
+            setPlanType(null);
             setPlanExpiresAt(null);
           }
         });
@@ -217,6 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(null);
       setIsAdmin(false);
       setHasPaid(false);
+      setPlanType(null);
       return;
     }
 
@@ -224,7 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, hasPaid, hasMinicourse, hasAccess, legacyAccess, planExpiresAt, loading, signIn, signUp, signOut, refreshPaymentStatus }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, hasPaid, hasMinicourse, hasAccess, legacyAccess, planType, planExpiresAt, loading, signIn, signUp, signOut, refreshPaymentStatus }}>
       {children}
     </AuthContext.Provider>
   );
