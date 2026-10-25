@@ -90,7 +90,7 @@ const landingPlans: LandingPlan[] = [
           "Spotify Premium individual por 1 ano incluso",
           "Acompanhamento na Primeira Importação",
           "Suporte Prioritário em até 24h",
-          "Condições especiais de upgrade para quem vem do plano de R$ 35",
+      "Condições especiais de upgrade para quem vem do plano de R$ 37",
           "Acesso vitalício: para sempre",
         ],
       },
@@ -106,7 +106,7 @@ const landingPlans: LandingPlan[] = [
     period: "/mês",
     features: [
       "Promoções exclusivas de roupas selecionadas",
-      "Fluxo próprio de Personal Shopper",
+      "Fluxo próprio de seleção e redirecionamento",
     ],
     ctaLabel: "Em breve",
     icon: <ShoppingBag className="h-5 w-5" />,
@@ -431,7 +431,7 @@ const LandingPage = () => {
               ["O que encontro na plataforma?", "Ferramentas para analisar produtos, pesquisar fontes internacionais e estimar custos e margem."],
               ["Preciso preencher meus dados para ver os preços?", "Não. Os planos e preços aparecem antes. Seus dados só são solicitados quando você decidir continuar para o checkout."],
               ["Como o acesso é liberado?", "Depois da confirmação do pagamento, o acesso é associado à sua conta e você entra pela página de login."],
-              ["Posso começar por um plano menor?", "Sim. Você pode começar pelo acesso ao site ou pelo minicurso e evoluir quando fizer sentido."],
+              ["Posso começar por um plano menor?", "Sim. Você pode começar pelo Importafacil Beginners e evoluir para o Importafacil Elite quando fizer sentido."],
             ].map(([question, answer]) => <article key={question} className="rounded-2xl border border-hero-foreground/10 bg-hero-foreground/[0.035] p-5"><h3 className="text-sm font-bold text-hero-foreground">{question}</h3><p className="mt-2 text-sm leading-relaxed text-hero-foreground/60">{answer}</p></article>)}
           </div>
         </div>
