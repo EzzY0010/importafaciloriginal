@@ -44,6 +44,7 @@ export const REDIRECTORS: SourceItem[] = [
   { name: "ViajaBox", url: "https://www.viajabox.com", country: "EUA", flag: "🇺🇸", description: "Suporte rápido via WhatsApp em português." },
   { name: "Redirect Europa", url: "https://www.redirecteuropa.com", country: "Espanha / Europa", flag: "🇪🇺", description: "Consolidação e envio direto para o Brasil." },
   { name: "CSSBuy", url: "https://www.cssbuy.com", country: "China", flag: "🇨🇳", description: "Agente de compras oficial com QC confiável." },
+  { name: "Superbuy", url: "https://m.superbuy.com/en/index", country: "China", flag: "🇨🇳", description: "Redirecionadora da China com foco em eletrônicos." },
   { name: "ForwardVia", url: "https://www.forwardvia.com", country: "Reino Unido", flag: "🇬🇧", description: "Envio rápido da Europa/UK para o Brasil." },
   { name: "Forward2Me", url: "https://my.forward2me.com/package/61/", country: "Alemanha / Reino Unido / Japão / EUA", flag: "🌍", description: "Endereços na Alemanha, Reino Unido, Japão e EUA." },
   {

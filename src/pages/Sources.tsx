@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ExternalLink, Search, Package, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { SOURCES, REDIRECTORS, type SourceItem } from "@/data/sources";
 import { useAuth } from "@/hooks/useAuth";
 import MinicursoGate from "@/components/MinicursoGate";
 import BeginnersGate from "@/components/BeginnersGate";
+import SiteAccessGate from "@/components/SiteAccessGate";
 
 const ItemCard = ({ item }: { item: SourceItem }) => (
   <Card className="p-4 flex flex-col gap-3 border border-border/60 hover:border-primary/40 hover:shadow-medium transition-all bg-card rounded-2xl">
@@ -46,13 +47,13 @@ const ItemCard = ({ item }: { item: SourceItem }) => (
 );
 
 const Sources = () => {
-  const { hasAccess, hasMinicourse, legacyAccess, planType, loading } = useAuth();
+  const { hasAccess, hasMinicourse, legacyAccess, planType, planExpiresAt, loading } = useAuth();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const tab = params.get("tab") === "logistics" ? "logistics" : "sources";
 
-  const filter = (list: SourceItem[]) => {
+  const filter = useCallback((list: SourceItem[]) => {
     const q = query.trim().toLowerCase();
     if (!q) return list;
     return list.filter(
@@ -62,13 +63,20 @@ const Sources = () => {
         i.description.toLowerCase().includes(q) ||
         i.searchTerms?.some((term) => term.toLowerCase().includes(q)),
     );
-  };
+  }, [query]);
 
-  const filteredSources = useMemo(() => filter(SOURCES), [query]);
-  const filteredRedirectors = useMemo(() => filter(REDIRECTORS), [query]);
+  const filteredSources = useMemo(() => filter(SOURCES), [filter]);
+  const filteredRedirectors = useMemo(() => filter(REDIRECTORS), [filter]);
 
+  const isBeginners = !legacyAccess && planType === "beginners";
+  const isExpiredBeginners = isBeginners && (!planExpiresAt || Date.parse(planExpiresAt) <= Date.now());
+  const isGroup = !legacyAccess && planType === "grupo";
+
+  // Acesso total (legado, Elite ou qualquer perfil liberado) permanece sem tela nova.
+  if (!loading && isBeginners) return <BeginnersGate expired={isExpiredBeginners} />;
+  if (!loading && isGroup) return <SiteAccessGate />;
   if (!loading && !hasAccess && hasMinicourse) return <MinicursoGate />;
-  if (!loading && hasAccess && !legacyAccess && planType === "beginners") return <BeginnersGate />;
+  if (!loading && !hasAccess) return <SiteAccessGate />;
 
   return (
     <div className="min-h-screen bg-background">
