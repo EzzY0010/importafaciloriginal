@@ -22,7 +22,7 @@ import wolfLogo from "@/assets/wolf-logo-clean.png";
 import homeScreenPreview from "@/assets/importafacil-home-preview.webp";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { BEGINNERS_CHECKOUT_URL, getPlanCheckoutUrl } from "@/config/checkouts";
+import { BEGINNERS_CHECKOUT_URL, CN_PAY_CHECKOUTS, getPlanCheckoutUrl } from "@/config/checkouts";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
 
 type LandingPlan = {
@@ -45,12 +45,14 @@ type LandingPlan = {
 const landingPlans: LandingPlan[] = [
   {
     title: "Importafacil Beginners",
-    description: "Calculadora Pro e grupo exclusivo com explicações passo a passo.",
+    description: "Calculadora Pro, grupo exclusivo de Networking, suporte e aprendizado direto com o mentor.",
     price: "37,00",
     period: "/mês",
     features: [
       "Calculadora Pro",
-      "Grupo exclusivo com explicações passo a passo de como funciona",
+      "Grupo exclusivo de Networking deste plano",
+      "Suporte para dúvidas",
+      "Aprendizado direto com o mentor, passo a passo no grupo",
     ],
     checkoutUrl: BEGINNERS_CHECKOUT_URL,
     icon: <Globe className="h-5 w-5" />,
@@ -101,14 +103,15 @@ const landingPlans: LandingPlan[] = [
   },
   {
     title: "Conexão USA",
-    description: "Grupo exclusivo para lojistas, melhores produtos no melhor preço.",
+    description: "Grupo exclusivo no WhatsApp para lojistas, com promoções, peças a preço exclusivo e as fontes que os lojistas usam.",
     price: "120,00",
     period: "/mês",
     features: [
-      "Promoções exclusivas de roupas selecionadas",
-      "Fluxo próprio de seleção e redirecionamento",
+      "Grupo exclusivo no WhatsApp para lojistas",
+      "Promoções e peças com preço exclusivo",
+      "Fontes que os lojistas usam",
     ],
-    ctaLabel: "Em breve",
+    checkoutUrl: CN_PAY_CHECKOUTS.mensal,
     icon: <ShoppingBag className="h-5 w-5" />,
   },
 ];

@@ -6,7 +6,12 @@ const DAYS: Record<string, number> = {
   anual: 365,
   autonomo: 30,
   beginners: 30,
+  grupo: 30,
 };
+
+// Regra aplicada somente a pagamentos aprovados após esta publicação.
+// Usuários e pagamentos anteriores permanecem intocados.
+const NEW_PLAN_RULES_START = "2026-10-25T03:07:00-03:00";
 
 const PAID_WORDS = ["COMPLETED", "PAID", "APPROVED", "CONFIRMED", "SUCCEEDED", "SUCCESS", "SETTLED"];
 const OFFER_TO_PLAN: Record<string, string> = {
@@ -15,12 +20,11 @@ const OFFER_TO_PLAN: Record<string, string> = {
   "5I0EBB2": "trimestral",
   "76GLDI7": "anual",
   TVDJKRN: "autonomo",
-  "038EXW7": "mensal",
+  "038EXW7": "grupo",
   "2J657HL": "trimestral",
   "1DUNPV5": "anual",
-  QN950TS: "autonomo",
-  // Oferta exclusiva do novo plano Beginners; não reutiliza 038EXW7.
-  "7UTYRCM": "beginners",
+  // Checkout atual do Acesso ao Site: novos compradores entram como Beginners.
+  QN950TS: "beginners",
 };
 const AMOUNT_TO_PLAN: Record<string, string> = {
   "14.99": "minicurso",
@@ -39,6 +43,49 @@ const nextPlanExpiry = (profile: { plan_expires_at?: string | null; legacy_acces
   const currentExpiry = profile?.plan_expires_at ? Date.parse(profile.plan_expires_at) : 0;
   const base = Math.max(Date.now(), Number.isFinite(currentExpiry) ? currentExpiry : 0);
   return new Date(base + (DAYS[planId] ?? DAYS.mensal) * 864e5).toISOString();
+};
+
+const readProfileAccessState = async (admin: any, userId: string, excludePaymentId?: string) => {
+  const [{ data: profile }, { data: priorPayments }] = await Promise.all([
+    admin.from("profiles").select("has_paid, plan_type, plan_expires_at, legacy_access").eq("id", userId).maybeSingle(),
+    (() => {
+      let query = admin.from("payments").select("id, created_at, plan_type").eq("user_id", userId).eq("status", "approved").order("created_at", { ascending: false }).limit(20);
+      if (excludePaymentId) query = query.neq("id", excludePaymentId);
+      return query;
+    })(),
+  ]);
+  return {
+    profile,
+    hasPriorApprovedPayment: Array.isArray(priorPayments) && priorPayments.length > 0,
+    hasPreRulesApprovedPayment: Array.isArray(priorPayments)
+      && priorPayments.some((payment: any) => Date.parse(payment.created_at) < Date.parse(NEW_PLAN_RULES_START)),
+  };
+};
+
+const updateProfileForApprovedPlan = async (admin: any, userId: string, planId: string, excludePaymentId?: string) => {
+  const { profile, hasPriorApprovedPayment, hasPreRulesApprovedPayment } = await readProfileAccessState(admin, userId, excludePaymentId);
+  const isManagedRenewal =
+    !profile?.legacy_access
+    && (planId === "beginners" || planId === "grupo")
+    && profile?.plan_type === planId
+    && !hasPreRulesApprovedPayment;
+  const hasExistingAccess = Boolean(profile?.has_paid || profile?.legacy_access || hasPriorApprovedPayment);
+
+  // Usuários atuais, ou qualquer pessoa com histórico anterior, nunca têm
+  // plan_type/plan_expires_at sobrescritos pela nova regra.
+  if (hasExistingAccess && !isManagedRenewal) {
+    console.log("[appcnpay-webhook] acesso existente preservado", { userId, planId });
+    return { changed: false, profile };
+  }
+
+  const expiresAt = nextPlanExpiry(profile, planId);
+  const { error } = await admin.from("profiles").update({
+    has_paid: planId !== "grupo",
+    plan_type: planId,
+    plan_expires_at: expiresAt,
+  }).eq("id", userId);
+  if (error) throw error;
+  return { changed: true, expiresAt };
 };
 
 const asObjects = (body: any) => {
@@ -114,6 +161,7 @@ Deno.serve(async (req) => {
     ]).map(norm).filter(Boolean);
     const isPaid = statusValues.some((status) => PAID_WORDS.some((word) => status.toUpperCase().includes(word)))
       || objects.some((object) => object?.paid === true || object?.confirmed === true || object?.isPaid === true);
+    const isRevoked = statusValues.some((status) => ["REFUND", "REFUNDED", "CHARGEBACK", "CANCEL", "CANCELLED", "CANCELED", "REVERSED"].some((word) => status.toUpperCase().includes(word)));
     const providerAmountRaw = firstValue(objects, ["amount", "value", "paidAmount", "paid_amount", "total"]);
     const providerAmount = Number(providerAmountRaw);
 
@@ -134,7 +182,7 @@ Deno.serve(async (req) => {
     });
 
     // Nunca libera uma cobrança que não foi marcada como paga pela CN Pay.
-    if (!isPaid) return new Response("OK");
+    if (!isPaid && !isRevoked) return new Response("OK");
 
     // As ofertas Spotify são resgatadas manualmente pelo WhatsApp e não concedem
     // acesso à plataforma ImportaFácil. Não as deixe cair no fallback mensal abaixo.
@@ -148,6 +196,28 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
+
+    if (isRevoked && !isPaid) {
+      let revokedPayment: any = null;
+      if (resolvedIdentifier) {
+        const { data } = await admin.from("payments").select("id, user_id, plan_type").eq("external_reference", resolvedIdentifier).maybeSingle();
+        revokedPayment = data;
+      }
+      if (!revokedPayment && transactionId) {
+        const { data } = await admin.from("payments").select("id, user_id, plan_type").eq("mercadopago_id", transactionId).maybeSingle();
+        revokedPayment = data;
+      }
+      if (revokedPayment) {
+        await admin.from("payments").update({ status: "refunded" }).eq("id", revokedPayment.id);
+        if (revokedPayment.user_id && (revokedPayment.plan_type === "beginners" || revokedPayment.plan_type === "grupo")) {
+          const { data: profile } = await admin.from("profiles").select("legacy_access, plan_type").eq("id", revokedPayment.user_id).maybeSingle();
+          if (!profile?.legacy_access && profile?.plan_type === revokedPayment.plan_type) {
+            await admin.from("profiles").update({ has_paid: false, plan_type: null, plan_expires_at: null }).eq("id", revokedPayment.user_id);
+          }
+        }
+      }
+      return new Response("OK");
+    }
 
     // ---- Minicurso ----
     let purchase: any = null;
@@ -256,7 +326,7 @@ Deno.serve(async (req) => {
       const reference = resolvedIdentifier || `cnpy_${transactionId || crypto.randomUUID()}`;
       const planFromReference = String(reference).split("_").find((part) => DAYS[part] || part === "vitalicio");
       const planId = planFromReference || OFFER_TO_PLAN[offerId] || AMOUNT_TO_PLAN[providerAmount.toFixed(2)] || "mensal";
-      const { error: claimError } = await admin.from("payments").upsert({
+      const { data: claimedPayment, error: claimError } = await admin.from("payments").upsert({
         user_id: matchedProfileId,
         customer_email: resolvedEmail,
         external_reference: reference,
@@ -265,25 +335,16 @@ Deno.serve(async (req) => {
         payment_method: "pix",
         mercadopago_id: transactionId || null,
         plan_type: planId,
-      }, { onConflict: "external_reference" });
+      }, { onConflict: "external_reference" }).select("id").maybeSingle();
       if (claimError) {
         console.error("[appcnpay-webhook] failed to store payment claim", claimError);
         return new Response("Error", { status: 500 });
       }
 
       if (matchedProfileId) {
-        const { data: currentProfile } = await admin.from("profiles")
-          .select("plan_expires_at, legacy_access")
-          .eq("id", matchedProfileId)
-          .maybeSingle();
-        const expiresAt = nextPlanExpiry(currentProfile, planId);
-        const { error: profileError } = await admin.from("profiles").update({
-          has_paid: true,
-          plan_type: planId,
-          plan_expires_at: expiresAt,
-          legacy_access: planId === "vitalicio" ? true : currentProfile?.legacy_access ?? false,
-        }).eq("id", matchedProfileId);
-        if (profileError) {
+        try {
+          await updateProfileForApprovedPlan(admin, matchedProfileId, planId, claimedPayment?.id);
+        } catch (profileError) {
           console.error("[appcnpay-webhook] claimed profile update failed", profileError);
           return new Response("Error", { status: 500 });
         }
@@ -313,18 +374,9 @@ Deno.serve(async (req) => {
         matchedProfileId = profile?.id ?? null;
       }
       if (matchedProfileId) {
-        const { data: currentProfile } = await admin.from("profiles")
-          .select("plan_expires_at, legacy_access")
-          .eq("id", matchedProfileId)
-          .maybeSingle();
-        const expiresAt = nextPlanExpiry(currentProfile, planId);
-        const { error: profileError } = await admin.from("profiles").update({
-          has_paid: true,
-          plan_type: planId,
-          plan_expires_at: expiresAt,
-          legacy_access: planId === "vitalicio" ? true : currentProfile?.legacy_access ?? false,
-        }).eq("id", matchedProfileId);
-        if (profileError) {
+        try {
+          await updateProfileForApprovedPlan(admin, matchedProfileId, planId, payment.id);
+        } catch (profileError) {
           console.error("[appcnpay-webhook] profile claim update failed", profileError);
           return new Response("Error", { status: 500 });
         }
@@ -342,19 +394,9 @@ Deno.serve(async (req) => {
       }
       return new Response("OK");
     }
-    const { data: currentProfile } = await admin.from("profiles")
-      .select("plan_expires_at, legacy_access")
-      .eq("id", payment.user_id)
-      .maybeSingle();
-    const expiresAt = nextPlanExpiry(currentProfile, planId);
-
-    const { error: profileError } = await admin.from("profiles").update({
-      has_paid: true,
-      plan_type: planId,
-      plan_expires_at: expiresAt,
-      legacy_access: planId === "vitalicio" ? true : currentProfile?.legacy_access ?? false,
-    }).eq("id", payment.user_id);
-    if (profileError) {
+    try {
+      await updateProfileForApprovedPlan(admin, payment.user_id, planId, payment.id);
+    } catch (profileError) {
       console.error("[appcnpay-webhook] profile update failed", profileError);
       return new Response("Error", { status: 500 });
     }
