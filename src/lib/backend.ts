@@ -1,8 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
-const FALLBACK_BACKEND_URL = 'https://ujwsbmjnpvzfvcjorlxl.supabase.co';
-const FALLBACK_BACKEND_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqd3NibWpucHZ6ZnZjam9ybHhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MTA3MzgsImV4cCI6MjA4MDE4NjczOH0.BgXcykHArnowryYNzn9vMIMFve0Y9XVe88D4_Jr5upE';
+const FALLBACK_BACKEND_URL = 'https://zmxktmjstvxmlsvdtvaa.supabase.co';
+const FALLBACK_BACKEND_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ6bXhrdG1qc3R2eG1sc3ZkdHZhYSIsInJlZiI6InpteGt0bWpzdHZ4bWxzdmR0dmFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDA2MTIsImV4cCI6MjA4NjA3NjYxMn0.yefw36-nT3dzcRxRh2RCj8Jo0eLdlb9glACHo4_qCPk';
 
 export const backendUrl = import.meta.env.VITE_SUPABASE_URL || FALLBACK_BACKEND_URL;
 export const backendKey =
