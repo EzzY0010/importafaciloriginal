@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -12,6 +12,7 @@ import {
   Globe,
   PackageSearch,
   Search,
+  ShoppingBag,
   ShieldAlert,
   Sparkles,
   Truck,
@@ -33,8 +34,10 @@ type LandingPlan = {
   priceNote?: string;
   badge?: string;
   includedBenefit?: string;
-  checkoutUrl: string;
+  checkoutUrl?: string;
   features: string[];
+  featureGroups?: { title: string; items: string[] }[];
+  ctaLabel?: string;
   featured?: boolean;
   icon: ReactNode;
 };
@@ -43,10 +46,8 @@ const landingPlans: LandingPlan[] = [
   {
     title: "Acesso ao Site",
     description: "As principais ferramentas para garimpar e analisar oportunidades.",
-    price: "19,90",
+    price: "35,00",
     period: "/mês",
-    previousPrice: "34,90",
-    checkoutUrl: getPlanCheckoutUrl("autonomo"),
     features: [
       "IA Especialista em Importação",
       "Busca Global Copia e Cola",
@@ -54,35 +55,79 @@ const landingPlans: LandingPlan[] = [
       "Fontes Principais de Garimpo",
       "Acesso ao Grupo do WhatsApp",
       "Suporte para dúvidas da plataforma em até 48h",
+      "Aulas de como vender e comprar na Vinted",
+      "Guia de uso da Redirect Europa",
+      "Grupo de Ofertas do Mercado Livre",
+      "Dicas de compras em outlets físicos (ex.: Só Marcas Outlet, Guarulhos)",
+      "Grupo de Networking exclusivo deste plano",
     ],
+    checkoutUrl: getPlanCheckoutUrl("autonomo"),
     icon: <Globe className="h-5 w-5" />,
   },
   {
     title: "Mentoria VIP Vitalícia",
     description: "Acompanhamento completo e acesso vitalício ao ecossistema.",
-    price: "499,00",
+    price: "497,00",
     period: "à vista · pagamento único",
-    previousPrice: "799,00",
+    previousPrice: "797,00",
     badge: "Melhor custo-benefício",
     checkoutUrl: getPlanCheckoutUrl("anual"),
-    features: [
-      "Spotify Premium individual por 1 ano incluso",
-      "Todos os recursos da mentoria",
-      "Todos os recursos do site",
-      "Acesso ao grupo do WhatsApp",
-      "Mais de 15 Fontes de Garimpo",
-      "Acompanhamento na Primeira Importação",
-      "Suporte Prioritário em até 24h",
-      "Acesso vitalício: para sempre",
+    features: [],
+    featureGroups: [
+      {
+        title: "Aulas",
+        items: [
+          "Todos os recursos da mentoria",
+          "Todos os recursos do site",
+          "Depop, Vinted, Graded e outras plataformas de revenda (avançado)",
+          "Aula de fotos profissionais de roupas",
+          "Aula de Canva para a identidade visual da loja",
+          "Treinamento de vendas, precificação e escala",
+          "Mais de 15 Fontes de Garimpo",
+        ],
+      },
+      {
+        title: "Comunidade",
+        items: [
+          "Acesso ao grupo do WhatsApp",
+          "Grupo de Networking VIP exclusivo",
+        ],
+      },
+      {
+        title: "Suporte e bônus",
+        items: [
+          "Spotify Premium individual por 1 ano incluso",
+          "Acompanhamento na Primeira Importação",
+          "Suporte Prioritário em até 24h",
+          "Condições especiais de upgrade para quem vem do plano de R$ 35",
+          "Acesso vitalício: para sempre",
+        ],
+      },
     ],
     featured: true,
     includedBenefit: "1 ano de Spotify Premium",
     icon: <Crown className="h-5 w-5" />,
   },
+  {
+    title: "Grupo VIP Personal Shopper & Redirecionamento",
+    description: "Acesso direto a oportunidades de compra de roupas para revenda.",
+    price: "120,00",
+    period: "pagamento único",
+    features: [
+      "Promoções exclusivas de roupas selecionadas",
+      "Fluxo próprio de Personal Shopper",
+    ],
+    ctaLabel: "Em breve",
+    icon: <ShoppingBag className="h-5 w-5" />,
+  },
 ];
 
-const LandingPlanCard = ({ plan }: { plan: LandingPlan }) => (
-  <article
+const LandingPlanCard = ({ plan }: { plan: LandingPlan }) => {
+  const [expanded, setExpanded] = useState(false);
+  const visibleFeatures = expanded ? plan.features : plan.features.slice(0, 6);
+  const hasMoreFeatures = plan.features.length > 6;
+
+  return (<article
     className={`relative flex h-full flex-col rounded-3xl border p-5 transition-all duration-300 hover:-translate-y-1 sm:p-6 ${
       plan.featured
         ? "border-gold/60 bg-[linear-gradient(160deg,hsl(var(--gold)/0.14),hsl(var(--hero-bg))_55%)] shadow-[0_0_42px_hsl(43_80%_55%_/_0.13)]"
@@ -118,24 +163,50 @@ const LandingPlanCard = ({ plan }: { plan: LandingPlan }) => (
         <span>Incluso: {plan.includedBenefit}</span>
       </div>
     )}
-    <ul className="mb-6 flex-1 space-y-3">
-      {plan.features.map((feature) => (
+    {plan.featureGroups ? (
+      <div className="mb-6 flex-1 space-y-4">
+        {plan.featureGroups.map((group) => (
+          <div key={group.title}>
+            <h4 className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold">{group.title}</h4>
+            <ul className="space-y-2.5">
+              {group.items.map((feature) => (
+                <li key={feature} className="flex items-start gap-2.5 text-xs leading-relaxed text-hero-foreground/80">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden="true" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <ul className="mb-2 flex-1 space-y-3">
+        {visibleFeatures.map((feature) => (
         <li key={feature} className="flex items-start gap-2.5 text-xs leading-relaxed text-hero-foreground/80">
           <Check className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden="true" />
           <span>{feature}</span>
         </li>
-      ))}
-    </ul>
-    <Button
-      asChild
-      className="mt-auto h-11 w-full rounded-xl bg-gold font-bold text-gold-foreground shadow-[0_0_18px_hsl(43_80%_55%_/_0.16)] hover:bg-gold/90"
-    >
-      <a href={plan.checkoutUrl} aria-label={`Escolher ${plan.title}`}>
-        Quero conhecer <ArrowRight className="ml-2 h-4 w-4" />
-      </a>
-    </Button>
-  </article>
-);
+        ))}
+      </ul>
+    )}
+    {hasMoreFeatures && (
+      <button type="button" onClick={() => setExpanded((value) => !value)} className="mb-4 self-start text-xs font-bold text-gold underline underline-offset-4 hover:text-gold/80">
+        {expanded ? "Ver menos" : "Ver tudo"}
+      </button>
+    )}
+    {plan.checkoutUrl ? (
+      <Button asChild className="mt-auto h-11 w-full rounded-xl bg-gold font-bold text-gold-foreground shadow-[0_0_18px_hsl(43_80%_55%_/_0.16)] hover:bg-gold/90">
+        <a href={plan.checkoutUrl} aria-label={`Escolher ${plan.title}`}>
+          {plan.ctaLabel ?? "Quero conhecer"} <ArrowRight className="ml-2 h-4 w-4" />
+        </a>
+      </Button>
+    ) : (
+      <Button disabled className="mt-auto h-11 w-full rounded-xl bg-gold/70 font-bold text-gold-foreground">
+        {plan.ctaLabel ?? "Em breve"}
+      </Button>
+    )}
+  </article>);
+};
 
 const SectionHeading = ({ eyebrow, title, accent, description }: { eyebrow: string; title: string; accent?: string; description?: string }) => (
   <div className="mx-auto mb-10 max-w-2xl text-center">
