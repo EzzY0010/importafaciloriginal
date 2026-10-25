@@ -11,15 +11,12 @@ import {
   Gem,
   Globe,
   PackageSearch,
-  Search,
   ShoppingBag,
   ShieldAlert,
   Sparkles,
-  Truck,
   WalletCards,
 } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
-import homeScreenPreview from "@/assets/importafacil-home-preview.webp";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { BEGINNERS_CHECKOUT_URL, CN_PAY_CHECKOUTS, getPlanCheckoutUrl } from "@/config/checkouts";
@@ -212,62 +209,26 @@ const SectionHeading = ({ eyebrow, title, accent, description }: { eyebrow: stri
   </div>
 );
 
-const ProductPreview = () => (
-  <div className="overflow-hidden rounded-2xl border border-hero-foreground/10 bg-[#0b1018] p-3 shadow-2xl" aria-label="Captura da tela inicial do ImportaFácil">
-    <p className="mb-2 text-center text-[9px] font-medium uppercase tracking-wider text-hero-foreground/40">Tela inicial · experiência mobile</p>
-    <div className="flex h-[340px] items-center justify-center overflow-hidden rounded-xl bg-black/40 p-2">
-      <img
-        src={homeScreenPreview}
-        alt="Tela inicial do ImportaFácil no celular, com análise de produto, fontes de garimpo e ferramentas rápidas"
-        loading="lazy"
-        className="h-full w-auto max-w-full rounded-lg object-contain"
-      />
-    </div>
-  </div>
-);
-
-const SourcesPreview = () => (
-  <div className="overflow-hidden rounded-2xl border border-hero-foreground/10 bg-[#0b1018] shadow-2xl" aria-label="Prévia visual ilustrativa das fontes globais de garimpo">
-    <div className="flex items-center gap-1.5 border-b border-white/5 bg-white/[0.025] px-3 py-2.5">
-      <span className="h-1.5 w-1.5 rounded-full bg-red-400/80" /><span className="h-1.5 w-1.5 rounded-full bg-amber-300/80" /><span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80" />
-      <span className="ml-2 truncate text-[9px] font-medium text-white/45">importafacil.app / fontes-globais</span>
-    </div>
-    <div className="space-y-3 p-3 sm:p-4">
-      <div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2 text-[10px] font-semibold text-white/85"><span className="rounded-lg bg-sky-400/10 p-1.5 text-sky-300"><Globe className="h-3.5 w-3.5" /></span> Bases &amp; Fontes de Garimpo</div><Search className="h-3.5 w-3.5 text-white/35" /></div>
-      <div className="flex flex-wrap gap-1.5">
-        {["China", "Europa", "Estados Unidos"].map((region) => <span key={region} className="rounded-full border border-white/10 bg-white/[0.035] px-2 py-1 text-[8px] text-white/55">{region}</span>)}
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {["DHgate", "Catálogos", "Xianyu", "1688", "Taobao", "Vinted"].map((source, index) => (
-          <div key={source} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/[0.025] px-2.5 py-2">
-            <span className="text-[9px] font-semibold text-white/75">{source}</span><span className={`h-1.5 w-1.5 rounded-full ${index % 2 === 0 ? "bg-gold" : "bg-sky-300"}`} />
-          </div>
-        ))}
-      </div>
-      <p className="text-[8px] text-white/40">Fontes organizadas por região para facilitar o garimpo.</p>
-    </div>
-  </div>
-);
-
-const PricingPreview = () => (
-  <div className="overflow-hidden rounded-2xl border border-hero-foreground/10 bg-[#0b1018] shadow-2xl" aria-label="Prévia visual ilustrativa da calculadora e precificação">
-    <div className="flex items-center gap-1.5 border-b border-white/5 bg-white/[0.025] px-3 py-2.5">
-      <span className="h-1.5 w-1.5 rounded-full bg-red-400/80" /><span className="h-1.5 w-1.5 rounded-full bg-amber-300/80" /><span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80" />
-      <span className="ml-2 truncate text-[9px] font-medium text-white/45">importafacil.app / calculadora-pro</span>
-    </div>
-    <div className="space-y-3 p-3 sm:p-4">
-      <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[10px] font-semibold text-white/85"><span className="rounded-lg bg-violet-400/10 p-1.5 text-violet-300"><Calculator className="h-3.5 w-3.5" /></span> Calculadora Pro</div><span className="flex items-center gap-1 rounded-full bg-emerald-400/10 px-2 py-1 text-[8px] font-semibold text-emerald-300"><WalletCards className="h-3 w-3" /> Multimoedas</span></div>
-      <div className="space-y-2 rounded-xl border border-white/7 bg-white/[0.025] p-3">
-        <div className="flex items-center justify-between text-[9px]"><span className="text-white/45">Moeda de origem</span><span className="font-semibold text-white/75">EUR → BRL</span></div>
-        <div className="h-px bg-white/5" />
-        <div className="flex items-center justify-between text-[9px]"><span className="text-white/45">Produto + frete estimado</span><span className="font-semibold text-white/75">Simulação</span></div>
-        <div className="flex items-center justify-between text-[9px]"><span className="flex items-center gap-1 text-white/45"><Truck className="h-3 w-3" /> Custos internacionais</span><span className="font-semibold text-white/75">Detalhados</span></div>
-      </div>
-      <div className="flex items-center justify-between rounded-lg border border-gold/15 bg-gold/[0.06] px-3 py-2.5"><span className="text-[9px] text-white/60">Estimativa de custo e margem</span><span className="text-[9px] font-bold text-gold">Antes de comprar</span></div>
-      <p className="text-[8px] text-white/40">Conversão de moedas e simulador para apoiar sua precificação.</p>
-    </div>
-  </div>
-);
+const ecosystemPreviews = [
+  {
+    title: "Início",
+    image: "/assets/ecossistema-inicio.webp",
+    alt: "Tela Início do ImportaFácil no celular, com análise de produtos, fornecedores e ferramentas rápidas.",
+    caption: "Analise produtos por foto e encontre fornecedores.",
+  },
+  {
+    title: "IA Lobo",
+    image: "/assets/ecossistema-ia-lobo.webp",
+    alt: "Tela IA Lobo do ImportaFácil no celular, com respostas e estratégias de importação.",
+    caption: "Tire dúvidas e descubra se vale a pena importar.",
+  },
+  {
+    title: "Calculadora",
+    image: "/assets/ecossistema-calculadora.webp",
+    alt: "Tela Calculadora do ImportaFácil no celular, com conversão de moedas, frete e precificação.",
+    caption: "Converta moedas e calcule custo, frete e margem.",
+  },
+];
 
 const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
@@ -382,21 +343,27 @@ const LandingPage = () => {
       <section id="por-dentro" className="relative z-10 scroll-mt-24 border-y border-hero-foreground/5 bg-hero-foreground/[0.018] px-5 py-20 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-6xl">
           <SectionHeading eyebrow="Por dentro do site" title="Conheça o" accent="ecossistema." description="Uma prévia visual das ferramentas que ajudam você a analisar produtos, encontrar fontes e estimar custos." />
-          <div className="grid gap-4 lg:grid-cols-3">
-            <article className="group rounded-3xl border border-hero-foreground/10 bg-hero-foreground/[0.025] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 sm:p-5">
-              <ProductPreview />
-              <div className="px-1 pb-1 pt-5"><div className="mb-2 flex items-center gap-2"><Brain className="h-4 w-4 text-gold" /><h3 className="text-sm font-bold">IA Lobo das Importações</h3></div><p className="text-xs leading-relaxed text-hero-foreground/60">Análise de produto por foto, busca de marcas e estimativa de margem para apoiar sua avaliação.</p></div>
-            </article>
-            <article className="group rounded-3xl border border-hero-foreground/10 bg-hero-foreground/[0.025] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 sm:p-5">
-              <SourcesPreview />
-              <div className="px-1 pb-1 pt-5"><div className="mb-2 flex items-center gap-2"><Globe className="h-4 w-4 text-gold" /><h3 className="text-sm font-bold">Bases &amp; Fontes de Garimpo</h3></div><p className="text-xs leading-relaxed text-hero-foreground/60">Acesso organizado a fontes da China, Europa e EUA, incluindo marketplaces, catálogos de fornecedores, 1688, Taobao e Vinted.</p></div>
-            </article>
-            <article className="group rounded-3xl border border-hero-foreground/10 bg-hero-foreground/[0.025] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 sm:p-5">
-              <PricingPreview />
-              <div className="px-1 pb-1 pt-5"><div className="mb-2 flex items-center gap-2"><Calculator className="h-4 w-4 text-gold" /><h3 className="text-sm font-bold">Calculadora &amp; Precificação</h3></div><p className="text-xs leading-relaxed text-hero-foreground/60">Conversor de moedas e simulador de frete e custos internacionais para planejar a precificação.</p></div>
-            </article>
+          <div className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0 lg:pb-0">
+            {ecosystemPreviews.map((preview) => (
+              <article key={preview.title} className="group min-w-[88%] snap-center rounded-3xl border border-hero-foreground/10 bg-hero-foreground/[0.025] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 sm:min-w-[72%] sm:p-5 lg:min-w-0">
+                <div className="flex h-[520px] items-center justify-center overflow-hidden rounded-2xl border border-hero-foreground/10 bg-[#0B1220] p-2 sm:h-[560px]">
+                  <img
+                    src={preview.image}
+                    alt={preview.alt}
+                    width={720}
+                    height={1485}
+                    loading="lazy"
+                    className="h-full w-auto max-w-full rounded-xl object-contain"
+                  />
+                </div>
+                <div className="px-1 pb-1 pt-5">
+                  <h3 className="mb-2 text-sm font-bold text-hero-foreground">{preview.title}</h3>
+                  <p className="text-xs leading-relaxed text-hero-foreground/60">{preview.caption}</p>
+                </div>
+              </article>
+            ))}
           </div>
-          <p className="mt-4 text-center text-[10px] text-hero-foreground/35">A tela inicial é a captura enviada; as prévias de fontes e calculadora permanecem ilustrativas.</p>
+          <p className="mt-4 text-center text-[10px] text-hero-foreground/35">Deslize no celular para conhecer cada tela do ecossistema.</p>
         </div>
       </section>
 
