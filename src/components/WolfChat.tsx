@@ -141,7 +141,7 @@ const renderInline = (text: string, keyPrefix: string): React.ReactNode[] => {
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) out.push(text.substring(last, m.index));
     out.push(
-      <strong key={`${keyPrefix}-b-${i++}`} className="font-bold text-foreground">
+      <strong key={`${keyPrefix}-b-${i++}`} className="font-bold text-[#111827]">
         {m[1]}
       </strong>
     );
@@ -196,7 +196,7 @@ const renderMessageContent = (content: string) => {
         href={match[2]}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-secondary underline hover:text-secondary/80 font-medium"
+        className="font-medium text-[#1D4ED8] underline decoration-[#1D4ED8]/70 underline-offset-2 hover:text-[#1E40AF]"
       >
         {match[1]}
       </a>
@@ -857,7 +857,7 @@ const WolfChat: React.FC = () => {
                   ) : msg.image_url ? (
                     <img src={msg.image_url} alt="Uploaded" className="max-w-full rounded-xl mb-3 max-h-48 object-contain" />
                   ) : null}
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed break-words" style={{ wordBreak: 'break-word' }}>
+                  <div className={`whitespace-pre-wrap text-sm leading-relaxed break-words ${msg.role === 'assistant' ? 'wolf-assistant-message' : ''}`} style={{ wordBreak: 'break-word' }}>
                     {renderMessageContent(msg.content)}
                   </div>
                 </div>

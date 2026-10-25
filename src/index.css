@@ -167,6 +167,33 @@ html {
     background: var(--gradient-background);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
+
+  /* A resposta do Lobo usa fundo claro também no modo escuro. Mantemos
+     a tipografia interna escura sem alterar bolhas do usuário ou o restante
+     do tema. */
+  .wolf-assistant-message,
+  .wolf-assistant-message strong,
+  .wolf-assistant-message b,
+  .wolf-assistant-message em,
+  .wolf-assistant-message i,
+  .wolf-assistant-message h1,
+  .wolf-assistant-message h2,
+  .wolf-assistant-message h3,
+  .wolf-assistant-message h4,
+  .wolf-assistant-message li {
+    color: #111827;
+  }
+
+  .wolf-assistant-message a {
+    color: #1d4ed8;
+    text-decoration: underline;
+    text-decoration-color: rgb(29 78 216 / 0.7);
+    text-underline-offset: 2px;
+  }
+
+  .wolf-assistant-message a:hover {
+    color: #1e40af;
+  }
   
   @keyframes fadeIn {
     from {
