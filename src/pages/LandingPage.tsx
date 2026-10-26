@@ -42,14 +42,14 @@ type LandingPlan = {
 const landingPlans: LandingPlan[] = [
   {
     title: "Importafacil Beginners",
-    description: "Aprenda somente Vinted e Grailed com o mentor, em um passo a passo individual no privado.",
+    description: "Calculadora Pro, grupo exclusivo de Networking, suporte e aprendizado direto com o mentor.",
     price: "37,00",
     period: "/mês",
     features: [
       "Calculadora Pro",
       "Grupo exclusivo de Networking deste plano",
       "Suporte para dúvidas",
-      "Aprendizado individual com o mentor, passo a passo no privado",
+      "Aprendizado somente em Vinted e Grailed, com o mentor, passo a passo individual no privado",
     ],
     checkoutUrl: BEGINNERS_CHECKOUT_URL,
     icon: <Globe className="h-5 w-5" />,
