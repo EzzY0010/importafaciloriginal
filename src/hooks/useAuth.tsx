@@ -76,13 +76,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    setHasPaid(data?.has_paid ?? false);
+    let effectiveHasPaid = data?.has_paid === true;
+    let effectivePlanType = data?.plan_type ?? null;
+
+    // Recupera clientes antigos cujo pagamento existe, mas o perfil ainda
+    // ficou marcado como Free no banco legado.
+    if (!effectiveHasPaid) {
+      const { data: approvedPayment } = await client
+        .from('payments')
+        .select('id, plan_type')
+        .eq('user_id', userId)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const paymentPlan = approvedPayment?.plan_type?.toLowerCase() ?? null;
+      const isSiteAccessPayment = !['grupo', 'conexao_usa', 'minicurso'].includes(paymentPlan ?? '');
+      if (approvedPayment && isSiteAccessPayment) {
+        effectiveHasPaid = true;
+        effectivePlanType = paymentPlan;
+      }
+    }
+
+    setHasPaid(effectiveHasPaid);
     setHasMinicourse(data?.has_minicourse ?? false);
     // Usuário pago sem vencimento é legado/acesso manual permanente.
     // Isso mantém compatibilidade com a produção antiga, que ainda não possui
     // o RPC de ativação administrativa.
-    setLegacyAccess(data?.has_paid === true && !data?.plan_expires_at);
-    setPlanType(data?.plan_type ?? null);
+    setLegacyAccess(effectiveHasPaid && !data?.plan_expires_at);
+    setPlanType(effectivePlanType);
     setPlanExpiresAt(data?.plan_expires_at ?? null);
     setNowTick(Date.now());
   };
