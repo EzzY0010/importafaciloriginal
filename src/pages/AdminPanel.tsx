@@ -83,15 +83,10 @@ const AdminPanel = () => {
     const supabase = await getSupabaseClient();
     if (!supabase) return;
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        has_paid: newStatus,
-        // Ativação manual do administrador é acesso legado vitalício.
-        legacy_access: newStatus,
-        plan_expires_at: null,
-      })
-      .eq("id", profileId);
+    const { error } = await supabase.rpc("admin_set_profile_access", {
+      _profile_id: profileId,
+      _enabled: newStatus,
+    });
 
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });

@@ -423,6 +423,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_set_profile_access: {
+        Args: { _enabled: boolean; _profile_id: string }
+        Returns: undefined
+      }
       has_active_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
