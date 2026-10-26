@@ -85,13 +85,18 @@ const AdminPanel = () => {
 
     const { error } = await supabase
       .from("profiles")
-      .update({ has_paid: newStatus })
+      .update({
+        has_paid: newStatus,
+        // Ativação manual do administrador é acesso legado vitalício.
+        legacy_access: newStatus,
+        plan_expires_at: null,
+      })
       .eq("id", profileId);
 
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: newStatus ? "Pagamento ativado" : "Pagamento removido" });
+      toast({ title: newStatus ? "Acesso ativado" : "Acesso removido" });
       setProfiles((prev) =>
         prev.map((p) => (p.id === profileId ? { ...p, has_paid: newStatus } : p))
       );

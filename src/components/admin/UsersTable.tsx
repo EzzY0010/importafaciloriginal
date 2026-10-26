@@ -199,11 +199,11 @@ const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncreme
                           variant={isBanned ? "default" : "destructive"}
                           className="h-7 text-xs gap-1"
                           onClick={() => onToggleBan(p.id, p.device_approved)}
-                        >
+                          >
                           {isBanned ? (
-                            <><ShieldCheck className="w-3 h-3" /> Liberar</>
+                            <><ShieldCheck className="w-3 h-3" /> Liberar dispositivo</>
                           ) : (
-                            <><Ban className="w-3 h-3" /> Banir</>
+                            <><Ban className="w-3 h-3" /> Bloquear dispositivo</>
                           )}
                         </Button>
                         <Button
@@ -212,7 +212,7 @@ const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncreme
                           className="h-7 text-xs"
                           onClick={() => onTogglePayment(p.id, p.has_paid)}
                         >
-                          {p.has_paid ? "Remover Pgto" : "Ativar Pgto"}
+                          {p.has_paid ? "Desativar Acesso" : "Ativar Acesso"}
                         </Button>
                         {canManageDeviceLimit && onIncrementDeviceLimit && (
                           <Button
