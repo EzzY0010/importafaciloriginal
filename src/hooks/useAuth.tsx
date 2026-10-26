@@ -46,11 +46,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const checkPaymentStatus = async (userId: string, client: SupabaseClient<Database>) => {
-    const { data, error } = await client
+    let { data, error } = await client
       .from('profiles')
       .select('has_paid, has_minicourse, legacy_access, plan_expires_at, plan_type, created_at')
       .eq('id', userId)
       .maybeSingle();
+
+    // Produções antigas podem ainda não ter as colunas adicionadas depois.
+    // Nesse caso, não transformar um usuário pago em visitante sem acesso.
+    if (error) {
+      const fallback = await client
+        .from('profiles')
+        .select('has_paid, plan_expires_at, plan_type, created_at')
+        .eq('id', userId)
+        .maybeSingle();
+      data = fallback.data as typeof data;
+      error = fallback.error;
+    }
 
     if (error) {
       // Sem os campos de assinatura não é seguro conceder acesso pago.
