@@ -356,8 +356,6 @@ Deno.serve(async (req) => {
       console.error("[appcnpay-webhook] plan amount mismatch", { expected: payment.amount, received: providerAmount });
       return new Response("Forbidden", { status: 403 });
     }
-    if (payment.status === "approved") return new Response("OK");
-
     const parts = String(payment.external_reference ?? "").split("_");
     const planFromReference = DAYS[parts[1]] || parts[1] === "vitalicio" ? parts[1] : undefined;
     const planId = OFFER_TO_PLAN[offerId]
@@ -365,6 +363,36 @@ Deno.serve(async (req) => {
       || AMOUNT_TO_PLAN[providerAmount.toFixed(2)]
       || payment.plan_type
       || "mensal";
+
+    // Um webhook repetido também deve reparar o perfil. Antes, o retorno
+    // antecipado deixava pagamentos aprovados sem acesso sincronizado.
+    if (payment.status === "approved") {
+      let approvedUserId = payment.user_id;
+      if (!approvedUserId && (resolvedEmail || payment.customer_email)) {
+        const { data: profile } = await admin.from("profiles")
+          .select("id")
+          .ilike("email", resolvedEmail || payment.customer_email)
+          .maybeSingle();
+        approvedUserId = profile?.id ?? null;
+      }
+      if (approvedUserId) {
+        try {
+          await updateProfileForApprovedPlan(admin, approvedUserId, planId, payment.id);
+          if (!payment.user_id || !payment.plan_type) {
+            await admin.from("payments").update({
+              user_id: approvedUserId,
+              customer_email: resolvedEmail || payment.customer_email,
+              plan_type: planId,
+            }).eq("id", payment.id);
+          }
+        } catch (profileError) {
+          console.error("[appcnpay-webhook] approved payment reconciliation failed", profileError);
+          return new Response("Error", { status: 500 });
+        }
+      }
+      return new Response("OK");
+    }
+
     if (!payment.user_id) {
       if (!matchedProfileId && (resolvedEmail || payment.customer_email)) {
         const { data: profile } = await admin.from("profiles")
