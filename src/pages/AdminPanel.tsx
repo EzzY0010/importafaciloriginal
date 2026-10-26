@@ -83,10 +83,20 @@ const AdminPanel = () => {
     const supabase = await getSupabaseClient();
     if (!supabase) return;
 
-    const { error } = await supabase.rpc("admin_set_profile_access", {
+    let { error } = await supabase.rpc("admin_set_profile_access", {
       _profile_id: profileId,
       _enabled: newStatus,
     });
+
+    // Compatibilidade com a produção antiga, onde o RPC ainda não existe.
+    // A própria policy de admin continua protegendo esta atualização.
+    if (error) {
+      const fallback = await supabase
+        .from("profiles")
+        .update({ has_paid: newStatus })
+        .eq("id", profileId);
+      error = fallback.error;
+    }
 
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });

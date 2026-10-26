@@ -66,8 +66,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setHasPaid(data?.has_paid ?? false);
     setHasMinicourse(data?.has_minicourse ?? false);
-    // Um prazo de expiração sempre prevalece sobre a marca de legado.
-    setLegacyAccess(data?.legacy_access === true && !data?.plan_expires_at);
+    // Usuário pago sem vencimento é legado/acesso manual permanente.
+    // Isso mantém compatibilidade com a produção antiga, que ainda não possui
+    // o RPC de ativação administrativa.
+    setLegacyAccess(data?.has_paid === true && !data?.plan_expires_at);
     setPlanType(data?.plan_type ?? null);
     setPlanExpiresAt(data?.plan_expires_at ?? null);
     setNowTick(Date.now());
