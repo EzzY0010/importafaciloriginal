@@ -3,16 +3,25 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// The production deployment previously carried an environment variable for an
+// old Supabase project. Keep the app bound to the project tracked by this repo
+// so the public landing page and the admin publisher use the same database.
+const FALLBACK_SUPABASE_URL = 'https://zmxktmjstvxmlsvdtvaa.supabase.co';
+const FALLBACK_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ6bXhrdG1qc3R2eG1sc3ZkdHZhYSIsInJlZiI6InpteGt0bWpzdHZ4bWxzdmR0dmFhIiwiaWF0IjoxNzcwNTAwNjEyLCJleHAiOjIwODYwNzY2MTJ9.yefw36-nT3dzcRxRh2RCj8Jo0eLdlb9glACHo4_qCPk';
+const configuredUrl = import.meta.env.VITE_SUPABASE_URL;
+const useConfiguredBackend = configuredUrl?.includes('zmxktmjstvxmlsvdtvaa.supabase.co');
+const SUPABASE_URL = useConfiguredBackend ? configuredUrl : FALLBACK_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = useConfiguredBackend
+  ? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  : FALLBACK_SUPABASE_KEY;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: brokeredPreviewStorage(),
-    persistSession: true,
-    autoRefreshToken: true,
-  }
+ auth: {
+ storage: brokeredPreviewStorage(),
+ persistSession: true,
+ autoRefreshToken: true,
+ }
 });
