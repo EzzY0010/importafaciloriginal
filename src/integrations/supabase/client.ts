@@ -7,7 +7,7 @@ import { brokeredPreviewStorage } from './previewAuthStorage';
 // old Supabase project. Keep the app bound to the project tracked by this repo
 // so the public landing page and the admin publisher use the same database.
 const FALLBACK_SUPABASE_URL = 'https://zmxktmjstvxmlsvdtvaa.supabase.co';
-const FALLBACK_SUPABASE_KEY = 'sb_publishable_ltaNA7nnVozoSCOcZIjg';
+const FALLBACK_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpteGt0bWpzdHZ4bWxzdmR0dmFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDA2MTIsImV4cCI6MjA4NjA3NjYxMn0.yefw36-nT3dzcRxRh2RCj8Jo0eLdlb9glACHo4_qCPk';
 const configuredUrl = import.meta.env.VITE_SUPABASE_URL;
 const useConfiguredBackend = configuredUrl?.includes('zmxktmjstvxmlsvdtvaa.supabase.co');
 const SUPABASE_URL = useConfiguredBackend ? configuredUrl : FALLBACK_SUPABASE_URL;
@@ -19,9 +19,9 @@ const SUPABASE_PUBLISHABLE_KEY = useConfiguredBackend
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
- auth: {
- storage: brokeredPreviewStorage(),
- persistSession: true,
- autoRefreshToken: true,
- }
+  auth: {
+    storage: brokeredPreviewStorage(),
+    persistSession: true,
+    autoRefreshToken: true,
+  }
 });
