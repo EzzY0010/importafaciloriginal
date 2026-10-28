@@ -76,7 +76,8 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Habilita atualizações em tempo real para visitantes com a página aberta.
+-- Habilita atualizações em tempo real para que visitantes com a página aberta
+-- recebam alterações publicadas no painel sem precisar recarregar.
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime')

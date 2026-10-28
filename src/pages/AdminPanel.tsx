@@ -15,6 +15,7 @@ import IPBlacklist from "@/components/admin/IPBlacklist";
 import LeadsTable from "@/components/admin/LeadsTable";
 import PushSetupCard from "@/components/admin/PushSetupCard";
 import MinicursoFiles from "@/components/admin/MinicursoFiles";
+import SiteContentManager from "@/components/admin/SiteContentManager";
 
 const AdminPanel = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -240,6 +241,7 @@ const AdminPanel = () => {
                 {activeSection === "overview" && "Visão Geral"}
                 {activeSection === "users" && "Usuários"}
                 {activeSection === "leads" && "Leads"}
+                {activeSection === "site" && "Gestão do Site"}
                {activeSection === "minicurso" && "Minicurso"}
                 {activeSection === "devices" && "Dispositivos"}
                 {activeSection === "blacklist" && "IPs Bloqueados"}
@@ -282,6 +284,7 @@ const AdminPanel = () => {
                 <LeadsTable />
               </>
             )}
+            {activeSection === "site" && <SiteContentManager />}
             {activeSection === "minicurso" && <MinicursoFiles />}
             {activeSection === "users" && (
               <UsersTable

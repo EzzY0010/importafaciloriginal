@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { BEGINNERS_CHECKOUT_URL, CN_PAY_CHECKOUTS, getPlanCheckoutUrl } from "@/config/checkouts";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
+import { getSupabaseClient } from "@/lib/backend";
+import { DEFAULT_SITE_SETTINGS, parseSiteSettings, type SiteSettings } from "@/lib/siteSettings";
 
 type LandingPlan = {
   title: string;
@@ -233,6 +235,37 @@ const ecosystemPreviews = [
 const LandingPage = () => {
   const { user, hasPaid, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [settings, setSettings] = useState<SiteSettings>({ ...DEFAULT_SITE_SETTINGS });
+
+  useEffect(() => {
+    let active = true;
+    let channel: { unsubscribe: () => Promise<unknown> } | null = null;
+    void (async () => {
+      const supabase = await getSupabaseClient();
+      if (!supabase || !active) return;
+      const { data } = await supabase
+        .from("site_settings")
+        .select("content")
+        .eq("id", "global")
+        .maybeSingle();
+      if (active && data) setSettings(parseSiteSettings(data.content));
+      channel = supabase
+        .channel("public-site-settings-live")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "site_settings", filter: "id=eq.global" },
+          (payload) => {
+            const content = (payload.new as { content?: unknown })?.content;
+            if (active && content) setSettings(parseSiteSettings(content));
+          },
+        )
+        .subscribe();
+    })();
+    return () => {
+      active = false;
+      if (channel) void channel.unsubscribe();
+    };
+  }, []);
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -240,6 +273,35 @@ const LandingPage = () => {
 
   const scrollToPlans = () => scrollToSection("plans-section");
   const scrollToManifesto = () => scrollToSection("quem-somos");
+  const whatsappDigits = settings.whatsapp_number.replace(/\D/g, "");
+  const publicPlans: LandingPlan[] = [
+    {
+      ...landingPlans[0],
+      title: settings.beginners_title,
+      description: settings.beginners_description,
+      price: settings.beginners_price,
+      period: settings.beginners_period,
+      previousPrice: settings.beginners_previous_price.trim() || undefined,
+      badge: settings.beginners_badge.trim() || undefined,
+    },
+    {
+      ...landingPlans[1],
+      title: settings.elite_title,
+      description: settings.elite_description,
+      price: settings.elite_price,
+      period: settings.elite_period,
+      previousPrice: settings.elite_previous_price.trim() || undefined,
+      badge: settings.elite_badge.trim() || undefined,
+      includedBenefit: settings.elite_included_benefit.trim() || undefined,
+    },
+    {
+      ...landingPlans[2],
+      title: settings.usa_title,
+      description: settings.usa_description,
+      price: settings.usa_price,
+      period: settings.usa_period,
+    },
+  ];
 
   const problems = [
     { icon: <ShieldAlert className="h-5 w-5" />, title: "Medo de golpes", text: "Dificuldade para avaliar anúncios, produtos e vendedores antes de comprar." },
@@ -262,25 +324,36 @@ const LandingPage = () => {
         <img src={wolfLogo} alt="" className="w-[60vw] sm:w-[40vw] max-w-[500px] opacity-[0.055] select-none" />
       </div>
 
+      {settings.announcement_enabled && settings.announcement_text.trim() && (
+        <div role="status" className="relative z-10 bg-gold px-4 py-2.5 text-center text-xs font-bold text-gold-foreground sm:text-sm">
+          {settings.announcement_text}
+        </div>
+      )}
+
       <section className="relative z-10 flex min-h-[86svh] flex-col items-center justify-center px-5 py-16 text-center sm:px-6 sm:py-20">
         <div className="mx-auto w-full max-w-4xl space-y-6">
           <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/[0.06] px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-gold/90 sm:text-xs">
-            <Sparkles className="h-3.5 w-3.5" /> Garimpo internacional com mais clareza
+            <Sparkles className="h-3.5 w-3.5" /> {settings.hero_eyebrow}
           </div>
           <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl lg:text-7xl">
-            Importar começa com <span className="text-gold">a oportunidade certa.</span>
+            {settings.hero_title_prefix} <span className="text-gold">{settings.hero_title_accent}</span>
             <span className="mt-3 block text-2xl font-semibold leading-tight text-hero-foreground/75 sm:text-3xl lg:text-4xl">
-              Conhecimento, ferramentas e fontes globais. Em um só lugar.
+              {settings.hero_subtitle}
             </span>
           </h1>
           <p className="mx-auto max-w-2xl text-sm leading-relaxed text-hero-foreground/70 sm:text-base lg:text-lg">
-            O ImportaFácil reúne inteligência de garimpo, busca internacional e cálculo de custos para ajudar você a pesquisar e planejar suas importações.
+            {settings.hero_description}
           </p>
           <div className="flex flex-col items-center justify-center gap-3 pt-2 sm:flex-row">
-            <button onClick={scrollToPlans} className="inline-flex h-12 items-center justify-center rounded-xl bg-gold px-6 text-sm font-bold text-gold-foreground shadow-[0_0_25px_hsl(43_80%_55%_/_0.22)] transition-colors hover:bg-gold/90">Ver planos e preços <ArrowRight className="ml-2 h-4 w-4" /></button>
-            <button onClick={scrollToManifesto} className="inline-flex h-12 items-center justify-center rounded-xl border border-hero-foreground/15 px-6 text-sm font-semibold text-hero-foreground/75 transition-colors hover:border-gold/40 hover:text-gold">Como funciona <ChevronDown className="ml-2 h-4 w-4" /></button>
+            <button onClick={scrollToPlans} className="inline-flex h-12 items-center justify-center rounded-xl bg-gold px-6 text-sm font-bold text-gold-foreground shadow-[0_0_25px_hsl(43_80%_55%_/_0.22)] transition-colors hover:bg-gold/90">{settings.hero_primary_cta} <ArrowRight className="ml-2 h-4 w-4" /></button>
+            <button onClick={scrollToManifesto} className="inline-flex h-12 items-center justify-center rounded-xl border border-hero-foreground/15 px-6 text-sm font-semibold text-hero-foreground/75 transition-colors hover:border-gold/40 hover:text-gold">{settings.hero_secondary_cta} <ChevronDown className="ml-2 h-4 w-4" /></button>
+            {whatsappDigits && (
+              <a href={`https://wa.me/${whatsappDigits}`} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center justify-center rounded-xl border border-hero-foreground/15 px-5 text-sm font-semibold text-hero-foreground/75 transition-colors hover:border-gold/40 hover:text-gold">
+                {settings.whatsapp_label}
+              </a>
+            )}
           </div>
-          <p className="text-xs text-hero-foreground/45">Veja o valor primeiro. Seus dados só entram quando você decidir continuar.</p>
+          <p className="text-xs text-hero-foreground/45">{settings.hero_microcopy}</p>
         </div>
       </section>
 
@@ -299,12 +372,12 @@ const LandingPage = () => {
         <span id="manifesto-section" className="scroll-mt-24" aria-hidden="true" />
         <div className="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-[0.8fr_1.2fr] md:gap-16">
           <div>
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.24em] text-gold/80 sm:text-xs">Quem somos</p>
-            <h2 className="text-3xl font-extrabold leading-tight sm:text-5xl">Garimpo global, <span className="text-gold">organizado para você.</span></h2>
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.24em] text-gold/80 sm:text-xs">{settings.about_eyebrow}</p>
+            <h2 className="text-3xl font-extrabold leading-tight sm:text-5xl">{settings.about_title_prefix} <span className="text-gold">{settings.about_title_accent}</span></h2>
           </div>
           <div className="space-y-4 text-sm leading-relaxed text-hero-foreground/70 sm:text-base">
-            <p><span className="font-semibold text-hero-foreground">ImportaFácil é uma plataforma centralizadora de conhecimento, ferramentas e inteligência de garimpo internacional para importadores.</span></p>
-            <p>Em vez de alternar entre guias, planilhas e dezenas de sites sem contexto, você encontra em um só ecossistema recursos para pesquisar produtos, explorar fontes globais e organizar os custos da sua operação.</p>
+            <p><span className="font-semibold text-hero-foreground">{settings.about_lead}</span></p>
+            <p>{settings.about_description}</p>
             <a href="#por-dentro" className="inline-flex items-center gap-2 pt-1 text-sm font-bold text-gold transition-colors hover:text-gold/80">Veja por dentro da plataforma <ArrowRight className="h-4 w-4" /></a>
           </div>
         </div>
@@ -382,7 +455,7 @@ const LandingPage = () => {
         <div className="mx-auto max-w-7xl">
           <SectionHeading eyebrow="Planos" title="Escolha como quer" accent="começar." description="Do primeiro passo na Vinted ao acompanhamento completo da sua importação." />
           <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {landingPlans.map((plan) => <LandingPlanCard key={plan.title} plan={plan} />)}
+            {publicPlans.map((plan) => <LandingPlanCard key={plan.title} plan={plan} />)}
           </div>
           <div className="mx-auto mt-8 flex max-w-2xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center text-[11px] text-hero-foreground/50">
             <span>Pagamento processado com segurança</span><span>•</span><span>Pix e checkout online</span><span>•</span><span>Liberação após confirmação</span>

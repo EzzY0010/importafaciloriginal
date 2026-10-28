@@ -257,7 +257,7 @@ const SiteContentManager = () => {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/30 p-4">
         <p className="text-xs text-muted-foreground">Links de checkout, layout, login e permissões não são alterados por este editor.</p>
         <Button onClick={handleSave} disabled={loading || saving} className="gap-2">
-          <Save className="h-4 w-4" /> {saving ? "Publicando…” : "Salvar e Publicar"}
+          <Save className="h-4 w-4" /> {saving ? "Publicando…" : "Salvar e Publicar"}
         </Button>
       </div>
     </div>
