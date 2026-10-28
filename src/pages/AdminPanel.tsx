@@ -115,13 +115,80 @@ const AdminPanel = () => {
     }
     const supabase = await getSupabaseClient();
     if (!supabase) return;
-    const { error } = await supabase.rpc(
-      tier === "beginners" ? "admin_set_beginners_access_by_email" : "admin_set_full_access_by_email",
+    const rpcName = tier === "beginners" ? "admin_set_beginners_access_by_email" : "admin_set_full_access_by_email";
+    const { error: rpcError } = await supabase.rpc(
+      rpcName,
       { _email: email, _enabled: enabled },
     );
-    if (error) {
-      toast({ title: `Erro no acesso ${tier === "beginners" ? "Beginners" : "Full"}`, description: error.message, variant: "destructive" });
-      return;
+    if (rpcError) {
+      const functionMissing = rpcError.code === "PGRST202" &&
+        (rpcError.message.toLowerCase().includes("schema cache") || rpcError.message.includes(rpcName));
+      if (!functionMissing) {
+        toast({ title: `Erro no acesso ${tier === "beginners" ? "Beginners" : "Full"}`, description: rpcError.message, variant: "destructive" });
+        return;
+      }
+
+      // Compatibilidade enquanto a migration RPC não foi aplicada no Supabase.
+      // A política RLS "Admins can update all profiles" continua autorizando somente admins.
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, email, has_paid, plan_type, plan_expires_at, legacy_access")
+        .eq("email", email.trim())
+        .maybeSingle();
+
+      if (profileError || !profile) {
+        toast({
+          title: `Erro no acesso ${tier === "beginners" ? "Beginners" : "Full"}`,
+          description: profileError?.message ?? "Nenhuma conta encontrada para este e-mail.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (tier === "beginners" && enabled) {
+        const hasActiveFull = profile.legacy_access === true || (
+          profile.has_paid === true &&
+          profile.plan_type !== "beginners" &&
+          profile.plan_type !== "grupo" &&
+          profile.plan_expires_at !== null &&
+          Date.parse(profile.plan_expires_at) > Date.now()
+        );
+        if (hasActiveFull) {
+          toast({ title: "Acesso não alterado", description: "Esta conta possui acesso Full ativo e não pode ser rebaixada para Beginners.", variant: "destructive" });
+          return;
+        }
+      }
+      if (tier === "beginners" && !enabled && profile.plan_type !== "beginners") {
+        toast({ title: "Acesso não alterado", description: "Esta conta não possui Beginners ativo.", variant: "destructive" });
+        return;
+      }
+      if (tier === "full" && !enabled && (profile.legacy_access !== true || !profile.plan_type)) {
+        toast({ title: "Acesso não alterado", description: "Esta conta não possui acesso Full permanente.", variant: "destructive" });
+        return;
+      }
+
+      const profileUpdate = tier === "beginners"
+        ? {
+            has_paid: enabled,
+            plan_type: enabled ? "beginners" : null,
+            plan_expires_at: enabled ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+            legacy_access: enabled ? false : profile.legacy_access,
+          }
+        : {
+            has_paid: enabled,
+            plan_type: enabled ? "vitalicio" : null,
+            plan_expires_at: null,
+            legacy_access: enabled,
+          };
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update(profileUpdate)
+        .eq("id", profile.id);
+
+      if (updateError) {
+        toast({ title: `Erro no acesso ${tier === "beginners" ? "Beginners" : "Full"}`, description: updateError.message, variant: "destructive" });
+        return;
+      }
     }
     toast({ title: `${tier === "beginners" ? "Beginners" : "Full"} ${enabled ? "ativado" : "removido"}` });
     await loadProfiles();
