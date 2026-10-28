@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Ban, ShieldCheck, Monitor, Globe, Plus, Search } from "lucide-react";
+import { Ban, ShieldCheck, Monitor, Globe, Plus, Search, Calculator, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,8 @@ export interface UserProfile {
   last_user_agent: string | null;
   created_at: string;
   max_logins?: number | null;
+  plan_type?: string | null;
+  legacy_access?: boolean | null;
 }
 
 interface UsersTableProps {
@@ -40,9 +42,11 @@ interface UsersTableProps {
   onTogglePayment: (id: string, currentPaid: boolean | null) => void;
   onIncrementDeviceLimit?: (id: string, currentLimit: number) => void;
   canManageDeviceLimit?: boolean;
+  onManageBeginnersAccess?: (email: string | null, enabled: boolean) => void;
+  onManageFullAccess?: (email: string | null, enabled: boolean) => void;
 }
 
-const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncrementDeviceLimit, canManageDeviceLimit }: UsersTableProps) => {
+const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncrementDeviceLimit, canManageDeviceLimit, onManageBeginnersAccess, onManageFullAccess }: UsersTableProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activityFilter, setActivityFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
@@ -143,6 +147,8 @@ const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncreme
             <TableBody>
               {filteredProfiles.map((p) => {
                 const isBanned = p.device_approved === false;
+                const hasBeginners = p.has_paid === true && p.plan_type === "beginners" && p.legacy_access !== true;
+                const hasFull = p.has_paid === true && (p.legacy_access === true || p.plan_type === "vitalicio");
                 return (
                   <TableRow key={p.id} className={`border-border ${isBanned ? "bg-destructive/5" : ""}`}>
                     <TableCell>
@@ -214,6 +220,30 @@ const UsersTable = ({ profiles, loading, onToggleBan, onTogglePayment, onIncreme
                         >
                           {p.has_paid ? "Desativar Acesso" : "Ativar Acesso"}
                         </Button>
+                        {onManageBeginnersAccess && (
+                          <Button
+                            size="sm"
+                            variant={hasBeginners ? "secondary" : "outline"}
+                            className="h-7 text-xs gap-1"
+                            disabled={!p.email}
+                            onClick={() => onManageBeginnersAccess(p.email, !hasBeginners)}
+                            title="Liberar somente a Calculadora Pro"
+                          >
+                            <Calculator className="w-3 h-3" /> {hasBeginners ? "Remover Beginners" : "Beginners"}
+                          </Button>
+                        )}
+                        {onManageFullAccess && (
+                          <Button
+                            size="sm"
+                            variant={hasFull ? "secondary" : "outline"}
+                            className="h-7 text-xs gap-1"
+                            disabled={!p.email}
+                            onClick={() => onManageFullAccess(p.email, !hasFull)}
+                            title="Liberar acesso completo permanente"
+                          >
+                            <Crown className="w-3 h-3" /> {hasFull ? "Remover Full" : "Full"}
+                          </Button>
+                        )}
                         {canManageDeviceLimit && onIncrementDeviceLimit && (
                           <Button
                             size="sm"

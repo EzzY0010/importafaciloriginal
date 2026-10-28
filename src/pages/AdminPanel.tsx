@@ -15,7 +15,6 @@ import IPBlacklist from "@/components/admin/IPBlacklist";
 import LeadsTable from "@/components/admin/LeadsTable";
 import PushSetupCard from "@/components/admin/PushSetupCard";
 import MinicursoFiles from "@/components/admin/MinicursoFiles";
-import BeginnersAccessPanel from "@/components/admin/BeginnersAccessPanel";
 
 const AdminPanel = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -109,6 +108,25 @@ const AdminPanel = () => {
     }
   };
 
+  const manageTierAccess = async (tier: "beginners" | "full", email: string | null, enabled: boolean) => {
+    if (!email) {
+      toast({ title: "Usuário sem e-mail", description: "Não é possível alterar o acesso desta conta.", variant: "destructive" });
+      return;
+    }
+    const supabase = await getSupabaseClient();
+    if (!supabase) return;
+    const { error } = await supabase.rpc(
+      tier === "beginners" ? "admin_set_beginners_access_by_email" : "admin_set_full_access_by_email",
+      { _email: email, _enabled: enabled },
+    );
+    if (error) {
+      toast({ title: `Erro no acesso ${tier === "beginners" ? "Beginners" : "Full"}`, description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: `${tier === "beginners" ? "Beginners" : "Full"} ${enabled ? "ativado" : "removido"}` });
+    await loadProfiles();
+  };
+
   const incrementDeviceLimit = async (profileId: string, currentLimit: number) => {
     const newLimit = (currentLimit || 1) + 1;
     const supabase = await getSupabaseClient();
@@ -159,7 +177,6 @@ const AdminPanel = () => {
                 {activeSection === "devices" && "Dispositivos"}
                 {activeSection === "blacklist" && "IPs Bloqueados"}
                 {activeSection === "security" && "Segurança"}
-                {activeSection === "beginners" && "Beginners"}
               </h1>
             </div>
             <Button variant="ghost" size="icon" onClick={loadProfiles}>
@@ -184,6 +201,8 @@ const AdminPanel = () => {
                   onTogglePayment={togglePayment}
                   onIncrementDeviceLimit={incrementDeviceLimit}
                   canManageDeviceLimit={canManageDeviceLimit}
+                  onManageBeginnersAccess={(email, enabled) => void manageTierAccess("beginners", email, enabled)}
+                  onManageFullAccess={(email, enabled) => void manageTierAccess("full", email, enabled)}
                 />
                 <PushSetupCard />
                 <LeadsTable />
@@ -197,8 +216,6 @@ const AdminPanel = () => {
               </>
             )}
             {activeSection === "minicurso" && <MinicursoFiles />}
-            {activeSection === "beginners" && <BeginnersAccessPanel onChanged={loadProfiles} />}
-
             {activeSection === "users" && (
               <UsersTable
                 profiles={profiles}
@@ -207,6 +224,8 @@ const AdminPanel = () => {
                 onTogglePayment={togglePayment}
                 onIncrementDeviceLimit={incrementDeviceLimit}
                 canManageDeviceLimit={canManageDeviceLimit}
+                onManageBeginnersAccess={(email, enabled) => void manageTierAccess("beginners", email, enabled)}
+                onManageFullAccess={(email, enabled) => void manageTierAccess("full", email, enabled)}
               />
             )}
 

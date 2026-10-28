@@ -1,4 +1,4 @@
-import { Users, Shield, BarChart3, ArrowLeft, UserPlus, BookOpen, Calculator } from "lucide-react";
+import { Users, Shield, BarChart3, ArrowLeft, UserPlus, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -26,7 +26,6 @@ const menuItems = [
   { id: "users", title: "Usuários", icon: Users },
   { id: "leads", title: "Leads", icon: UserPlus },
   { id: "minicurso", title: "Minicurso", icon: BookOpen },
-  { id: "beginners", title: "Beginners", icon: Calculator },
   { id: "security", title: "Segurança", icon: Shield },
 ];
 
