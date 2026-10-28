@@ -204,6 +204,20 @@ serve(async (req) => {
       console.log('[wolf-chat] acesso negado: subscription_expired', authUser.id);
       return new Response(JSON.stringify({ error: 'subscription_expired' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+
+    // Beginners tem acesso somente à Calculadora Pro. A trava é feita também
+    // no backend para impedir chamadas diretas à Edge Function.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan_type, legacy_access')
+      .eq('id', authUser.id)
+      .maybeSingle();
+    if (!isAdmin && profile?.plan_type === 'beginners' && profile.legacy_access !== true) {
+      return new Response(JSON.stringify({ error: 'beginners_plan_restricted', message: 'A IA Lobo está disponível no Importafacil Elite.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     if (conversationId) {
       const { data: conv } = await supabase.from('conversations').select('user_id').eq('id', conversationId).maybeSingle();
       if (conv && conv.user_id !== authUser.id) {

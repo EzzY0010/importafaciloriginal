@@ -78,13 +78,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     let effectiveHasPaid = data?.has_paid === true;
     let effectivePlanType = data?.plan_type ?? null;
+    let effectivePlanExpiresAt = data?.plan_expires_at ?? null;
 
     // Recupera clientes antigos cujo pagamento existe, mas o perfil ainda
     // ficou marcado como Free no banco legado.
-    if (!effectiveHasPaid) {
+    if (!effectiveHasPaid || (effectivePlanType === 'beginners' && !effectivePlanExpiresAt)) {
       const { data: approvedPayment } = await client
         .from('payments')
-        .select('id, plan_type')
+        .select('id, plan_type, created_at')
         .eq('user_id', userId)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
@@ -96,6 +97,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (approvedPayment && isSiteAccessPayment) {
         effectiveHasPaid = true;
         effectivePlanType = paymentPlan;
+        if (paymentPlan === 'beginners' && !effectivePlanExpiresAt) {
+          const paidAt = Date.parse(approvedPayment.created_at);
+          if (Number.isFinite(paidAt)) {
+            effectivePlanExpiresAt = new Date(paidAt + 30 * 24 * 60 * 60 * 1000).toISOString();
+          }
+        }
       }
     }
 
@@ -104,9 +111,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Usuário pago sem vencimento é legado/acesso manual permanente.
     // Isso mantém compatibilidade com a produção antiga, que ainda não possui
     // o RPC de ativação administrativa.
-    setLegacyAccess(effectiveHasPaid && !data?.plan_expires_at);
+    const isTimeLimitedPlan = effectivePlanType === 'beginners' || effectivePlanType === 'grupo';
+    setLegacyAccess(
+      data?.legacy_access === true
+      || (effectiveHasPaid && !effectivePlanExpiresAt && !isTimeLimitedPlan),
+    );
     setPlanType(effectivePlanType);
-    setPlanExpiresAt(data?.plan_expires_at ?? null);
+    setPlanExpiresAt(effectivePlanExpiresAt);
     setNowTick(Date.now());
   };
 
