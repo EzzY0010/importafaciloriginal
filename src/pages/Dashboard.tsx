@@ -46,6 +46,12 @@ const Dashboard = () => {
   }, [activeTab]);
 
   useEffect(() => {
+    if (!isAdmin && planType === "beginners" && activeTab !== "calculator") {
+      setActiveTab("calculator");
+    }
+  }, [activeTab, isAdmin, planType]);
+
+  useEffect(() => {
     if (!loading && !user) {
       navigate("/login");
     }
@@ -113,7 +119,8 @@ const Dashboard = () => {
   if (!user) return null;
 
   const hasAccess = subscriptionActive || isAdmin;
-  const isBeginners = hasAccess && !isAdmin && !legacyAccess && planType === "beginners";
+  const isBeginnersPlan = !isAdmin && !legacyAccess && planType === "beginners";
+  const isBeginners = hasAccess && isBeginnersPlan;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -189,17 +196,17 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 pb-28">
         <div className="max-w-5xl mx-auto">
-          {hasAccess ? (
-            <>
-            {isBeginners ? (
+          {isBeginnersPlan ? (
+            isBeginners ? (
               activeTab === 'calculator' ? (
                 <div className="flex flex-col items-center gap-6 animate-fade-in">
                   <CurrencyConverter />
                   <AdvancedPricingCalculator />
                 </div>
               ) : <BeginnersGate />
-            ) : (
-              <>
+            ) : <BeginnersGate expired />
+          ) : hasAccess ? (
+            <>
                 <RenewalBanner onRenew={() => navigate('/dashboard?plan=anual')} />
                 <SourcesDialog open={sourcesOpen} onOpenChange={setSourcesOpen} />
                 {activeTab === 'home' && (
@@ -216,8 +223,6 @@ const Dashboard = () => {
                     <AdvancedPricingCalculator />
                   </div>
                 )}
-              </>
-            )}
             </>
           ) : hasMinicourse ? (
             <MinicursoGate />

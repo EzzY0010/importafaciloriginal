@@ -15,6 +15,7 @@ import IPBlacklist from "@/components/admin/IPBlacklist";
 import LeadsTable from "@/components/admin/LeadsTable";
 import PushSetupCard from "@/components/admin/PushSetupCard";
 import MinicursoFiles from "@/components/admin/MinicursoFiles";
+import BeginnersAccessPanel from "@/components/admin/BeginnersAccessPanel";
 
 const AdminPanel = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -158,6 +159,7 @@ const AdminPanel = () => {
                 {activeSection === "devices" && "Dispositivos"}
                 {activeSection === "blacklist" && "IPs Bloqueados"}
                 {activeSection === "security" && "Segurança"}
+                {activeSection === "beginners" && "Beginners"}
               </h1>
             </div>
             <Button variant="ghost" size="icon" onClick={loadProfiles}>
@@ -195,6 +197,7 @@ const AdminPanel = () => {
               </>
             )}
             {activeSection === "minicurso" && <MinicursoFiles />}
+            {activeSection === "beginners" && <BeginnersAccessPanel onChanged={loadProfiles} />}
 
             {activeSection === "users" && (
               <UsersTable
