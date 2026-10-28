@@ -427,6 +427,10 @@ export type Database = {
         Args: { _email: string; _enabled: boolean }
         Returns: undefined
       }
+      admin_set_full_access_by_email: {
+        Args: { _email: string; _enabled: boolean }
+        Returns: undefined
+      }
       admin_set_profile_access: {
         Args: { _enabled: boolean; _profile_id: string }
         Returns: undefined

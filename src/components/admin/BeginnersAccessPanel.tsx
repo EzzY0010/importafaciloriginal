@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calculator, Mail, RefreshCw, ShieldCheck, UserRound } from "lucide-react";
+import { Calculator, Crown, Mail, RefreshCw, ShieldCheck, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,34 +13,36 @@ interface BeginnersAccessPanelProps {
 
 const BeginnersAccessPanel = ({ onChanged }: BeginnersAccessPanelProps) => {
   const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState<"activate" | "remove" | null>(null);
+  const [busy, setBusy] = useState<"beginners-activate" | "beginners-remove" | "full-activate" | "full-remove" | null>(null);
   const { toast } = useToast();
 
-  const changeAccess = async (enabled: boolean) => {
+  const changeAccess = async (tier: "beginners" | "full", enabled: boolean) => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !normalizedEmail.includes("@")) {
       toast({ title: "Informe um e-mail válido", variant: "destructive" });
       return;
     }
-    setBusy(enabled ? "activate" : "remove");
+    setBusy(`${tier}-${enabled ? "activate" : "remove"}` as typeof busy);
     const supabase = await getSupabaseClient();
     if (!supabase) {
       toast({ title: "Erro", description: "Backend indisponível.", variant: "destructive" });
       setBusy(null);
       return;
     }
-    const { error } = await supabase.rpc("admin_set_beginners_access_by_email", {
+    const { error } = await supabase.rpc(tier === "beginners" ? "admin_set_beginners_access_by_email" : "admin_set_full_access_by_email", {
       _email: normalizedEmail,
       _enabled: enabled,
     });
     if (error) {
-      toast({ title: "Não foi possível alterar o Beginners", description: error.message, variant: "destructive" });
+      toast({ title: `Não foi possível alterar o acesso ${tier === "beginners" ? "Beginners" : "Full"}`, description: error.message, variant: "destructive" });
     } else {
       toast({
-        title: enabled ? "Beginners ativado" : "Beginners removido",
+        title: enabled ? `${tier === "beginners" ? "Beginners" : "Full"} ativado` : `${tier === "beginners" ? "Beginners" : "Full"} removido`,
         description: enabled
-          ? `${normalizedEmail} agora tem somente a Calculadora Pro por 30 dias.`
-          : `O acesso Beginners de ${normalizedEmail} foi removido.`,
+          ? tier === "beginners"
+            ? `${normalizedEmail} agora tem somente a Calculadora Pro por 30 dias.`
+            : `${normalizedEmail} agora tem acesso Full permanente.`
+          : `O acesso ${tier === "beginners" ? "Beginners" : "Full"} de ${normalizedEmail} foi removido.`,
       });
       setEmail("");
       await onChanged();
@@ -53,10 +55,10 @@ const BeginnersAccessPanel = ({ onChanged }: BeginnersAccessPanelProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Calculator className="h-5 w-5 text-gold" />
-          Acesso Beginners
+          Controles de acesso por e-mail
         </CardTitle>
         <CardDescription>
-          Libere somente a Calculadora Pro para uma conta existente. A ativação dura 30 dias e não altera usuários Full legados.
+          Use o mesmo e-mail para liberar o Beginners ou o acesso Full. Contas Full existentes ficam protegidas contra rebaixamento acidental.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -77,17 +79,25 @@ const BeginnersAccessPanel = ({ onChanged }: BeginnersAccessPanelProps) => {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => void changeAccess(true)} disabled={busy !== null} className="gap-2 bg-gold text-gold-foreground hover:bg-gold/90">
-            {busy === "activate" ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+          <Button onClick={() => void changeAccess("beginners", true)} disabled={busy !== null} className="gap-2 bg-gold text-gold-foreground hover:bg-gold/90">
+            {busy === "beginners-activate" ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
             Ativar Beginners
           </Button>
-          <Button onClick={() => void changeAccess(false)} disabled={busy !== null} variant="outline" className="gap-2">
-            {busy === "remove" ? <RefreshCw className="h-4 w-4 animate-spin" /> : <UserRound className="h-4 w-4" />}
+          <Button onClick={() => void changeAccess("beginners", false)} disabled={busy !== null} variant="outline" className="gap-2">
+            {busy === "beginners-remove" ? <RefreshCw className="h-4 w-4 animate-spin" /> : <UserRound className="h-4 w-4" />}
             Remover Beginners
+          </Button>
+          <Button onClick={() => void changeAccess("full", true)} disabled={busy !== null} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+            {busy === "full-activate" ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
+            Ativar Full
+          </Button>
+          <Button onClick={() => void changeAccess("full", false)} disabled={busy !== null} variant="outline" className="gap-2">
+            {busy === "full-remove" ? <RefreshCw className="h-4 w-4 animate-spin" /> : <UserRound className="h-4 w-4" />}
+            Remover Full
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          O cliente continua podendo entrar e acessar o Perfil. IA, Fontes e as demais áreas continuam bloqueadas.
+          Beginners libera somente a Calculadora por 30 dias. Full libera todo o site permanentemente.
         </p>
       </CardContent>
     </Card>
