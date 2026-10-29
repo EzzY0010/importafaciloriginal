@@ -71,7 +71,7 @@ const landingPlans: LandingPlan[] = [
         items: [
           "Todos os recursos da mentoria",
           "Todos os recursos do site",
-          "Depop, Vinted, Graded e outras plataformas de revenda (avançado)",
+          "Depop, Vinted, Grailed e outras plataformas de revenda (avançado)",
           "Aula de fotos profissionais de roupas",
           "Aula de Canva para a identidade visual da loja",
           "Treinamento de vendas, precificação e escala",
@@ -108,7 +108,10 @@ const landingPlans: LandingPlan[] = [
     features: [
       "Grupo exclusivo no WhatsApp para lojistas",
       "Promoções e peças com preço exclusivo",
-      "Fontes que os lojistas usam",
+      "Os fornecedores chegam em 07 dias",
+      "Preço exclusivo para lojista",
+      "Compra em atacado",
+      "Grandes lojistas do ramo utilizam esses mesmos fornecedores",
     ],
     checkoutUrl: CN_PAY_CHECKOUTS.mensal,
     icon: <ShoppingBag className="h-5 w-5" />,
