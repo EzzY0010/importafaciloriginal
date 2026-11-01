@@ -196,22 +196,38 @@ serve(async (req) => {
     if (!authUser) {
       return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    const [{ data: active }, { data: isAdmin }] = await Promise.all([
+    const [{ data: active, error: accessRpcError }, { data: isAdmin }] = await Promise.all([
       supabase.rpc('has_full_access', { _user_id: authUser.id }),
       supabase.rpc('has_role', { _user_id: authUser.id, _role: 'admin' }),
     ]);
-    if (!active && !isAdmin) {
-      console.log('[wolf-chat] acesso negado: subscription_expired', authUser.id);
-      return new Response(JSON.stringify({ error: 'subscription_expired' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
 
     // Beginners tem acesso somente à Calculadora Pro. A trava é feita também
     // no backend para impedir chamadas diretas à Edge Function.
     const { data: profile } = await supabase
       .from('profiles')
-      .select('plan_type, legacy_access')
+      .select('has_paid, plan_type, plan_expires_at, legacy_access')
       .eq('id', authUser.id)
       .maybeSingle();
+
+    // Algumas versões do banco ainda não têm o RPC has_full_access ou podem
+    // retornar falso enquanto o perfil já está liberado. Em vez de bloquear
+    // clientes pagos, usamos um fallback conservador baseado no próprio perfil.
+    const profilePlan = String(profile?.plan_type ?? '').toLowerCase();
+    const profileExpiry = profile?.plan_expires_at ? Date.parse(profile.plan_expires_at) : NaN;
+    const profileHasFullAccess = profile?.legacy_access === true
+      || (profile?.has_paid === true
+        && profilePlan !== 'beginners'
+        && profilePlan !== 'grupo'
+        && (!Number.isFinite(profileExpiry) || profileExpiry > Date.now()));
+    const hasFullAccess = Boolean(active) || profileHasFullAccess;
+    if (!hasFullAccess && !isAdmin) {
+      console.log('[wolf-chat] acesso negado: subscription_expired', {
+        userId: authUser.id,
+        accessRpcError: accessRpcError?.message,
+        profilePlan,
+      });
+      return new Response(JSON.stringify({ error: 'subscription_expired' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     if (!isAdmin && profile?.plan_type === 'beginners' && profile.legacy_access !== true) {
       return new Response(JSON.stringify({ error: 'beginners_plan_restricted', message: 'A IA Lobo está disponível no Importafacil Elite.' }), {
         status: 403,

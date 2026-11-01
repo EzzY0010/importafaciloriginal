@@ -83,7 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Recupera clientes antigos cujo pagamento existe, mas o perfil ainda
     // ficou marcado como Free no banco legado.
     if (!effectiveHasPaid || (effectivePlanType === 'beginners' && !effectivePlanExpiresAt)) {
-      const { data: approvedPayment } = await client
+      let approvedPayment: { plan_type?: string | null; created_at?: string | null } | null = null;
+      const { data: payment } = await client
         .from('payments')
         .select('id, plan_type, created_at')
         .eq('user_id', userId)
@@ -92,13 +93,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .limit(1)
         .maybeSingle();
 
+      approvedPayment = payment;
+
+      // O backend Lovable usado pela produção registra os pagamentos em
+      // payment_transactions, não em payments. A consulta é tolerante para
+      // manter compatibilidade com o schema Supabase antigo.
+      if (!approvedPayment) {
+        const compatibilityClient = client as unknown as {
+          from: (table: string) => {
+            select: (columns: string) => {
+              eq: (column: string, value: string) => {
+                limit: (count: number) => Promise<{ data: Array<Record<string, unknown>> | null }>;
+              };
+            };
+          };
+        };
+        const { data: transactions } = await compatibilityClient
+          .from('payment_transactions')
+          .select('*')
+          .eq('user_id', userId)
+          .limit(50);
+        const approvedTransaction = (transactions ?? [])
+          .filter((row: Record<string, unknown>) => {
+            const status = String(row.status ?? row.payment_status ?? row.state ?? '').toLowerCase();
+            return ['approved', 'paid', 'completed', 'succeeded', 'success'].includes(status);
+          })
+          .sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+            const dateA = Date.parse(String(a.created_at ?? a.paid_at ?? a.approved_at ?? 0));
+            const dateB = Date.parse(String(b.created_at ?? b.paid_at ?? b.approved_at ?? 0));
+            return dateB - dateA;
+          })[0];
+        if (approvedTransaction) {
+          approvedPayment = {
+            plan_type: String(approvedTransaction.plan_type ?? approvedTransaction.plan ?? approvedTransaction.plan_name ?? ''),
+            created_at: String(approvedTransaction.created_at ?? approvedTransaction.paid_at ?? approvedTransaction.approved_at ?? ''),
+          };
+        }
+      }
+
       const paymentPlan = approvedPayment?.plan_type?.toLowerCase() ?? null;
       const isSiteAccessPayment = !['grupo', 'conexao_usa', 'minicurso'].includes(paymentPlan ?? '');
       if (approvedPayment && isSiteAccessPayment) {
         effectiveHasPaid = true;
         effectivePlanType = paymentPlan;
         if (paymentPlan === 'beginners' && !effectivePlanExpiresAt) {
-          const paidAt = Date.parse(approvedPayment.created_at);
+          const paidAt = Date.parse(approvedPayment.created_at ?? '');
           if (Number.isFinite(paidAt)) {
             effectivePlanExpiresAt = new Date(paidAt + 30 * 24 * 60 * 60 * 1000).toISOString();
           }

@@ -603,6 +603,13 @@ const WolfChat: React.FC = () => {
           window.dispatchEvent(new CustomEvent('subscription-expired'));
           return;
         }
+        if (errPayload?.error === 'beginners_plan_restricted') {
+          const friendly = errPayload.message || 'A IA Lobo está disponível no Importafacil Elite.';
+          setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: friendly }]);
+          await saveMessage(convId, 'assistant', friendly);
+          window.dispatchEvent(new CustomEvent('wolf-chat-answered'));
+          return;
+        }
         // Foto sem modelo de visão disponível: mostra a mensagem amigável
         // como resposta do Lobo, não como erro genérico.
         if (errPayload?.error === 'vision_unavailable' && errPayload?.message) {
