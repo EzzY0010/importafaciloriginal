@@ -46,7 +46,8 @@ const landingPlans: LandingPlan[] = [
     title: "Importafacil Beginners",
     description: "Calculadora Pro, grupo exclusivo de Networking, suporte e aprendizado direto com o mentor.",
     price: "37,00",
-    period: "/mês",
+    period: "/mês · cobrança recorrente",
+    previousPrice: "150,00",
     features: [
       "Calculadora Pro",
       "Grupo exclusivo de Networking deste plano",
@@ -59,9 +60,9 @@ const landingPlans: LandingPlan[] = [
   {
     title: "Importafacil Elite",
     description: "Acompanhamento completo e acesso vitalício ao ecossistema.",
-    price: "497,00",
+    price: "297,00",
     period: "à vista · pagamento único",
-    previousPrice: "797,00",
+    previousPrice: "497,00",
     badge: "Melhor custo-benefício",
     checkoutUrl: getPlanCheckoutUrl("anual"),
     features: [],
@@ -103,8 +104,9 @@ const landingPlans: LandingPlan[] = [
   {
     title: "Conexão USA",
     description: "Grupo exclusivo no WhatsApp para lojistas, com promoções, peças a preço exclusivo e as fontes que os lojistas usam.",
-    price: "120,00",
-    period: "/mês",
+    price: "57,00",
+    period: "/mês · cobrança recorrente",
+    previousPrice: "120,00",
     features: [
       "Grupo exclusivo no WhatsApp para lojistas",
       "Promoções e peças com preço exclusivo",
