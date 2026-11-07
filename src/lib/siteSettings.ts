@@ -66,7 +66,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   elite_included_benefit: "1 ano de Spotify Premium",
   usa_title: "Conexão USA",
   usa_description: "Grupo exclusivo no WhatsApp para lojistas, com promoções, peças a preço exclusivo e as fontes que os lojistas usam.",
-  usa_price: "57,00",
+  usa_price: "67,00",
   usa_period: "/mês · cobrança recorrente",
   whatsapp_number: "",
   whatsapp_label: "Fale conosco no WhatsApp",
