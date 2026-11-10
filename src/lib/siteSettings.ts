@@ -53,7 +53,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   about_description: "Em vez de alternar entre guias, planilhas e dezenas de sites sem contexto, você encontra em um só ecossistema recursos para pesquisar produtos, explorar fontes globais e organizar os custos da sua operação.",
   beginners_title: "Importafacil Beginners",
   beginners_description: "Calculadora Pro, grupo exclusivo de Networking, suporte e aprendizado direto com o mentor.",
-  beginners_price: "37,00",
+  beginners_price: "67,00",
   beginners_period: "/mês · cobrança recorrente",
   beginners_previous_price: "150,00",
   beginners_badge: "",

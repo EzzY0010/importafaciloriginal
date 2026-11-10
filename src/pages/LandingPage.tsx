@@ -45,7 +45,7 @@ const landingPlans: LandingPlan[] = [
   {
     title: "Importafacil Beginners",
     description: "Calculadora Pro, grupo exclusivo de Networking, suporte e aprendizado direto com o mentor.",
-    price: "37,00",
+    price: "67,00",
     period: "/mês · cobrança recorrente",
     previousPrice: "150,00",
     features: [
