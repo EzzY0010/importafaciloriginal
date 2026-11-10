@@ -11,6 +11,11 @@ export const CN_PAY_CHECKOUTS = {
   anual: `${CN_PAY_CHECKOUT_BASE}1DUNPV5`,
 } as const;
 
+export const PUBLIC_CARD_SUBSCRIPTION_CHECKOUTS = {
+  beginners: "https://checkout.appcnpay.com/checkout/cmw5grd5h02pm01ob24krj1yy?offer=LBJKBNX",
+  conexaoUsa: "https://checkout.appcnpay.com/checkout/cmw5grd5h02pm01ob24krj1yy?offer=42PP4V4",
+} as const;
+
 /** Checkout atual do Acesso ao Site, reutilizado pelo card Beginners. */
 export const BEGINNERS_CHECKOUT_URL = CN_PAY_CHECKOUTS.autonomo;
 

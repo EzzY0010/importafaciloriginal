@@ -19,7 +19,7 @@ import {
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { BEGINNERS_CHECKOUT_URL, CN_PAY_CHECKOUTS, getPlanCheckoutUrl } from "@/config/checkouts";
+import { PUBLIC_CARD_SUBSCRIPTION_CHECKOUTS, getPlanCheckoutUrl } from "@/config/checkouts";
 import LeadCaptureInline from "@/components/LeadCaptureInline";
 import { getSupabaseClient } from "@/lib/backend";
 import { DEFAULT_SITE_SETTINGS, parseSiteSettings, type SiteSettings } from "@/lib/siteSettings";
@@ -54,7 +54,7 @@ const landingPlans: LandingPlan[] = [
       "Suporte para dúvidas",
       "Aprendizado somente em Vinted e Grailed, com o mentor, passo a passo individual no privado",
     ],
-    checkoutUrl: BEGINNERS_CHECKOUT_URL,
+    checkoutUrl: PUBLIC_CARD_SUBSCRIPTION_CHECKOUTS.beginners,
     icon: <Globe className="h-5 w-5" />,
   },
   {
@@ -115,7 +115,7 @@ const landingPlans: LandingPlan[] = [
       "Compra em atacado",
       "Grandes lojistas do ramo utilizam esses mesmos fornecedores",
     ],
-    checkoutUrl: CN_PAY_CHECKOUTS.mensal,
+    checkoutUrl: PUBLIC_CARD_SUBSCRIPTION_CHECKOUTS.conexaoUsa,
     icon: <ShoppingBag className="h-5 w-5" />,
   },
 ];
