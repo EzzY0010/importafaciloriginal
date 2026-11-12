@@ -442,7 +442,7 @@ const WolfChat: React.FC = () => {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const compressImage = (file: File, maxWidth = 600, quality = 0.5): Promise<string> =>
+    const compressImage = (file: File, maxWidth = 900, quality = 0.68): Promise<string> =>
       new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
@@ -469,6 +469,12 @@ const WolfChat: React.FC = () => {
 
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+    const invalid = files.find((file) => !file.type.startsWith('image/'));
+    if (invalid) {
+      toast({ title: 'Imagem inválida', description: 'Escolha uma foto JPG, PNG ou WEBP.', variant: 'destructive' });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     const remaining = MAX_IMAGES - imagePreviews.length;
     if (remaining <= 0) {
       toast({ title: 'Limite atingido', description: `Máximo de ${MAX_IMAGES} fotos por envio.`, variant: 'destructive' });
@@ -480,7 +486,8 @@ const WolfChat: React.FC = () => {
     }
     selected.forEach(async (file) => {
       try {
-        const compressed = await compressImage(file, 600, 0.5);
+        const compressed = await compressImage(file, 900, 0.68);
+        if (!compressed.startsWith('data:image/jpeg;base64,')) throw new Error('Formato de imagem não suportado');
         setImagePreviews((prev) => (prev.length >= MAX_IMAGES ? prev : [...prev, compressed]));
       } catch (err) {
         console.error('Erro ao comprimir imagem:', err);
@@ -495,7 +502,7 @@ const WolfChat: React.FC = () => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string, imageUrl?: string) => {
+  const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string, _imageUrl?: string) => {
     const client = await getSupabase();
     if (!client) return;
 
@@ -503,7 +510,7 @@ const WolfChat: React.FC = () => {
       conversation_id: conversationId,
       role,
       content,
-      image_url: imageUrl
+      image_url: null
     });
   };
 
@@ -582,6 +589,7 @@ const WolfChat: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${(await (await getSupabase())?.auth.getSession())?.data.session?.access_token ?? backendKey}`,
+          apikey: backendKey,
         },
         body: JSON.stringify({
           messages: [{ role: 'user', content: finalContent }],
