@@ -17,6 +17,8 @@ REGRAS DE FORMATO E OBJETIVIDADE:
 
 Ao analisar uma imagem de produto, siga SEMPRE esta estrutura de resposta:
 📦 Produto identificado: [nome / categoria / marca aparente]
+🧩 Modelo ou variação: [somente se estiver visível ou informado; caso contrário, "não identificável pela imagem"]
+🧵 Material/composição: [somente se estiver visível em etiqueta ou puder ser descrito como aparência; nunca invente composição]
 🔍 Autenticidade: [ver regras abaixo — nunca pule esta etapa]
 ⚖️ Peso estimado: [faixa de peso]
 💰 Vale importar: [Sim / Não / Depende] — [1 frase de motivo]
@@ -411,7 +413,20 @@ serve(async (req) => {
           .map((m: any) => `${m.role === 'user' ? 'Usuário' : 'Lobo'}: ${m.content ?? ''}`)
           .join('\n');
 
-        const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+        const modelResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+        const modelPayload = modelResponse.ok ? await modelResponse.json() : null;
+        const listedGeminiModels = Array.isArray(modelPayload?.models)
+          ? modelPayload.models
+            .filter((item: any) => Array.isArray(item?.supportedGenerationMethods) && item.supportedGenerationMethods.includes('generateContent'))
+            .map((item: any) => String(item.name ?? '').replace(/^models\//, ''))
+            .filter(Boolean)
+          : [];
+        const preferredGeminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+        const GEMINI_MODELS = [...preferredGeminiModels.filter((model) => listedGeminiModels.includes(model)), ...listedGeminiModels.filter((model) => /gemini.*(flash|pro)/i.test(model))]
+          .filter((model, index, all) => all.indexOf(model) === index);
+        if (GEMINI_MODELS.length === 0) {
+          throw new Error('Nenhum modelo Gemini com generateContent está ativo');
+        }
         let geminiText = '';
         let usedModel = '';
         let lastErr = '';
