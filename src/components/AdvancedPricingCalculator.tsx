@@ -13,6 +13,7 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Width
 import ProductDescriptionAssistant from '@/components/calculator/ProductDescriptionAssistant';
 
 type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY' | 'PLN' | 'JPY' | 'SAR' | 'AED';
+type DeclarationCurrency = 'USD' | 'EUR';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 type ExportType = 'pdf' | 'docx';
 
@@ -108,6 +109,7 @@ interface ProductItem {
   name: string;
   costPrice: string;
   declaredValue: string;
+  declaredCurrency: DeclarationCurrency;
   profitMargin: string;
   currency: Currency;
   weightCategory: WeightCategory;
@@ -173,7 +175,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   const [totalShipping, setTotalShipping] = useState<string>('');
   const [shippingCurrency, setShippingCurrency] = useState<Currency>('USD');
   const [items, setItems] = useState<ProductItem[]>([
-    { id: '1', name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD', weightCategory: 'medium', estimatedGrams: 300, weightLabel: '~300g' }
+    { id: '1', name: '', costPrice: '', declaredValue: '', declaredCurrency: 'EUR', profitMargin: '30', currency: 'USD', weightCategory: 'medium', estimatedGrams: 300, weightLabel: '~300g' }
   ]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<Array<{
@@ -242,6 +244,7 @@ const AdvancedPricingCalculator: React.FC = () => {
       name: '',
       costPrice: '',
       declaredValue: '',
+      declaredCurrency: 'EUR',
       profitMargin: '30',
       currency: 'USD',
       weightCategory: 'medium',
@@ -304,7 +307,7 @@ const AdvancedPricingCalculator: React.FC = () => {
     const costPriceBRL = convertToBRL(costPrice, item.currency);
     const itemShippingBRL = getShippingForItem(item);
     const costWithShippingBRL = costPriceBRL + itemShippingBRL;
-    const declaredValueBRL = declaredValue > 0 ? convertToBRL(declaredValue, 'USD') : 0; // Valor informado em USD
+    const declaredValueBRL = declaredValue > 0 ? convertToBRL(declaredValue, item.declaredCurrency || 'USD') : 0;
     const taxBRL = declaredValue > 0 ? declaredValueBRL * 0.60 : 0;
     const finalCostBRL = costWithShippingBRL + taxBRL;
     const sellingPrice = finalCostBRL * (1 + profitMargin / 100);
@@ -378,7 +381,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const createPdfBlob = async (): Promise<Blob> => {
-    if (hasIncompleteDeclaredValues) throw new Error('Informe um valor real positivo para cada item antes de exportar.');
+    if (hasIncompleteDeclaredValues) throw new Error('Informe um valor de declaração positivo para cada item antes de exportar.');
     // Lazy-load jspdf + autotable to keep main bundle small
     const [{ default: JsPDF }, autoTableModule] = await Promise.all([
       import('jspdf'),
@@ -413,7 +416,7 @@ const AdvancedPricingCalculator: React.FC = () => {
       return [
         displayName,
         `${getCurrencySymbol(item.currency)} ${(parseFloat(item.costPrice) || 0).toFixed(2)}`,
-        `$ ${(parseFloat(item.declaredValue) || 0).toFixed(2)}`,
+        `${getCurrencySymbol(item.declaredCurrency)} ${(parseFloat(item.declaredValue) || 0).toFixed(2)}`,
         `${item.profitMargin || '0'}%`,
         `R$ ${costs.sellingPrice.toFixed(2)}`,
       ];
@@ -421,7 +424,7 @@ const AdvancedPricingCalculator: React.FC = () => {
 
     autoTable(doc, {
       startY: 90,
-      head: [['Nome', 'Preço Custo', 'Declaração', 'Margem', 'Preço Venda']],
+      head: [['Nome', 'Preço Custo', 'Valor de declaração', 'Margem', 'Preço Venda']],
       body,
       styles: { font: 'helvetica', fontSize: 10, cellPadding: 6, textColor: [30, 30, 30] },
       headStyles: { fillColor: [15, 59, 111], textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -465,7 +468,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const createDocxBlob = async () => {
-    if (hasIncompleteDeclaredValues) throw new Error('Informe um valor real positivo para cada item antes de exportar.');
+    if (hasIncompleteDeclaredValues) throw new Error('Informe um valor de declaração positivo para cada item antes de exportar.');
     const itemsToExport = adjustedItems.filter((item) => parseFloat(item.costPrice) > 0);
     const now = new Date();
     const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
@@ -710,15 +713,16 @@ const AdvancedPricingCalculator: React.FC = () => {
     const snap = history.find((h) => h.id === snapId);
     if (!snap) return;
     const hasCurrentDeclarationValues = snap.schemaVersion === 2;
-    setItems(hasCurrentDeclarationValues
-      ? snap.items
-      : snap.items.map((item) => ({ ...item, declaredValue: '' })));
+    setItems((hasCurrentDeclarationValues ? snap.items : snap.items.map((item) => ({ ...item, declaredValue: '' }))).map((item) => ({
+      ...item,
+      declaredCurrency: item.declaredCurrency || 'USD',
+    })));
     setTotalShipping(snap.totalShipping);
     setShippingCurrency(snap.shippingCurrency);
     toast.success('Simulação restaurada!', {
       description: hasCurrentDeclarationValues
         ? snap.label
-        : `${snap.label} — informe novamente os valores reais de declaração do histórico antigo.`,
+        : `${snap.label} — informe novamente os valores de declaração do histórico antigo.`,
     });
   };
 
@@ -789,10 +793,10 @@ const AdvancedPricingCalculator: React.FC = () => {
           <div className="rounded-xl border border-border bg-muted/40 p-3">
             <p className="flex items-center gap-2 text-sm font-medium text-foreground">
               <FileText className="h-4 w-4 text-accent" />
-              Total informado para declaração: ${totalDeclaration.toFixed(2)}
+              Total informado para declaração: ${totalDeclaration.toFixed(2)} (moeda do primeiro item)
             </p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Informe o valor real pago. A calculadora não estima nem altera esse valor; confira também os requisitos do formulário utilizado.
+              O valor sugerido pela IA é uma estimativa editável. Confirme sempre o valor correto e os requisitos do formulário aduaneiro utilizado.
             </p>
             {hasIncompleteDeclaredValues && (
               <p className="mt-2 flex items-start gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
@@ -865,7 +869,7 @@ const AdvancedPricingCalculator: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setItems([{ id: Date.now().toString(), name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD', weightCategory: 'medium', estimatedGrams: 300, weightLabel: '~300g' }]);
+                  setItems([{ id: Date.now().toString(), name: '', costPrice: '', declaredValue: '', declaredCurrency: 'EUR', profitMargin: '30', currency: 'USD', weightCategory: 'medium', estimatedGrams: 300, weightLabel: '~300g' }]);
                   setTotalShipping('');
                   toast.success('Campos limpos', { description: 'Pronto pra uma nova simulação.' });
                 }}
@@ -892,6 +896,7 @@ const AdvancedPricingCalculator: React.FC = () => {
             const costs = calculateItemCosts(item);
             const hasData = parseFloat(item.costPrice) > 0;
             const currencySymbol = getCurrencySymbol(item.currency);
+            const declarationSymbol = getCurrencySymbol(item.declaredCurrency);
 
             return (
               <div key={item.id} className="p-3 border border-border rounded-xl bg-card space-y-3">
@@ -952,7 +957,7 @@ const AdvancedPricingCalculator: React.FC = () => {
                   <span className="text-xs text-muted-foreground">estimativa usada no rateio do frete</span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">
                       Preço Custo ({currencySymbol})
@@ -967,18 +972,31 @@ const AdvancedPricingCalculator: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">
-                      Valor real (US$)
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      placeholder="Informe o valor pago"
-                      value={item.declaredValue}
-                      onChange={(e) => updateItem(item.id, 'declaredValue', e.target.value)}
-                      className="h-8 text-sm"
-                    />
+                    <Label className="text-xs text-muted-foreground">Valor de declaração ({declarationSymbol})</Label>
+                    <div className="flex gap-1">
+                      <Select
+                        value={item.declaredCurrency}
+                        onValueChange={(v) => updateItem(item.id, 'declaredCurrency', v)}
+                      >
+                        <SelectTrigger className="h-8 w-[4.6rem] shrink-0 px-2 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EUR">€ EUR</SelectItem>
+                          <SelectItem value="USD">$ USD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        placeholder="Sugestão da IA"
+                        value={item.declaredValue}
+                        onChange={(e) => updateItem(item.id, 'declaredValue', e.target.value)}
+                        className="h-8 min-w-0 text-sm"
+                      />
+                    </div>
+                    <p className="text-[10px] leading-tight text-muted-foreground">Editável após a análise da foto.</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Margem (%)</Label>
@@ -997,13 +1015,22 @@ const AdvancedPricingCalculator: React.FC = () => {
                   productName={item.name}
                   value={item.declarationDescription ?? ''}
                   onChange={(description) => updateItem(item.id, 'declarationDescription', description)}
+                  onDeclarationSuggestion={({ value, currency, range, category }) => {
+                    const converted = item.declaredCurrency === currency
+                      ? value
+                      : value / rates.EUR;
+                    updateItem(item.id, 'declaredValue', converted.toFixed(2));
+                    toast.success('Valor de declaração sugerido pela IA', {
+                      description: `${category} · faixa ${range.min.toFixed(2)}–${range.max.toFixed(2)} EUR. Você pode editar o valor e a moeda.`,
+                    });
+                  }}
                 />
 
                 {hasData && (
                   <div className="pt-2 border-t border-border space-y-1">
                     {!isValidDeclaredValue(item.declaredValue) ? (
                       <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                        Informe o valor real positivo em US$ para calcular imposto, preço final e lucro deste item.
+                        Informe um valor de declaração positivo em {item.declaredCurrency} para calcular imposto, preço final e lucro deste item.
                       </p>
                     ) : hasIncompleteDeclaredValues ? (
                       <p className="text-xs text-muted-foreground">

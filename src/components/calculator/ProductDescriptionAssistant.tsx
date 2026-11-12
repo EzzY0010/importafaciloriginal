@@ -11,6 +11,7 @@ interface ProductDescriptionAssistantProps {
   productName: string;
   value: string;
   onChange: (value: string) => void;
+  onDeclarationSuggestion?: (suggestion: { value: number; currency: 'EUR' | 'USD'; range: { min: number; max: number }; category: string }) => void;
 }
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -133,14 +134,23 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
         ));
       }
 
-      let result: { suggestion?: string } | null = null;
+      let result: { suggestion?: string; declaration?: { value?: number; currency?: 'EUR' | 'USD'; min?: number; max?: number; category?: string } } | null = null;
       try { result = JSON.parse(payload); } catch { result = null; }
       const suggestion = typeof result?.suggestion === 'string'
         ? result.suggestion.trim().slice(0, MAX_DESCRIPTION_LENGTH)
         : '';
       if (!suggestion) throw new Error('A IA não retornou uma sugestão. Tente uma foto mais nítida.');
       onChange(suggestion);
-      toast({ title: 'Sugestão pronta', description: 'Revise a descrição e a composição antes de copiar.' });
+      const declaration = result?.declaration;
+      if (declaration && typeof declaration.value === 'number' && Number.isFinite(declaration.value) && typeof declaration.min === 'number' && typeof declaration.max === 'number' && declaration.max >= declaration.min) {
+        onDeclarationSuggestion?.({
+          value: declaration.value,
+          currency: declaration.currency === 'USD' ? 'USD' : 'EUR',
+          range: { min: declaration.min, max: declaration.max },
+          category: declaration.category || 'Produto identificado',
+        });
+      }
+      toast({ title: 'Sugestão pronta', description: declaration ? 'A IA também sugeriu um valor de declaração editável.' : 'Revise a descrição e a composição antes de copiar.' });
     } catch (error) {
       toast({
         title: error instanceof Error && error.name === 'AbortError' ? 'A análise demorou demais' : 'Não consegui analisar a foto',
@@ -184,7 +194,7 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
           </span>
         </Label>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Envie uma foto nítida do produto. A imagem será usada somente nesta análise e não será salva no histórico.
+          Envie uma foto nítida do produto. A IA identifica a categoria, sugere o valor de declaração e preenche o campo para você revisar e editar.
         </p>
       </div>
 
@@ -242,7 +252,7 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
         <ClipboardCopy className="mr-2 h-4 w-4" /> Copiar descrição
       </Button>
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        A composição só deve ser informada quando estiver legível na etiqueta ou confirmada por você. Confira marca e demais dados exigidos antes de declarar.
+        O valor sugerido é apenas uma estimativa de apoio, baseada na categoria visível e nas faixas configuradas. Confirme o valor correto e os requisitos do formulário antes de declarar.
       </p>
     </section>
   );
