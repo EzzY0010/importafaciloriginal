@@ -1,0 +1,3 @@
+# Architecture rules
+- Share direct Google Gemini visual discovery, validation and safe errors in `supabase/functions/_shared/gemini-vision.ts`; both image features use the explicitly requested server-only Google credential, avoiding divergent provider fallbacks.
+- Construct customs descriptions from allowlisted structured visual attributes instead of free-form model text; brands and speculative customs values must not enter generated descriptions.
