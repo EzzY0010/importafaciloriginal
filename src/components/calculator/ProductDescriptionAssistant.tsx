@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { backendKey, backendUrl, getSupabaseClient, isBackendConfigured } from '@/lib/backend';
+import { visionErrorMessage } from '@/lib/visionErrors';
 
 interface ProductDescriptionAssistantProps {
   productName: string;
@@ -125,13 +126,7 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
       if (!response.ok) {
         let errorPayload: { error?: string; message?: string } = {};
         try { errorPayload = JSON.parse(payload); } catch { /* usa mensagem padrão */ }
-        throw new Error(errorPayload.message || (
-          errorPayload.error === 'beginners_plan_restricted'
-            ? 'A análise por IA está disponível no Importafacil Elite.'
-            : errorPayload.error === 'subscription_expired'
-              ? 'Sua assinatura não tem acesso ativo à IA.'
-              : 'Não foi possível analisar a foto agora. Tente novamente.'
-        ));
+        throw new Error(visionErrorMessage(errorPayload.error, response.status, errorPayload.message));
       }
 
       let result: { suggestion?: string; declaration?: { value?: number; currency?: 'EUR' | 'USD'; min?: number; max?: number; category?: string } } | null = null;
@@ -141,16 +136,7 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
         : '';
       if (!suggestion) throw new Error('A IA não retornou uma sugestão. Tente uma foto mais nítida.');
       onChange(suggestion);
-      const declaration = result?.declaration;
-      if (declaration && typeof declaration.value === 'number' && Number.isFinite(declaration.value) && typeof declaration.min === 'number' && typeof declaration.max === 'number' && declaration.max >= declaration.min) {
-        onDeclarationSuggestion?.({
-          value: declaration.value,
-          currency: declaration.currency === 'USD' ? 'USD' : 'EUR',
-          range: { min: declaration.min, max: declaration.max },
-          category: declaration.category || 'Produto identificado',
-        });
-      }
-      toast({ title: 'Sugestão pronta', description: declaration ? 'A IA também sugeriu um valor de declaração editável.' : 'Revise a descrição e a composição antes de copiar.' });
+      toast({ title: 'Sugestão pronta', description: 'Revise a descrição antes de copiar.' });
     } catch (error) {
       toast({
         title: error instanceof Error && error.name === 'AbortError' ? 'A análise demorou demais' : 'Não consegui analisar a foto',
@@ -194,7 +180,7 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
           </span>
         </Label>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Envie uma foto nítida do produto. A IA identifica a categoria, sugere o valor de declaração e preenche o campo para você revisar e editar.
+          Envie uma foto nítida do produto. A IA gera uma descrição genérica para você revisar e editar.
         </p>
       </div>
 
@@ -252,7 +238,7 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
         <ClipboardCopy className="mr-2 h-4 w-4" /> Copiar descrição
       </Button>
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        O valor sugerido é apenas uma estimativa de apoio, baseada na categoria visível e nas faixas configuradas. Confirme o valor correto e os requisitos do formulário antes de declarar.
+        Confirme a descrição e os requisitos da alfândega antes de declarar. A foto não determina o valor de declaração.
       </p>
     </section>
   );

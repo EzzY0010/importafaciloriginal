@@ -289,24 +289,6 @@ export type Database = {
         }
         Relationships: []
       }
-      site_settings: {
-        Row: {
-          content: Json
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          content?: Json
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          content?: Json
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       purchases: {
         Row: {
           amount: number
@@ -447,10 +429,6 @@ export type Database = {
       }
       admin_set_full_access_by_email: {
         Args: { _email: string; _enabled: boolean }
-        Returns: undefined
-      }
-      admin_set_profile_access: {
-        Args: { _enabled: boolean; _profile_id: string }
         Returns: undefined
       }
       has_active_access: { Args: { _user_id: string }; Returns: boolean }
