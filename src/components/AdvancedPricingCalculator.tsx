@@ -5,36 +5,16 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, ShieldCheck, AlertTriangle, FileText, FileSpreadsheet, CheckCircle, FileDown, Eye } from 'lucide-react';
+import { RefreshCw, TrendingUp, Plus, Trash2, Package, AlertCircle, FileText, FileSpreadsheet, CheckCircle, FileDown, Eye } from 'lucide-react';
 import { Copy, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
+import ProductDescriptionAssistant from '@/components/calculator/ProductDescriptionAssistant';
 
 type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY' | 'PLN' | 'JPY' | 'SAR' | 'AED';
 type WeightCategory = 'light' | 'medium' | 'heavy';
 type ExportType = 'pdf' | 'docx';
-
-// Descrição alfandegária 100% dinâmica baseada no título do produto.
-// Mapeia por palavras-chave em 3 categorias:
-//  - Eletrônicos/tecnologia → termo técnico de comunicação
-//  - Vestuário/calçado → termo têxtil casual
-//  - Outros → descrição genérica de uso pessoal/utilidade doméstica com o nome
-const ELECTRONICS_KW = ['celular','iphone','smartphone','fone','headphone','headset','earbud','airpod','smartwatch','watch','relogio','relógio','tablet','ipad','notebook','laptop','camera','câmera','console','playstation','xbox','nintendo','eletronico','eletrônico','tv','monitor','drone','carregador','cabo','mouse','teclado','speaker','caixa de som'];
-const CLOTHING_KW = ['tenis','tênis','sapato','sneaker','bota','chinelo','sandalia','sandália','moletom','hoodie','camiseta','t-shirt','tshirt','camisa','polo','regata','jaqueta','casaco','blusa','bermuda','short','calca','calça','jeans','bone','boné','cap','meia','cueca','boxer','conjunto','vestido','saia','calcinha','sutia','sutiã'];
-
-const getOptimizedDescription = (name: string): string => {
-  const raw = (name || '').trim();
-  if (!raw) return '';
-  const n = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  if (ELECTRONICS_KW.some((k) => n.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))) {
-    return 'Dispositivo eletrônico de comunicação e acessórios';
-  }
-  if (CLOTHING_KW.some((k) => n.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))) {
-    return 'Vestuário casual de algodão e fibras sintéticas';
-  }
-  return `Item de uso pessoal/utilidade doméstica - ${raw}`;
-};
 
 interface SaveAsModalProps {
   exportType: ExportType;
@@ -133,6 +113,7 @@ interface ProductItem {
   weightCategory: WeightCategory;
   estimatedGrams: number;
   weightLabel: string;
+  declarationDescription?: string;
 }
 
 const CURRENCY_CONFIG = {
@@ -159,102 +140,6 @@ const ORIGIN_CURRENCY: { label: string; currency: Currency }[] = [
   { label: '🇦🇪 Dubai', currency: 'AED' },
 ];
 
-// Marcas famosas que devem ser substituídas
-const FAMOUS_BRANDS = [
-  'lacoste', 'nike', 'adidas', 'gucci', 'prada', 'louis vuitton', 'lv', 'chanel',
-  'dior', 'balenciaga', 'yeezy', 'jordan', 'supreme', 'off-white', 'bape',
-  'burberry', 'versace', 'fendi', 'hermès', 'hermes', 'rolex', 'cartier',
-  'boss', 'hugo boss', 'ralph lauren', 'polo', 'tommy hilfiger', 'calvin klein',
-  'armani', 'dolce', 'gabbana', 'givenchy', 'valentino', 'moncler', 'stone island',
-  'the north face', 'tnf', 'new balance', 'puma', 'asics', 'converse', 'vans',
-  'oakley', 'ray-ban', 'rayban', 'apple', 'samsung', 'louis vitton'
-];
-
-// Substituições genéricas por categoria detectada
-const GENERIC_REPLACEMENTS: Record<string, string[]> = {
-  'boné': ['Fashion Hat', 'Cotton Cap', 'Sport Cap'],
-  'cap': ['Fashion Hat', 'Cotton Cap', 'Sport Cap'],
-  'bone': ['Fashion Hat', 'Cotton Cap', 'Sport Cap'],
-  'chapeu': ['Fashion Hat', 'Cotton Cap'],
-  'camiseta': ['Men Clothing', 'Cotton T-shirt', 'Casual Shirt'],
-  'camisa': ['Men Clothing', 'Cotton Shirt'],
-  'polo': ['Men Clothing', 'Cotton Polo'],
-  'tenis': ['Casual Shoes', 'Sport Shoes', 'Running Shoes'],
-  'tênis': ['Casual Shoes', 'Sport Shoes', 'Running Shoes'],
-  'sneaker': ['Casual Shoes', 'Sport Shoes'],
-  'sapato': ['Casual Shoes', 'Leather Shoes'],
-  'jaqueta': ['Windbreaker', 'Polyester Jacket', 'Light Jacket'],
-  'moletom': ['Cotton Hoodie', 'Sport Hoodie'],
-  'hoodie': ['Cotton Hoodie', 'Sport Hoodie'],
-  'casaco': ['Polyester Jacket', 'Winter Coat'],
-  'bolsa': ['Fashion Bag', 'Leather Bag'],
-  'bag': ['Fashion Bag', 'Travel Bag'],
-  'mochila': ['Travel Bag', 'Sport Bag'],
-  'relogio': ['Fashion Watch', 'Quartz Watch'],
-  'relógio': ['Fashion Watch', 'Quartz Watch'],
-  'watch': ['Fashion Watch', 'Quartz Watch'],
-  'oculos': ['Fashion Sunglasses', 'Sport Glasses'],
-  'óculos': ['Fashion Sunglasses', 'Sport Glasses'],
-  'calça': ['Cotton Pants', 'Casual Pants'],
-  'calca': ['Cotton Pants', 'Casual Pants'],
-  'short': ['Sport Shorts', 'Casual Shorts'],
-  'bermuda': ['Sport Shorts', 'Casual Shorts'],
-};
-
-// Faixas de declaração por peso
-const WEIGHT_DECLARATION_RANGES: Record<WeightCategory, { min: number; max: number; label: string }> = {
-  light: { min: 2.10, max: 3.15, label: 'Até 300g (Boné/Camiseta)' },
-  medium: { min: 5.20, max: 7.85, label: '301g a 1.1kg (Tênis/Moletom)' },
-  heavy: { min: 8.10, max: 9.80, label: 'Acima de 1.1kg (Jaqueta/Pesados)' }
-};
-
-// Gerar valor quebrado aleatório dentro de uma faixa
-const generateBrokenValue = (min: number, max: number): string => {
-  const base = Math.random() * (max - min) + min;
-  // Garantir valor "quebrado" com centavos não redondos
-  const cents = [0.13, 0.27, 0.43, 0.57, 0.63, 0.78, 0.83, 0.91, 0.17, 0.23];
-  const randomCents = cents[Math.floor(Math.random() * cents.length)];
-  const finalValue = Math.floor(base) + randomCents;
-  return Math.min(finalValue, max).toFixed(2);
-};
-
-// Verificar se contém marca famosa
-const containsBrand = (text: string): boolean => {
-  const lowerText = text.toLowerCase();
-  return FAMOUS_BRANDS.some(brand => lowerText.includes(brand));
-};
-
-// Substituir marca por termo genérico
-const camouflageProductName = (name: string): { name: string; wasCamouflaged: boolean } => {
-  if (!name.trim()) return { name, wasCamouflaged: false };
-  
-  let camouflaged = name.toLowerCase();
-  let wasCamouflaged = false;
-  
-  // Remover marcas
-  for (const brand of FAMOUS_BRANDS) {
-    if (camouflaged.includes(brand)) {
-      camouflaged = camouflaged.replace(new RegExp(brand, 'gi'), '').trim();
-      wasCamouflaged = true;
-    }
-  }
-  
-  // Encontrar termo genérico baseado no tipo de produto
-  for (const [keyword, replacements] of Object.entries(GENERIC_REPLACEMENTS)) {
-    if (camouflaged.includes(keyword) || name.toLowerCase().includes(keyword)) {
-      const randomReplacement = replacements[Math.floor(Math.random() * replacements.length)];
-      return { name: randomReplacement, wasCamouflaged: true };
-    }
-  }
-  
-  // Se removeu marca mas não achou categoria, usar termo genérico padrão
-  if (wasCamouflaged) {
-    return { name: 'Fashion Item', wasCamouflaged: true };
-  }
-  
-  return { name, wasCamouflaged: false };
-};
-
 // Estimar peso em gramas pelo nome do item
 const estimateWeight = (name: string): { grams: number; label: string; category: WeightCategory } => {
   const lowerName = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -270,7 +155,11 @@ const estimateWeight = (name: string): { grams: number; label: string; category:
   return { grams: 300, label: '~300g', category: 'medium' };
 };
 
-const detectWeightCategory = (name: string): WeightCategory => estimateWeight(name).category;
+const isValidDeclaredValue = (value: string): boolean => {
+  if (!value.trim()) return false;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0;
+};
 
 const AdvancedPricingCalculator: React.FC = () => {
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -286,8 +175,6 @@ const AdvancedPricingCalculator: React.FC = () => {
   const [items, setItems] = useState<ProductItem[]>([
     { id: '1', name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD', weightCategory: 'medium', estimatedGrams: 300, weightLabel: '~300g' }
   ]);
-  const [camouflagedItems, setCamouflagedItems] = useState<Set<string>>(new Set());
-  const [brandWarning, setBrandWarning] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<Array<{
     id: string;
@@ -298,10 +185,12 @@ const AdvancedPricingCalculator: React.FC = () => {
     shippingCurrency: Currency;
     totalCost: number;
     totalProfit: number;
+    schemaVersion?: number;
   }>>(() => {
     try {
       const raw = localStorage.getItem('importafacil:calc-history');
-      return raw ? JSON.parse(raw) : [];
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch { return []; }
   });
 
@@ -340,35 +229,11 @@ const AdvancedPricingCalculator: React.FC = () => {
     return inUSD * rates.BRL;
   };
 
-  // Calcular total de declarações e aplicar teto de $9.90
-  const { adjustedItems, totalDeclaration, wasAdjusted } = useMemo(() => {
-    const activeItems = items.filter(item => parseFloat(item.costPrice) > 0);
-    const totalDeclared = activeItems.reduce((sum, item) => sum + (parseFloat(item.declaredValue) || 0), 0);
-    
-    if (totalDeclared <= 9.90) {
-      return { adjustedItems: items, totalDeclaration: totalDeclared, wasAdjusted: false };
-    }
-    
-    // Recalcular para ficar entre $9.00 e $9.80
-    const targetTotal = 9.00 + Math.random() * 0.80; // Entre 9.00 e 9.80
-    const ratio = targetTotal / totalDeclared;
-    
-    const adjusted = items.map(item => {
-      if (parseFloat(item.costPrice) <= 0) return item;
-      const originalDecl = parseFloat(item.declaredValue) || 0;
-      const newDecl = originalDecl * ratio;
-      // Manter valor "quebrado"
-      const cents = [0.13, 0.23, 0.37, 0.43, 0.57, 0.67, 0.73, 0.87];
-      const finalDecl = Math.floor(newDecl) + cents[Math.floor(Math.random() * cents.length)];
-      return { ...item, declaredValue: Math.max(0.50, finalDecl).toFixed(2) };
-    });
-    
-    const newTotal = adjusted
-      .filter(item => parseFloat(item.costPrice) > 0)
-      .reduce((sum, item) => sum + (parseFloat(item.declaredValue) || 0), 0);
-    
-    return { adjustedItems: adjusted, totalDeclaration: newTotal, wasAdjusted: true };
-  }, [items]);
+  // Valores de declaração nunca são estimados nem reescritos; usar somente o informado.
+  const adjustedItems = items;
+  const totalDeclaration = useMemo(() => items
+    .filter(item => parseFloat(item.costPrice) > 0)
+    .reduce((sum, item) => sum + (isValidDeclaredValue(item.declaredValue) ? Number(item.declaredValue) : 0), 0), [items]);
 
   const addItem = () => {
     if (items.length >= 10) return;
@@ -388,69 +253,33 @@ const AdvancedPricingCalculator: React.FC = () => {
   const removeItem = (id: string) => {
     if (items.length <= 1) return;
     setItems(prev => prev.filter(item => item.id !== id));
-    setCamouflagedItems(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
   };
 
   const updateItem = (id: string, field: keyof ProductItem, value: string) => {
     setItems(prev => prev.map(item => {
       if (item.id !== id) return item;
-      
-      let updatedItem = { ...item, [field]: value };
-      
-      // Se mudou o nome, verificar marca, estimar peso e aplicar camuflagem
+
+      const updatedItem = { ...item, [field]: value };
+
+      // O nome só atualiza a estimativa de peso; nunca altera o valor declarado.
       if (field === 'name') {
         const w = estimateWeight(value);
         updatedItem.estimatedGrams = w.grams;
         updatedItem.weightLabel = w.label;
         updatedItem.weightCategory = w.category;
-
-        if (containsBrand(value)) {
-          setBrandWarning('Cuidado! O Lobo recomenda não usar nomes de marcas para evitar a fiscalização de pirataria.');
-          setCamouflagedItems(prev => new Set(prev).add(id));
-          const range = WEIGHT_DECLARATION_RANGES[w.category];
-          updatedItem.declaredValue = generateBrokenValue(range.min, range.max);
-        } else {
-          setBrandWarning(null);
-          if (w.category !== item.weightCategory) {
-            const range = WEIGHT_DECLARATION_RANGES[w.category];
-            updatedItem.declaredValue = generateBrokenValue(range.min, range.max);
-          }
-        }
-      }
-      
-      // Se mudou categoria de peso, atualizar declaração
-      if (field === 'weightCategory') {
-        const range = WEIGHT_DECLARATION_RANGES[value as WeightCategory];
-        updatedItem.declaredValue = generateBrokenValue(range.min, range.max);
       }
       
       return updatedItem;
     }));
   };
 
-  // Auto-preencher declaração quando adiciona preço de custo
   const handleCostPriceChange = (id: string, value: string) => {
-    setItems(prev => prev.map(item => {
-      if (item.id !== id) return item;
-      
-      let updatedItem = { ...item, costPrice: value };
-      
-      // Se adicionou preço e declaração está vazia, auto-preencher
-      if (parseFloat(value) > 0 && !item.declaredValue) {
-        const range = WEIGHT_DECLARATION_RANGES[item.weightCategory];
-        updatedItem.declaredValue = generateBrokenValue(range.min, range.max);
-      }
-      
-      return updatedItem;
-    }));
+    setItems(prev => prev.map(item => item.id === id ? { ...item, costPrice: value } : item));
   };
 
   // Calcular frete rateado proporcional ao peso (já convertido para BRL)
   const activeItems = adjustedItems.filter(item => parseFloat(item.costPrice) > 0);
+  const hasIncompleteDeclaredValues = activeItems.some(item => !isValidDeclaredValue(item.declaredValue));
   const totalShippingValue = parseFloat(totalShipping) || 0;
   const totalShippingBRL = convertToBRL(totalShippingValue, shippingCurrency);
   const totalWeight = activeItems.reduce((sum, item) => sum + (item.estimatedGrams || 300), 0);
@@ -469,14 +298,14 @@ const AdvancedPricingCalculator: React.FC = () => {
   // Cálculos para cada item
   const calculateItemCosts = (item: ProductItem) => {
     const costPrice = parseFloat(item.costPrice) || 0;
-    const declaredValue = parseFloat(item.declaredValue) || 0;
+    const declaredValue = isValidDeclaredValue(item.declaredValue) ? Number(item.declaredValue) : 0;
     const profitMargin = parseFloat(item.profitMargin) || 0;
 
     const costPriceBRL = convertToBRL(costPrice, item.currency);
     const itemShippingBRL = getShippingForItem(item);
     const costWithShippingBRL = costPriceBRL + itemShippingBRL;
-    const declaredValueBRL = convertToBRL(declaredValue, 'USD'); // Declaração sempre em USD
-    const taxBRL = declaredValueBRL * 0.60;
+    const declaredValueBRL = declaredValue > 0 ? convertToBRL(declaredValue, 'USD') : 0; // Valor informado em USD
+    const taxBRL = declaredValue > 0 ? declaredValueBRL * 0.60 : 0;
     const finalCostBRL = costWithShippingBRL + taxBRL;
     const sellingPrice = finalCostBRL * (1 + profitMargin / 100);
     const netProfit = sellingPrice - finalCostBRL;
@@ -494,7 +323,9 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   // Total geral
-  const totalResults = adjustedItems.reduce((acc, item) => {
+  const totalResults = hasIncompleteDeclaredValues
+    ? { totalCost: 0, totalSelling: 0, totalProfit: 0 }
+    : activeItems.reduce((acc, item) => {
     const costs = calculateItemCosts(item);
     return {
       totalCost: acc.totalCost + costs.finalCostBRL,
@@ -547,6 +378,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const createPdfBlob = async (): Promise<Blob> => {
+    if (hasIncompleteDeclaredValues) throw new Error('Informe um valor real positivo para cada item antes de exportar.');
     // Lazy-load jspdf + autotable to keep main bundle small
     const [{ default: JsPDF }, autoTableModule] = await Promise.all([
       import('jspdf'),
@@ -577,8 +409,7 @@ const AdvancedPricingCalculator: React.FC = () => {
     // Items table
     const body = itemsToExport.map((item, index) => {
       const costs = calculateItemCosts(item);
-      const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name };
-      const displayName = (camouflaged.name || item.name || `Item ${index + 1}`).substring(0, 50);
+      const displayName = (item.name || `Item ${index + 1}`).substring(0, 50);
       return [
         displayName,
         `${getCurrencySymbol(item.currency)} ${(parseFloat(item.costPrice) || 0).toFixed(2)}`,
@@ -634,6 +465,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const createDocxBlob = async () => {
+    if (hasIncompleteDeclaredValues) throw new Error('Informe um valor real positivo para cada item antes de exportar.');
     const itemsToExport = adjustedItems.filter((item) => parseFloat(item.costPrice) > 0);
     const now = new Date();
     const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
@@ -656,8 +488,7 @@ const AdvancedPricingCalculator: React.FC = () => {
 
     const dataRows = itemsToExport.map((item, index) => {
       const costs = calculateItemCosts(item);
-      const camouflaged = camouflagedItems.has(item.id) ? camouflageProductName(item.name) : { name: item.name };
-      const displayName = (camouflaged.name || item.name || `Item ${index + 1}`).substring(0, 40);
+      const displayName = (item.name || `Item ${index + 1}`).substring(0, 40);
       const values = [displayName, `R$ ${costs.costPriceBRL.toFixed(2)}`, `R$ ${costs.itemShippingBRL.toFixed(2)}`, `R$ ${costs.sellingPrice.toFixed(2)}`];
 
       return new TableRow({
@@ -743,6 +574,10 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (hasIncompleteDeclaredValues) {
+      toast.error('Valores incompletos', { description: 'Informe o valor real positivo de cada item antes de exportar.' });
+      return;
+    }
     if (!filename.trim()) return;
 
     const nextFileName = buildExportFileName(exportType);
@@ -782,7 +617,7 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const handlePreviewPdf = async () => {
-    if (generatingPDF || activeItems.length === 0) return;
+    if (generatingPDF || activeItems.length === 0 || hasIncompleteDeclaredValues) return;
 
     setGeneratingPDF(true);
     const loadingToast = toast.loading('Gerando pré-visualização do PDF...', {
@@ -833,26 +668,13 @@ const AdvancedPricingCalculator: React.FC = () => {
   // ============================================================
   // Análise de Risco do Lobo + Cópia de resumo + Histórico
   // ============================================================
-  const riskAnalysis = useMemo(() => {
-    const totalDeclUSD = totalDeclaration;
-    const totalKg = totalWeight / 1000;
+  const complianceNotice = useMemo(() => {
     if (activeItems.length === 0) return null;
-    const isLow = totalDeclUSD < 50 && totalKg < 2;
-    if (isLow) {
-      return {
-        level: 'low' as const,
-        title: 'Risco Baixo — Caminho Livre 🐺',
-        message: 'Sua declaração está abaixo de $50 e o pacote leve. A chance de retenção na alfândega é pequena.',
-        tip: 'Dica de ouro: consolide várias peças em UMA caixa só na sua redirecionadora pra diluir o frete por item e manter o peso controlado.',
-      };
-    }
     return {
-      level: 'high' as const,
-      title: 'Alerta do Lobo — Atenção na Fiscalização ⚠️',
-      message: 'Pacotes com mais de $50 declarados ou acima de 2kg chamam mais atenção na fiscalização.',
-      tip: 'Use redirecionadoras pra FRACIONAR o envio em 2 ou 3 caixas menores — reduz drasticamente o risco de bloqueio.',
+      message: 'As exigências dependem do produto, da origem e da modalidade de envio. Esta calculadora não prevê seleção ou retenção pela fiscalização.',
+      tip: 'Informe descrição, composição e valor conforme seus documentos e confira as instruções da transportadora e as orientações oficiais aplicáveis.',
     };
-  }, [totalDeclaration, totalWeight, activeItems.length]);
+  }, [activeItems.length]);
 
   // Auto-save últimas 5 simulações no LocalStorage (debounce 1.5s)
   useEffect(() => {
@@ -864,6 +686,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         savedAt: Date.now(),
         label: firstName.substring(0, 40),
         items,
+        schemaVersion: 2,
         totalShipping,
         shippingCurrency,
         totalCost: totalResults.totalCost,
@@ -875,7 +698,7 @@ const AdvancedPricingCalculator: React.FC = () => {
           return prev;
         }
         const next = [snap, ...prev].slice(0, 5);
-        try { localStorage.setItem('importafacil:calc-history', JSON.stringify(next)); } catch {}
+        try { localStorage.setItem('importafacil:calc-history', JSON.stringify(next)); } catch { /* O histórico continua disponível somente durante esta sessão. */ }
         return next;
       });
     }, 1500);
@@ -886,10 +709,17 @@ const AdvancedPricingCalculator: React.FC = () => {
   const restoreSimulation = (snapId: string) => {
     const snap = history.find((h) => h.id === snapId);
     if (!snap) return;
-    setItems(snap.items);
+    const hasCurrentDeclarationValues = snap.schemaVersion === 2;
+    setItems(hasCurrentDeclarationValues
+      ? snap.items
+      : snap.items.map((item) => ({ ...item, declaredValue: '' })));
     setTotalShipping(snap.totalShipping);
     setShippingCurrency(snap.shippingCurrency);
-    toast.success('Simulação restaurada!', { description: snap.label });
+    toast.success('Simulação restaurada!', {
+      description: hasCurrentDeclarationValues
+        ? snap.label
+        : `${snap.label} — informe novamente os valores reais de declaração do histórico antigo.`,
+    });
   };
 
   const handleCopyResumo = async () => {
@@ -955,26 +785,21 @@ const AdvancedPricingCalculator: React.FC = () => {
           <p className="text-xs text-muted-foreground">⚠️ Não foi possível atualizar a cotação agora. Usando os últimos valores disponíveis.</p>
         )}
 
-        {/* Camouflage Status */}
-        {(camouflagedItems.size > 0 || wasAdjusted) && (
-          <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-xl">
-            <p className="text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4" />
-              🐺 O Lobo camuflou sua declaração: Termos genéricos e valores abaixo de $10 aplicados
+        {activeItems.length > 0 && (
+          <div className="rounded-xl border border-border bg-muted/40 p-3">
+            <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <FileText className="h-4 w-4 text-accent" />
+              Total informado para declaração: ${totalDeclaration.toFixed(2)}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total declarado: ${totalDeclaration.toFixed(2)} {wasAdjusted && '(ajustado automaticamente)'}
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Informe o valor real pago. A calculadora não estima nem altera esse valor; confira também os requisitos do formulário utilizado.
             </p>
-          </div>
-        )}
-
-        {/* Brand Warning */}
-        {brandWarning && (
-          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl animate-fade-in">
-            <p className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              {brandWarning}
-            </p>
+            {hasIncompleteDeclaredValues && (
+              <p className="mt-2 flex items-start gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                Preencha um valor real positivo em cada item para calcular imposto, preço final e exportar.
+              </p>
+            )}
           </div>
         )}
 
@@ -1042,8 +867,6 @@ const AdvancedPricingCalculator: React.FC = () => {
                 onClick={() => {
                   setItems([{ id: Date.now().toString(), name: '', costPrice: '', declaredValue: '', profitMargin: '30', currency: 'USD', weightCategory: 'medium', estimatedGrams: 300, weightLabel: '~300g' }]);
                   setTotalShipping('');
-                  setCamouflagedItems(new Set());
-                  setBrandWarning(null);
                   toast.success('Campos limpos', { description: 'Pronto pra uma nova simulação.' });
                 }}
                 className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -1069,14 +892,13 @@ const AdvancedPricingCalculator: React.FC = () => {
             const costs = calculateItemCosts(item);
             const hasData = parseFloat(item.costPrice) > 0;
             const currencySymbol = getCurrencySymbol(item.currency);
-            const isCamouflaged = camouflagedItems.has(item.id);
 
             return (
-              <div key={item.id} className={`p-3 border rounded-xl bg-card space-y-3 ${isCamouflaged ? 'border-green-500/50' : 'border-border'}`}>
+              <div key={item.id} className="p-3 border border-border rounded-xl bg-card space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <Badge variant={isCamouflaged ? "default" : "outline"} className={`h-6 w-6 flex items-center justify-center p-0 text-xs flex-shrink-0 ${isCamouflaged ? 'bg-green-500' : ''}`}>
-                      {isCamouflaged ? '🐺' : index + 1}
+                    <Badge variant="outline" className="h-6 w-6 flex items-center justify-center p-0 text-xs flex-shrink-0">
+                      {index + 1}
                     </Badge>
                     <Input
                       type="text"
@@ -1122,26 +944,12 @@ const AdvancedPricingCalculator: React.FC = () => {
                   )}
                 </div>
 
-                {/* Weight display + Category Selector */}
+                {/* Estimated weight used for shipping allocation */}
                 <div className="flex gap-2 items-center">
                   <Badge variant="outline" className="text-xs whitespace-nowrap">
                     ⚖️ {item.weightLabel || '~300g'}
                   </Badge>
-                  <Select 
-                    value={item.weightCategory} 
-                    onValueChange={(v) => updateItem(item.id, 'weightCategory', v)}
-                  >
-                    <SelectTrigger className="h-7 text-xs flex-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(WEIGHT_DECLARATION_RANGES).map(([key, config]) => (
-                        <SelectItem key={key} value={key} className="text-xs">
-                          {config.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <span className="text-xs text-muted-foreground">estimativa usada no rateio do frete</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -1160,15 +968,16 @@ const AdvancedPricingCalculator: React.FC = () => {
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">
-                      Declaração ($)
+                      Valor real (US$)
                     </Label>
                     <Input
                       type="number"
                       step="0.01"
-                      placeholder="Auto"
+                      min="0.01"
+                      placeholder="Informe o valor pago"
                       value={item.declaredValue}
                       onChange={(e) => updateItem(item.id, 'declaredValue', e.target.value)}
-                      className="h-8 text-sm bg-green-500/5"
+                      className="h-8 text-sm"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1184,52 +993,50 @@ const AdvancedPricingCalculator: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Descrição Otimizada (Auto-Camuflagem para Alfândega) */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span>Descrição Otimizada (Alfândega)</span>
-                    <Badge
-                      variant="outline"
-                      className="h-4 px-1.5 text-[10px] font-semibold bg-blue-500/10 text-blue-600 border-blue-500/30"
-                    >
-                      Auto
-                    </Badge>
-                  </Label>
-                  <Input
-                    type="text"
-                    readOnly
-                    placeholder="Ex: Vestuário de uso diário"
-                    value={getOptimizedDescription(item.name)}
-                    className="h-8 text-sm bg-blue-500/5 border-blue-500/20 text-blue-700 dark:text-blue-300 cursor-default"
-                  />
-                </div>
+                <ProductDescriptionAssistant
+                  productName={item.name}
+                  value={item.declarationDescription ?? ''}
+                  onChange={(description) => updateItem(item.id, 'declarationDescription', description)}
+                />
 
                 {hasData && (
                   <div className="pt-2 border-t border-border space-y-1">
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div>
-                        <span className="text-muted-foreground">Custo+Frete:</span>
-                        <p className="font-medium">R$ {costs.costWithShippingBRL.toFixed(2)}</p>
-                      </div>
-                      <div>
-                        <span className="text-destructive">Imposto 60%:</span>
-                        <p className="font-medium text-destructive">R$ {costs.taxBRL.toFixed(2)}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Custo Final:</span>
-                        <p className="font-bold text-primary">R$ {costs.finalCostBRL.toFixed(2)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between pt-1">
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">Venda: </span>
-                        <span className="font-medium">R$ {costs.sellingPrice.toFixed(2)}</span>
-                      </div>
-                      <Badge className={`${costs.netProfit >= 0 ? 'bg-green-500/20 text-green-600' : 'bg-destructive/20 text-destructive'}`}>
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        Lucro: R$ {costs.netProfit.toFixed(2)}
-                      </Badge>
-                    </div>
+                    {!isValidDeclaredValue(item.declaredValue) ? (
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                        Informe o valor real positivo em US$ para calcular imposto, preço final e lucro deste item.
+                      </p>
+                    ) : hasIncompleteDeclaredValues ? (
+                      <p className="text-xs text-muted-foreground">
+                        Complete o valor real dos demais itens ativos para exibir os resultados desta simulação.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Custo+Frete:</span>
+                            <p className="font-medium">R$ {costs.costWithShippingBRL.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <span className="text-destructive">Imposto 60%:</span>
+                            <p className="font-medium text-destructive">R$ {costs.taxBRL.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Custo Final:</span>
+                            <p className="font-bold text-primary">R$ {costs.finalCostBRL.toFixed(2)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">Venda: </span>
+                            <span className="font-medium">R$ {costs.sellingPrice.toFixed(2)}</span>
+                          </div>
+                          <Badge className={`${costs.netProfit >= 0 ? 'bg-green-500/20 text-green-600' : 'bg-destructive/20 text-destructive'}`}>
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            Lucro: R$ {costs.netProfit.toFixed(2)}
+                          </Badge>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -1339,35 +1146,12 @@ const AdvancedPricingCalculator: React.FC = () => {
           </div>
         )}
 
-        {/* Análise de Risco do Lobo */}
-        {riskAnalysis && (
-          <div
-            className={`rounded-2xl p-4 border-2 shadow-md ${
-              riskAnalysis.level === 'low'
-                ? 'bg-[hsl(220,55%,12%)] border-emerald-400/40'
-                : 'bg-[hsl(220,55%,12%)] border-amber-400/50'
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-xl">🐺</span>
-              <h4 className={`text-sm font-bold tracking-wide text-center ${
-                riskAnalysis.level === 'low' ? 'text-emerald-300' : 'text-amber-300'
-              }`}>
-                Análise de Risco do Lobo
-              </h4>
-            </div>
-            <p className="text-sm text-white/90 text-center leading-relaxed mb-3">
-              {riskAnalysis.title}
-            </p>
-            <p className="text-xs text-white/70 text-center leading-relaxed mb-3">
-              {riskAnalysis.message}
-            </p>
-            <div className={`rounded-xl px-3 py-2 text-xs leading-relaxed text-center ${
-              riskAnalysis.level === 'low'
-                ? 'bg-emerald-500/15 text-emerald-200 border border-emerald-400/30'
-                : 'bg-amber-500/15 text-amber-200 border border-amber-400/30'
-            }`}>
-              <strong>💡 Dica:</strong> {riskAnalysis.tip}
+        {complianceNotice && (
+          <div className="rounded-2xl border border-border bg-muted/40 p-4 shadow-sm">
+            <h4 className="mb-2 text-sm font-semibold text-foreground">Conferência de declaração</h4>
+            <p className="mb-3 text-xs leading-relaxed text-muted-foreground">{complianceNotice.message}</p>
+            <div className="rounded-xl border border-border bg-background px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+              {complianceNotice.tip}
             </div>
           </div>
         )}

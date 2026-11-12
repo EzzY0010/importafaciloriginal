@@ -36,5 +36,8 @@ verify_jwt = false
 [functions.appcnpay-minicurso]
 verify_jwt = false
 
+[functions.product-description]
+verify_jwt = false
+
 [functions.appcnpay-status]
 verify_jwt = false
