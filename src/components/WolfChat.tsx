@@ -10,6 +10,7 @@ import { Send, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag,
 import wolfLogo from '@/assets/wolf-logo-clean.png';
 import StrategyButtons from './StrategyButtons';
 import { backendKey, backendUrl, getSupabaseClient, isBackendConfigured } from '@/lib/backend';
+import { visionErrorMessage } from '@/lib/visionErrors';
 
 interface Message {
   id?: string;
@@ -469,6 +470,11 @@ const WolfChat: React.FC = () => {
 
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+    if (files.some(file => file.size > 10 * 1024 * 1024)) {
+      toast({ title: 'Foto muito grande', description: 'Selecione uma imagem de até 10 MB.', variant: 'destructive' });
+      e.target.value = '';
+      return;
+    }
     const invalid = files.find((file) => !file.type.startsWith('image/'));
     if (invalid) {
       toast({ title: 'Imagem inválida', description: 'Escolha uma foto JPG, PNG ou WEBP.', variant: 'destructive' });
@@ -582,13 +588,15 @@ const WolfChat: React.FC = () => {
       // 90s timeout — análises visuais podem demorar mais no plano gratuito da Groq
       const controller = new AbortController();
       activeControllerRef.current = controller;
+      const accessToken = (await (await getSupabase())?.auth.getSession())?.data.session?.access_token;
+      if (!accessToken) throw new Error(visionErrorMessage('unauthorized', 401));
       const timeoutId = setTimeout(() => controller.abort(), 90000);
 
       const response = await fetch(`${backendUrl}/functions/v1/wolf-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await (await getSupabase())?.auth.getSession())?.data.session?.access_token ?? backendKey}`,
+          'Authorization': `Bearer ${accessToken}`,
           apikey: backendKey,
         },
         body: JSON.stringify({
@@ -628,7 +636,7 @@ const WolfChat: React.FC = () => {
           return;
         }
 
-        const err = new Error(errPayload?.message || 'Failed to get response');
+        const err = new Error(visionErrorMessage(errPayload?.error, response.status, errPayload?.message));
         (err as any).status = response.status;
         (err as any).code = errPayload?.error;
         throw err;
@@ -722,14 +730,14 @@ const WolfChat: React.FC = () => {
       const status = error?.status;
       const code = error?.code;
       let title = 'Não consegui responder agora';
-      let description = 'Tente enviar novamente em instantes.';
+      let description = visionErrorMessage(code, status, error?.message);
       if (error?.name === 'AbortError') {
         title = 'A análise demorou demais';
         description = 'A imagem levou mais de 90 segundos. Tente reenviar uma foto mais leve ou mais nítida.';
       } else if (status === 413 || code === 'payload_too_large') {
         description = 'A imagem ainda ficou pesada demais. Tente enviar um print recortado ou uma foto mais próxima do produto.';
       } else if (status === 429 || code === 'rate_limit') {
-        description = 'Muitas requisições. Aguarde alguns segundos e tente novamente.';
+        description = visionErrorMessage(code, status);
       } else if (status === 402 || code === 'quota_exhausted') {
         description = 'Cota de IA esgotada. Contate o suporte.';
       } else if (status === 400) {
