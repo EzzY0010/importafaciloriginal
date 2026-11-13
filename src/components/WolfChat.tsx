@@ -622,13 +622,12 @@ const WolfChat: React.FC = () => {
       try {
         response = await sendRequest(session.access_token);
         if (response.status === 401) {
-          const authFailure = await response.clone().json().catch(() => null);
-          if (authFailure?.error === 'unauthorized') {
-            const refreshed = await authClient.auth.refreshSession({ refresh_token: session.refresh_token });
-            const refreshedToken = refreshed.data.session?.access_token;
-            if (refreshedToken && refreshedToken !== session.access_token) {
-              response = await sendRequest(refreshedToken);
-            }
+          // Supabase Gateway pode devolver 401 com corpos diferentes (ex.: Invalid JWT),
+          // portanto o refresh não deve depender do JSON específico da Edge Function.
+          const refreshed = await authClient.auth.refreshSession();
+          const refreshedToken = refreshed.data.session?.access_token;
+          if (refreshedToken && refreshedToken !== session.access_token) {
+            response = await sendRequest(refreshedToken);
           }
         }
       } finally {
