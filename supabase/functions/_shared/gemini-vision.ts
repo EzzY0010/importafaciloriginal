@@ -1,6 +1,25 @@
 const BASE = 'https://generativelanguage.googleapis.com/v1beta';
+const MODEL_LIST_TIMEOUT_MS = 10_000;
+const MODEL_GENERATION_TIMEOUT_MS = 25_000;
+const MAX_MODEL_ATTEMPTS = 2;
+const TIMEOUT_MESSAGE = 'A análise da foto demorou mais que o esperado. Tente uma imagem menor ou envie novamente.';
 export class VisionError extends Error {
   constructor(public code: string, public status: number, message: string) { super(message); }
+}
+
+async function fetchJson(fetcher: typeof fetch, input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetcher(input, { ...init, signal: controller.signal });
+    const payload = await response.json().catch(() => ({}));
+    return { response, payload };
+  } catch (error) {
+    if (controller.signal.aborted) throw new VisionError('vision_timeout', 504, TIMEOUT_MESSAGE);
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 export function parseImage(value: unknown): { mime_type: string; data: string } {
   if (typeof value !== 'string') throw new VisionError('invalid_image', 400, 'Envie uma foto JPG, PNG ou WEBP válida.');
@@ -39,36 +58,31 @@ function providerError(status: number, payload: unknown): VisionError {
   if (status === 400 && /image|decode|mime|base64/i.test(code)) return new VisionError('invalid_image', 400, 'O Google não conseguiu ler esta foto. Envie outra imagem mais nítida.');
   return new VisionError('vision_unavailable', 503, 'A análise por foto está indisponível no momento. Tente novamente mais tarde.');
 }
-export async function generateVisual(options: { apiKey?: string; prompt: string; text: string; images: ReturnType<typeof parseImage>[]; json?: boolean; fetcher?: typeof fetch }) {
+export async function generateVisual(options: { apiKey?: string; prompt: string; text: string; images: ReturnType<typeof parseImage>[]; json?: boolean; fetcher?: typeof fetch; timeoutMs?: { modelList?: number; generation?: number } }) {
   if (!options.apiKey) throw new VisionError('ai_key_missing', 503, 'A análise por foto ainda não está configurada. O responsável deve cadastrar GOOGLE_GEMINI_API_KEY no campo seguro.');
   const fetcher = options.fetcher ?? fetch;
   const headers = { 'x-goog-api-key': options.apiKey, 'Content-Type': 'application/json' };
   let listed: Model[] = [];
-  let pageToken = '';
   try {
-    do {
-      const url = new URL(`${BASE}/models`);
-      url.searchParams.set('pageSize', '1000');
-      if (pageToken) url.searchParams.set('pageToken', pageToken);
-      const response = await fetcher(url, { headers });
-      const payload = await response.json();
-      if (!response.ok) throw providerError(response.status, payload);
-      if (Array.isArray(payload.models)) listed.push(...payload.models);
-      pageToken = typeof payload.nextPageToken === 'string' ? payload.nextPageToken : '';
-    } while (pageToken);
+    const url = new URL(`${BASE}/models`);
+    url.searchParams.set('pageSize', '1000');
+    const { response: listResponse, payload: listPayload } = await fetchJson(
+      fetcher, url, { headers }, options.timeoutMs?.modelList ?? MODEL_LIST_TIMEOUT_MS,
+    );
+    if (!listResponse.ok) throw providerError(listResponse.status, listPayload);
+    if (Array.isArray(listPayload.models)) listed = listPayload.models;
     const models = selectVisualModels(listed);
     if (!models.length) throw new VisionError('model_unavailable', 503, 'Nenhum modelo Gemini multimodal está disponível para esta conta.');
     let lastError = new VisionError('model_unavailable', 503, 'Os modelos visuais disponíveis não conseguiram analisar a foto.');
-    for (const model of models.slice(0, 6)) {
-      const response = await fetcher(`${BASE}/models/${model}:generateContent`, {
+    for (const model of models.slice(0, MAX_MODEL_ATTEMPTS)) {
+      const { response, payload } = await fetchJson(fetcher, `${BASE}/models/${model}:generateContent`, {
         method: 'POST', headers,
         body: JSON.stringify({
           system_instruction: { parts: [{ text: options.prompt }] },
           contents: [{ role: 'user', parts: [{ text: options.text }, ...options.images.map(image => ({ inline_data: image }))] }],
           generationConfig: { temperature: 0.2, maxOutputTokens: 4096, ...(options.json ? { responseMimeType: 'application/json' } : {}) },
         }),
-      });
-      const payload = await response.json();
+      }, options.timeoutMs?.generation ?? MODEL_GENERATION_TIMEOUT_MS);
       if (!response.ok) {
         lastError = providerError(response.status, payload);
         console.warn('[gemini-vision] model rejected', { model, status: response.status, code: lastError.code });

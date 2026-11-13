@@ -585,27 +585,55 @@ const WolfChat: React.FC = () => {
           ]
         : messageText;
 
-      // 90s timeout — análises visuais podem demorar mais no plano gratuito da Groq
+      // Vision is bounded on the server; this client timeout leaves room for one
+      // auth refresh/retry without telling the user that their session expired.
       const controller = new AbortController();
       activeControllerRef.current = controller;
-      const accessToken = (await (await getSupabase())?.auth.getSession())?.data.session?.access_token;
-      if (!accessToken) throw new Error(visionErrorMessage('unauthorized', 401));
-      const timeoutId = setTimeout(() => controller.abort(), 90000);
+      const authClient = await getSupabase();
+      if (!authClient) throw new Error(visionErrorMessage('unauthorized', 401));
 
-      const response = await fetch(`${backendUrl}/functions/v1/wolf-chat`, {
+      let session = (await authClient.auth.getSession()).data.session;
+      const tokenExpiresSoon = session?.expires_at != null
+        && session.expires_at <= Math.floor(Date.now() / 1000) + 60;
+      if (!session || tokenExpiresSoon) {
+        const refreshed = await authClient.auth.refreshSession();
+        if (refreshed.data.session) session = refreshed.data.session;
+      }
+      if (!session?.access_token) throw new Error(visionErrorMessage('unauthorized', 401));
+
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
+      const requestBody = JSON.stringify({
+        messages: [{ role: 'user', content: finalContent }],
+        conversationId: convId,
+        userId: user.id,
+      });
+      const sendRequest = (token: string) => fetch(`${backendUrl}/functions/v1/wolf-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${token}`,
           apikey: backendKey,
         },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: finalContent }],
-          conversationId: convId,
-          userId: user.id
-        }),
+        body: requestBody,
         signal: controller.signal,
-      }).finally(() => clearTimeout(timeoutId));
+      });
+
+      let response: Response;
+      try {
+        response = await sendRequest(session.access_token);
+        if (response.status === 401) {
+          const authFailure = await response.clone().json().catch(() => null);
+          if (authFailure?.error === 'unauthorized') {
+            const refreshed = await authClient.auth.refreshSession({ refresh_token: session.refresh_token });
+            const refreshedToken = refreshed.data.session?.access_token;
+            if (refreshedToken && refreshedToken !== session.access_token) {
+              response = await sendRequest(refreshedToken);
+            }
+          }
+        }
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         let errPayload: any = null;

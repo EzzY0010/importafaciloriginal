@@ -201,12 +201,25 @@ serve(async (req) => {
     if (!supabaseUrl || !supabaseKey) throw new Error('server_configuration');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verificação de assinatura (antes de chamar qualquer IA)
+    // Valida o token de usuário antes de qualquer IA. Use a mesma chave pública
+    // aceita pelo gateway nesta requisição; a service-role fica restrita ao DB/RPC.
     const authHeader = req.headers.get('Authorization') ?? '';
     const jwt = authHeader.replace(/^Bearer\s+/i, '');
-    const { data: authData } = jwt ? await supabase.auth.getUser(jwt) : { data: { user: null } } as any;
+    const requestApiKey = req.headers.get('apikey') || req.headers.get('x-api-key') || supabaseKey;
+    const authClient = createClient(supabaseUrl, requestApiKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+    const { data: authData, error: authError } = jwt
+      ? await authClient.auth.getUser(jwt)
+      : { data: { user: null }, error: null } as any;
     const authUser = authData?.user;
     if (!authUser) {
+      console.warn('[wolf-chat] request token rejected', {
+        hasBearer: Boolean(jwt),
+        authErrorStatus: authError?.status ?? null,
+        authErrorCode: authError?.code ?? null,
+        authErrorName: authError?.name ?? null,
+      });
       return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     const [{ data: active, error: accessRpcError }, { data: isAdmin }] = await Promise.all([

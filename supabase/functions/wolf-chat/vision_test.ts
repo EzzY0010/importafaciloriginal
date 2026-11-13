@@ -35,3 +35,17 @@ Deno.test('quota failure does not replay requests or masquerade as no vision', a
   try { await generateVisual({ apiKey: 'test-fixture-not-a-credential', prompt: '', text: '', images: [], fetcher }); throw new Error('Expected failure'); }
   catch (error) { assert(error instanceof VisionError && error.code === 'quota_exhausted' && calls === 1); }
 });
+Deno.test('slow model discovery returns a bounded vision timeout', async () => {
+  const fetcher: typeof fetch = async (_input, init) => await new Promise<Response>((_resolve, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+  });
+  try {
+    await generateVisual({
+      apiKey: 'test-fixture-not-a-credential', prompt: '', text: '', images: [], fetcher,
+      timeoutMs: { modelList: 5, generation: 5 },
+    });
+    throw new Error('Expected timeout');
+  } catch (error) {
+    assert(error instanceof VisionError && error.code === 'vision_timeout' && error.status === 504);
+  }
+});
