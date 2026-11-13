@@ -1,3 +1,5 @@
+// site_settings and admin_set_profile_access live in the external production database, not in the generated types.
+import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { Globe, Megaphone, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -67,7 +69,7 @@ const SiteContentManager = () => {
         }
         return;
       }
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as unknown as UntypedClient)
         .from("site_settings")
         .select("content, updated_at")
         .eq("id", "global")
@@ -100,7 +102,7 @@ const SiteContentManager = () => {
       return;
     }
     const now = new Date().toISOString();
-    const { error } = await supabase.from("site_settings").upsert({
+    const { error } = await (supabase as unknown as UntypedClient).from("site_settings").upsert({
       id: "global",
       content: settings as unknown as Json,
       updated_at: now,

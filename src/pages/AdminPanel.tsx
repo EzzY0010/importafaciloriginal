@@ -1,3 +1,5 @@
+// site_settings and admin_set_profile_access live in the external production database, not in the generated types.
+import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
@@ -84,7 +86,7 @@ const AdminPanel = () => {
     const supabase = await getSupabaseClient();
     if (!supabase) return;
 
-    let { error } = await supabase.rpc("admin_set_profile_access", {
+    let { error } = await (supabase as unknown as UntypedClient).rpc("admin_set_profile_access", {
       _profile_id: profileId,
       _enabled: newStatus,
     });
