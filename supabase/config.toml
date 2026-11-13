@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.appcnpay-status]
 verify_jwt = false
+
+[functions.lobo-vision]
+verify_jwt = false
