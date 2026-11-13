@@ -1,3 +1,5 @@
+// site_settings and admin_set_profile_access live in the external production database, not in the generated types.
+import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -248,7 +250,7 @@ const LandingPage = () => {
     void (async () => {
       const supabase = await getSupabaseClient();
       if (!supabase || !active) return;
-      const { data } = await supabase
+      const { data } = await (supabase as unknown as UntypedClient)
         .from("site_settings")
         .select("content")
         .eq("id", "global")
