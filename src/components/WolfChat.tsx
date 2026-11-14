@@ -230,7 +230,7 @@ const WolfChat: React.FC = () => {
   const LOADING_PHRASES_IMAGE = [
     'Analisando a imagem... 📸',
     'Descobrindo o peso médio de fábrica... 📦',
-    'Analisando componentes e marca... 🔍',
+    'Identificando o tipo de produto... 🔍',
   ];
   const LOADING_PHRASES = loadingMode === 'image' ? LOADING_PHRASES_IMAGE : LOADING_PHRASES_TEXT;
   const [conversations, setConversations] = useState<Conversation[]>([]);
