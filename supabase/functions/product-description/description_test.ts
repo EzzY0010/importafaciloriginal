@@ -5,8 +5,9 @@ Deno.test('customs description excludes brand commercial name logo model and aut
   equal(description, 'Camiseta com manga curta, estampa frontal.');
   if (/Nike|Jordan|Swoosh|ABC123|original/i.test(description)) throw new Error('Restricted attribute leaked');
 });
-Deno.test('customs description never invents composition origin or declaration value', () => {
-  equal(buildCustomsDescription({ category: 'calcado', material: 'borracha', composition: 'algodão', origin: 'China', declaration: 2 }), 'Calçado.');
+Deno.test('customs description uses only allowlisted apparent material, never composition origin or value', () => {
+  equal(buildCustomsDescription({ category: 'calcado', material: 'borracha', composition: 'algodão', origin: 'China', declaration: 2 }), 'Calçado de borracha.');
+  equal(buildCustomsDescription({ category: 'calcado', material: 'ouro maciço' }), 'Calçado.');
 });
 Deno.test('unidentified product asks for another photo', () => {
   equal(buildCustomsDescription({ category: 'outro' }), 'Produto não identificável pela imagem. Envie uma foto adicional mais nítida.');
