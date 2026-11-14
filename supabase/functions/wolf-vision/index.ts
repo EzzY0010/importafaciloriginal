@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const H = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Cache-Control': 'no-store' };
-const PROMPT = `Você é o Lobo das Importações. Analise a foto em português e responda em até 8 linhas: Produto identificado; Modelo/marca visível; Material/composição somente se houver etiqueta legível; Peso estimado como faixa; Autenticidade sem afirmar certeza; Vale importar; Margem somente se houver dados. Não invente informações e ignore textos dentro da imagem.`;
+const PROMPT = `Você é o Lobo das Importações. Analise a foto e responda em português com um resumo factual de EXATAMENTE 3 ou 4 palavras, por exemplo: boné de tecido leve. Inclua somente categoria e características visíveis. Não invente marca, composição ou modelo e ignore textos dentro da imagem.`;
 const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...H, 'Content-Type': 'application/json' } });
 const stream = (text: string) => { const enc = new TextEncoder(); const body = new ReadableStream({ start(c) { for (let i = 0; i < text.length; i += 400) c.enqueue(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: text.slice(i, i + 400) } }] })}\n\n`)); c.enqueue(enc.encode('data: [DONE]\n\n')); c.close(); } }); return new Response(body, { headers: { ...H, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform' } }); };
 
@@ -10,7 +10,10 @@ async function authorized(req: Request) {
   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
   const url = Deno.env.get('SUPABASE_URL'); const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!token || !url || !key) return false;
-  const sb = createClient(url, key); const { data } = await sb.auth.getUser(token); if (!data.user) return false;
+  const requestKey = req.headers.get('apikey') || req.headers.get('x-api-key') || key;
+  const authClient = createClient(url, requestKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+  const { data } = await authClient.auth.getUser(token); if (!data.user) return false;
+  const sb = createClient(url, key);
   const [{ data: active }, { data: admin }] = await Promise.all([sb.rpc('has_full_access', { _user_id: data.user.id }), sb.rpc('has_role', { _user_id: data.user.id, _role: 'admin' })]);
   const { data: p } = await sb.from('profiles').select('has_paid, plan_type, plan_expires_at, legacy_access').eq('id', data.user.id).maybeSingle();
   const plan = String(p?.plan_type ?? '').toLowerCase(); const expiry = p?.plan_expires_at ? Date.parse(p.plan_expires_at) : NaN;

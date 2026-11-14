@@ -163,13 +163,13 @@ const isValidDeclaredValue = (value: string): boolean => {
   return Number.isFinite(parsed) && parsed > 0;
 };
 
-const declarationFromTitle = (title: string): { value: number; min: number; max: number; category: string } | null => {
+const declarationFromTitle = (title: string, weightCategory: WeightCategory = 'medium'): { value: number; min: number; max: number; category: string } | null => {
   const name = title.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (!name.trim()) return null;
   if (/corta[- ]?vento|windbreaker/.test(name)) return { value: 4, min: 4, max: 4, category: 'Corta-vento' };
   if (/blusa de frio|moletom|hoodie|anorak|jaqueta|casaco|parka|velejad|puffer/.test(name)) {
-    const heavy = /velejad|puffer|casaco|parka|jaqueta pesada/.test(name);
-    return heavy ? { value: 7, min: 6, max: 8, category: 'Blusa de frio pesada' } : { value: 5, min: 4, max: 8, category: 'Blusa de frio' };
+    const heavy = weightCategory === 'heavy' || /velejad|puffer|casaco|parka|jaqueta pesada/.test(name);
+    return heavy ? { value: 7, min: 6, max: 8, category: 'Blusa de frio pesada' } : { value: 5, min: 4, max: 6, category: 'Blusa de frio leve' };
   }
   if (/camiseta|t-shirt|tee\b|regata/.test(name)) return { value: 3.5, min: 3, max: 4, category: 'Camiseta' };
   if (/bone|chapeu|cap\b|bucket/.test(name)) return { value: 2.5, min: 2, max: 3, category: 'Boné ou chapéu' };
@@ -284,7 +284,7 @@ const AdvancedPricingCalculator: React.FC = () => {
         updatedItem.estimatedGrams = w.grams;
         updatedItem.weightLabel = w.label;
         updatedItem.weightCategory = w.category;
-        const declaration = declarationFromTitle(value);
+        const declaration = declarationFromTitle(value, w.category);
         if (declaration && !isValidDeclaredValue(item.declaredValue)) {
           const converted = updatedItem.declaredCurrency === 'EUR' ? declaration.value : declaration.value / rates.EUR;
           updatedItem.declaredValue = converted.toFixed(2);

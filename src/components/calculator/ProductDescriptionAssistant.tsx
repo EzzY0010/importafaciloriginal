@@ -17,6 +17,13 @@ interface ProductDescriptionAssistantProps {
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_DESCRIPTION_LENGTH = 1200;
+const compactProductSummary = (text: string) => {
+  const firstLine = text.split(/[\r\n]/)[0]
+    .replace(/^[^:]{0,40}:\s*/i, '')
+    .replace(/[📦🧩🧵🔍⚖️💰📈]/gu, '')
+    .trim();
+  return firstLine.split(/\s+/).filter(Boolean).slice(0, 4).join(' ');
+};
 
 const compressImage = (file: File): Promise<string> => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -132,12 +139,13 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
         throw new Error(visionErrorMessage(errorPayload.error, response.status, errorPayload.message));
       }
 
-      const suggestion = payload.split('\n')
+      const rawSuggestion = payload.split('\n')
         .filter((line) => line.startsWith('data:') && !line.includes('[DONE]'))
         .map((line) => {
           try { return JSON.parse(line.slice(5).trim())?.choices?.[0]?.delta?.content ?? ''; } catch { return ''; }
         })
         .join('').trim().slice(0, MAX_DESCRIPTION_LENGTH);
+      const suggestion = compactProductSummary(rawSuggestion);
       if (!suggestion) throw new Error('A IA não retornou uma sugestão. Tente uma foto mais nítida.');
       onChange(suggestion);
       toast({ title: 'Sugestão pronta', description: 'Revise a descrição antes de copiar.' });
