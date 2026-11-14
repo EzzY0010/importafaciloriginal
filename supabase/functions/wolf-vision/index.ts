@@ -29,7 +29,20 @@ serve(async (req) => {
     if (typeof image !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(image)) return json({ error: 'invalid_image', message: 'Envie uma foto JPG, PNG ou WEBP válida.' }, 400);
     const groqKey = Deno.env.get('GROQ_API_KEY');
     if (!groqKey) return json({ error: 'ai_key_missing', message: 'O provedor visual ainda não está configurado.' }, 503);
-    const candidates = ['meta-llama/llama-4-scout-17b-16e-instruct', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'llama-3.2-11b-vision-preview'];
+    const preferred = ['meta-llama/llama-4-scout-17b-16e-instruct', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'llama-3.2-11b-vision-preview'];
+    const modelList = await fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: `Bearer ${groqKey}` } });
+    if (!modelList.ok) {
+      console.error('[wolf-vision] Groq model list failed', modelList.status);
+      return json({ error: 'vision_unavailable', message: `O provedor visual recusou a conexão (status ${modelList.status}).` }, 503);
+    }
+    const listed = await modelList.json().catch(() => ({}));
+    const available = (listed?.data ?? []).map((item: any) => String(item?.id ?? '')).filter(Boolean);
+    const discovered = available.filter((id: string) => /vision|llama-4|scout|maverick/i.test(id) && !/guard|whisper|audio|tts|compound/i.test(id));
+    const candidates = [...preferred.filter((id) => available.includes(id)), ...discovered].filter((id, index, all) => all.indexOf(id) === index);
+    if (!candidates.length) {
+      console.error('[wolf-vision] no visual model available', { modelCount: available.length });
+      return json({ error: 'vision_unavailable', message: 'Não há modelo visual ativo na conta Groq.' }, 503);
+    }
     const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 30000);
     let response: Response | null = null; let lastStatus = 503;
     try {
@@ -40,7 +53,10 @@ serve(async (req) => {
         if (![400, 404, 415].includes(response.status)) break;
       }
     } finally { clearTimeout(timer); }
-    if (!response?.ok) return json({ error: lastStatus === 429 ? 'quota_exhausted' : 'vision_unavailable', message: 'O modelo visual não respondeu. Tente novamente em instantes.' }, lastStatus === 429 ? 429 : 503);
+    if (!response?.ok) {
+      console.error('[wolf-vision] all visual models failed', { lastStatus, tried: candidates.length });
+      return json({ error: lastStatus === 429 ? 'quota_exhausted' : 'vision_unavailable', message: `O modelo visual recusou a imagem (status ${lastStatus}).` }, lastStatus === 429 ? 429 : 503);
+    }
     const payload = await response.json().catch(() => ({}));
     const answer = String(payload?.choices?.[0]?.message?.content ?? '').replace(/\s+/g, ' ').trim().split(' ').slice(0, 4).join(' ');
     return answer ? sse(answer) : json({ error: 'vision_unavailable', message: 'A IA não conseguiu interpretar essa foto.' }, 503);
