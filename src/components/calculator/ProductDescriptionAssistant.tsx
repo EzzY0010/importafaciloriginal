@@ -116,19 +116,14 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
         throw new Error('Sua sessão expirou. Entre novamente e tente outra vez.');
       }
 
-      const response = await fetch(`${backendUrl}/functions/v1/wolf-vision`, {
+      const response = await fetch(`${backendUrl}/functions/v1/product-description`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
           apikey: backendKey,
         },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: [
-            { type: 'text', text: productName.trim().slice(0, 160) || 'Analise este produto para a descrição da calculadora.' },
-            { type: 'image_url', image_url: { url: imageData } },
-          ] }],
-        }),
+        body: JSON.stringify({ productName: productName.trim().slice(0, 160), imageData }),
         signal: controller.signal,
       }).finally(() => window.clearTimeout(timeoutId));
 
@@ -139,12 +134,9 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
         throw new Error(visionErrorMessage(errorPayload.error, response.status, errorPayload.message));
       }
 
-      const rawSuggestion = payload.split('\n')
-        .filter((line) => line.startsWith('data:') && !line.includes('[DONE]'))
-        .map((line) => {
-          try { return JSON.parse(line.slice(5).trim())?.choices?.[0]?.delta?.content ?? ''; } catch { return ''; }
-        })
-        .join('').trim().slice(0, MAX_DESCRIPTION_LENGTH);
+      let responseData: { suggestion?: string } = {};
+      try { responseData = JSON.parse(payload); } catch { responseData = {}; }
+      const rawSuggestion = String(responseData.suggestion ?? '').trim().slice(0, MAX_DESCRIPTION_LENGTH);
       const suggestion = compactProductSummary(rawSuggestion);
       if (!suggestion) throw new Error('A IA não retornou uma sugestão. Tente uma foto mais nítida.');
       onChange(suggestion);

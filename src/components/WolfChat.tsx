@@ -607,7 +607,7 @@ const WolfChat: React.FC = () => {
         conversationId: convId,
         userId: user.id,
       });
-      const functionName = currentImages.length > 0 ? 'wolf-vision' : 'wolf-chat';
+      const functionName = currentImages.length > 0 ? 'lobo-vision' : 'wolf-chat';
       const sendRequest = (token: string) => fetch(`${backendUrl}/functions/v1/${functionName}`, {
         method: 'POST',
         headers: {
