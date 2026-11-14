@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.lobo-vision]
 verify_jwt = false
+
+[functions.lobo-photo]
+verify_jwt = false
