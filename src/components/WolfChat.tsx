@@ -607,7 +607,8 @@ const WolfChat: React.FC = () => {
         conversationId: convId,
         userId: user.id,
       });
-      const sendRequest = (token: string) => fetch(`${backendUrl}/functions/v1/wolf-chat`, {
+      const functionName = currentImages.length > 0 ? 'wolf-vision' : 'wolf-chat';
+      const sendRequest = (token: string) => fetch(`${backendUrl}/functions/v1/${functionName}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -637,7 +638,7 @@ const WolfChat: React.FC = () => {
       if (!response.ok) {
         let errPayload: any = null;
         try { errPayload = await response.json(); } catch { /* ignore */ }
-        console.error('wolf-chat request failed:', {
+        console.error(`${functionName} request failed:`, {
           status: response.status,
           statusText: response.statusText,
           body: errPayload,
