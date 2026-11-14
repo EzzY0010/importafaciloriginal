@@ -28,7 +28,22 @@ serve(async (req) => {
     const image = parts.find((p: any) => p?.type === 'image_url')?.image_url?.url;
     if (typeof image !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(image)) return json({ error: 'invalid_image', message: 'Envie uma foto JPG, PNG ou WEBP válida.' }, 400);
     const groqKey = Deno.env.get('GROQ_API_KEY');
-    if (!groqKey) return json({ error: 'ai_key_missing', message: 'O provedor visual ainda não está configurado.' }, 503);
+    const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!groqKey && !lovableKey) return json({ error: 'ai_key_missing', message: 'O provedor visual ainda não está configurado.' }, 503);
+    if (lovableKey) {
+      const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 30000);
+      let response: Response;
+      try {
+        response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST', headers: { 'Lovable-API-Key': lovableKey, 'Content-Type': 'application/json' }, signal: controller.signal,
+          body: JSON.stringify({ model: 'openai/gpt-5.6-sol', messages: [{ role: 'system', content: PROMPT }, { role: 'user', content: [{ type: 'text', text: text || 'Analise este produto.' }, { type: 'image_url', image_url: { url: image } }] }], temperature: 0.1, max_tokens: 80 }),
+        });
+      } finally { clearTimeout(timer); }
+      if (!response.ok) { console.error('[wolf-vision] Lovable Vision failed', response.status); return json({ error: 'vision_unavailable', message: `O provedor visual recusou a imagem (status ${response.status}).` }, 503); }
+      const payload = await response.json().catch(() => ({}));
+      const answer = String(payload?.choices?.[0]?.message?.content ?? '').replace(/\s+/g, ' ').trim().split(' ').slice(0, 4).join(' ');
+      return answer ? sse(answer) : json({ error: 'vision_unavailable', message: 'A IA não conseguiu interpretar essa foto.' }, 503);
+    }
     const preferred = ['meta-llama/llama-4-scout-17b-16e-instruct', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'llama-3.2-11b-vision-preview'];
     const modelList = await fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: `Bearer ${groqKey}` } });
     if (!modelList.ok) {
