@@ -1,7 +1,7 @@
 const BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL_LIST_TIMEOUT_MS = 10_000;
-const MODEL_GENERATION_TIMEOUT_MS = 25_000;
-const MAX_MODEL_ATTEMPTS = 2;
+const MODEL_GENERATION_TIMEOUT_MS = 15_000;
+const MAX_MODEL_ATTEMPTS = 1;
 const TIMEOUT_MESSAGE = 'A análise da foto demorou mais que o esperado. Tente uma imagem menor ou envie novamente.';
 export class VisionError extends Error {
   constructor(public code: string, public status: number, message: string) { super(message); }

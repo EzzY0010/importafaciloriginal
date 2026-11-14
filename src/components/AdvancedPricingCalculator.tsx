@@ -163,6 +163,19 @@ const isValidDeclaredValue = (value: string): boolean => {
   return Number.isFinite(parsed) && parsed > 0;
 };
 
+const declarationFromTitle = (title: string): { value: number; min: number; max: number; category: string } | null => {
+  const name = title.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (!name.trim()) return null;
+  if (/corta[- ]?vento|windbreaker/.test(name)) return { value: 4, min: 4, max: 4, category: 'Corta-vento' };
+  if (/blusa de frio|moletom|hoodie|anorak|jaqueta|casaco|parka|velejad|puffer/.test(name)) {
+    const heavy = /velejad|puffer|casaco|parka|jaqueta pesada/.test(name);
+    return heavy ? { value: 7, min: 6, max: 8, category: 'Blusa de frio pesada' } : { value: 5, min: 4, max: 8, category: 'Blusa de frio' };
+  }
+  if (/camiseta|t-shirt|tee\b|regata/.test(name)) return { value: 3.5, min: 3, max: 4, category: 'Camiseta' };
+  if (/bone|chapeu|cap\b|bucket/.test(name)) return { value: 2.5, min: 2, max: 3, category: 'Boné ou chapéu' };
+  return null;
+};
+
 const AdvancedPricingCalculator: React.FC = () => {
   const summaryRef = useRef<HTMLDivElement>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
@@ -264,12 +277,18 @@ const AdvancedPricingCalculator: React.FC = () => {
 
       const updatedItem = { ...item, [field]: value };
 
-      // O nome só atualiza a estimativa de peso; nunca altera o valor declarado.
+      // O nome atualiza o peso e preenche uma sugestão de declaração apenas
+      // enquanto o usuário ainda não informou um valor manual.
       if (field === 'name') {
         const w = estimateWeight(value);
         updatedItem.estimatedGrams = w.grams;
         updatedItem.weightLabel = w.label;
         updatedItem.weightCategory = w.category;
+        const declaration = declarationFromTitle(value);
+        if (declaration && !isValidDeclaredValue(item.declaredValue)) {
+          const converted = updatedItem.declaredCurrency === 'EUR' ? declaration.value : declaration.value / rates.EUR;
+          updatedItem.declaredValue = converted.toFixed(2);
+        }
       }
       
       return updatedItem;

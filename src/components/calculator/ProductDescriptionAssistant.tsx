@@ -51,6 +51,7 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
   productName,
   value,
   onChange,
+  onDeclarationSuggestion,
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -108,7 +109,7 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
         throw new Error('Sua sessão expirou. Entre novamente e tente outra vez.');
       }
 
-      const response = await fetch(`${backendUrl}/functions/v1/product-description`, {
+      const response = await fetch(`${backendUrl}/functions/v1/wolf-vision`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,8 +117,10 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
           apikey: backendKey,
         },
         body: JSON.stringify({
-          productName: productName.trim().slice(0, 160),
-          imageData,
+          messages: [{ role: 'user', content: [
+            { type: 'text', text: productName.trim().slice(0, 160) || 'Analise este produto para a descrição da calculadora.' },
+            { type: 'image_url', image_url: { url: imageData } },
+          ] }],
         }),
         signal: controller.signal,
       }).finally(() => window.clearTimeout(timeoutId));
@@ -129,11 +132,12 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
         throw new Error(visionErrorMessage(errorPayload.error, response.status, errorPayload.message));
       }
 
-      let result: { suggestion?: string; declaration?: { value?: number; currency?: 'EUR' | 'USD'; min?: number; max?: number; category?: string } } | null = null;
-      try { result = JSON.parse(payload); } catch { result = null; }
-      const suggestion = typeof result?.suggestion === 'string'
-        ? result.suggestion.trim().slice(0, MAX_DESCRIPTION_LENGTH)
-        : '';
+      const suggestion = payload.split('\n')
+        .filter((line) => line.startsWith('data:') && !line.includes('[DONE]'))
+        .map((line) => {
+          try { return JSON.parse(line.slice(5).trim())?.choices?.[0]?.delta?.content ?? ''; } catch { return ''; }
+        })
+        .join('').trim().slice(0, MAX_DESCRIPTION_LENGTH);
       if (!suggestion) throw new Error('A IA não retornou uma sugestão. Tente uma foto mais nítida.');
       onChange(suggestion);
       toast({ title: 'Sugestão pronta', description: 'Revise a descrição antes de copiar.' });
