@@ -152,13 +152,14 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
       if (declaration) onDeclarationSuggestion?.({ value: declaration.value, currency: 'EUR', range: { min: declaration.min, max: declaration.max }, category: declaration.category });
       toast({ title: 'Sugestão pronta', description: 'Revise a descrição antes de copiar.' });
     } catch (error) {
-      const fallback = compactProductSummary(productName.trim()) || 'produto importado';
-      onChange(fallback);
+      // Nunca preencher com uma descrição genérica: o campo deve refletir a foto.
+      // Se a visão falhar, deixe o valor anterior intacto e informe o usuário para tentar novamente.
       toast({
-        title: 'Resumo preenchido',
+        title: 'Não foi possível identificar a foto',
         description: error instanceof Error && error.name === 'AbortError'
-          ? 'A foto demorou. Você pode editar o resumo e o valor sugerido.'
-          : 'A descrição pode ser editada manualmente. O valor de declaração continua automático pela categoria e peso.',
+          ? 'A foto demorou para ser analisada. Envie uma imagem menor e mais focada no produto.'
+          : error instanceof Error ? error.message : 'Envie uma foto mais nítida e focada no produto.',
+        variant: 'destructive',
       });
     } finally {
       window.clearTimeout(timeoutId);
@@ -195,7 +196,7 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
           </span>
         </Label>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Envie uma foto nítida do produto. A IA gera uma descrição genérica para você revisar e editar.
+          Envie uma foto nítida do produto. A IA gera uma descrição curta baseada somente no que aparece na imagem.
         </p>
       </div>
 

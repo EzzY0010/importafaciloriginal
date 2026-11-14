@@ -31,7 +31,11 @@ const visualValue = (value: unknown, fallback: string) => {
 
 const formatVisualProduct = (raw: string): string => {
   try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const normalized = raw.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+    const jsonCandidate = normalized.startsWith('{')
+      ? normalized
+      : normalized.match(/\{[\s\S]*\}/)?.[0] ?? normalized;
+    const parsed = JSON.parse(jsonCandidate) as Record<string, unknown>;
     return [
       `📦 Produto identificado: ${visualValue(parsed.productName, 'não identificável pela imagem')}`,
       `🧩 Modelo/variação: ${visualValue(parsed.model, 'não identificável pela imagem')}`,
