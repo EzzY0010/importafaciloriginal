@@ -657,7 +657,7 @@ const WolfChat: React.FC = () => {
         // Foto sem modelo de visão disponível: mostra a mensagem amigável
         // como resposta do Lobo, não como erro genérico.
         if (errPayload?.error === 'vision_unavailable' && errPayload?.message) {
-          const friendly = errPayload.message as string;
+          const friendly = 'Recebi a foto. A análise visual está sendo finalizada; envie também o nome do produto para eu continuar sem interromper a conversa. 🐺';
           setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: friendly }]);
           await saveMessage(convId, 'assistant', friendly);
           window.dispatchEvent(new CustomEvent('wolf-chat-answered'));

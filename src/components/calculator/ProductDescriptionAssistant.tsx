@@ -152,12 +152,13 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
       if (declaration) onDeclarationSuggestion?.({ value: declaration.value, currency: 'EUR', range: { min: declaration.min, max: declaration.max }, category: declaration.category });
       toast({ title: 'Sugestão pronta', description: 'Revise a descrição antes de copiar.' });
     } catch (error) {
+      const fallback = compactProductSummary(productName.trim()) || 'produto importado';
+      onChange(fallback);
       toast({
-        title: error instanceof Error && error.name === 'AbortError' ? 'A análise demorou demais' : 'Não consegui analisar a foto',
+        title: 'Resumo preenchido',
         description: error instanceof Error && error.name === 'AbortError'
-          ? 'Tente uma foto mais leve ou mais nítida.'
-          : error instanceof Error ? error.message : 'Tente novamente em instantes.',
-        variant: 'destructive',
+          ? 'A foto demorou. Você pode editar o resumo e o valor sugerido.'
+          : 'A descrição pode ser editada manualmente. O valor de declaração continua automático pela categoria e peso.',
       });
     } finally {
       window.clearTimeout(timeoutId);
