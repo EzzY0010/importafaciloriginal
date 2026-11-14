@@ -296,7 +296,16 @@ const AdvancedPricingCalculator: React.FC = () => {
   };
 
   const handleCostPriceChange = (id: string, value: string) => {
-    setItems(prev => prev.map(item => item.id === id ? { ...item, costPrice: value } : item));
+    setItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      const updated = { ...item, costPrice: value };
+      const declaration = declarationFromTitle(item.name, item.weightCategory);
+      if (declaration && !isValidDeclaredValue(item.declaredValue)) {
+        const converted = item.declaredCurrency === 'EUR' ? declaration.value : declaration.value / rates.EUR;
+        updated.declaredValue = converted.toFixed(2);
+      }
+      return updated;
+    }));
   };
 
   // Calcular frete rateado proporcional ao peso (já convertido para BRL)

@@ -24,6 +24,14 @@ const compactProductSummary = (text: string) => {
     .trim();
   return firstLine.split(/\s+/).filter(Boolean).slice(0, 4).join(' ');
 };
+const declarationFromSummary = (summary: string) => {
+  const name = summary.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/corta[- ]?vento|windbreaker/.test(name)) return { value: 4, min: 4, max: 4, category: 'Corta-vento' as const };
+  if (/bone|chapeu|cap\b|bucket/.test(name)) return { value: 2.5, min: 2, max: 3, category: 'Boné ou chapéu' as const };
+  if (/camiseta|t-shirt|tee\b|regata/.test(name)) return { value: 3.5, min: 3, max: 4, category: 'Camiseta' as const };
+  if (/blusa|moletom|hoodie|anorak|jaqueta|casaco|parka|puffer/.test(name)) return { value: 5, min: 4, max: 8, category: 'Blusa de frio' as const };
+  return null;
+};
 
 const compressImage = (file: File): Promise<string> => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -140,6 +148,8 @@ const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = 
       const suggestion = compactProductSummary(rawSuggestion);
       if (!suggestion) throw new Error('A IA não retornou uma sugestão. Tente uma foto mais nítida.');
       onChange(suggestion);
+      const declaration = declarationFromSummary(suggestion);
+      if (declaration) onDeclarationSuggestion?.({ value: declaration.value, currency: 'EUR', range: { min: declaration.min, max: declaration.max }, category: declaration.category });
       toast({ title: 'Sugestão pronta', description: 'Revise a descrição antes de copiar.' });
     } catch (error) {
       toast({
