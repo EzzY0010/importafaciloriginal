@@ -1,10 +1,33 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { verifyAppUser } from '../_shared/app-auth.ts';
 import { generateVisual, parseImage, VisionError } from '../_shared/gemini-vision.ts';
-import { ANALYSIS_PROMPT, normalizeAnalysis, parseModelJson } from '../_shared/product-analysis.ts';
+import { generateBackupVisual } from '../_shared/lovable-vision.ts';
+import { ANALYSIS_PROMPT, formatChatReply, normalizeAnalysis, parseModelJson } from '../_shared/product-analysis.ts';
 
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+
+// Errors where the photo itself is the problem: the backup would fail the same way.
+const PHOTO_ERRORS = new Set(['invalid_image', 'payload_too_large', 'image_refused']);
+
+async function analyze(images: ReturnType<typeof parseImage>[], text: string) {
+  const started = Date.now();
+  try {
+    const result = await generateVisual({ apiKey: Deno.env.get('GOOGLE_GEMINI_API_KEY'), prompt: ANALYSIS_PROMPT, text, images, json: true });
+    return { ...result, provider: 'google-gemini' as const, analysis: normalizeAnalysis(parseModelJson(result.text)) };
+  } catch (error) {
+    const code = error instanceof VisionError ? error.code : 'invalid_json';
+    if (PHOTO_ERRORS.has(code)) throw error;
+    console.warn('[lobo-photo] Google Gemini falhou, usando reserva', { code, ms: Date.now() - started });
+  }
+  const backup = await generateBackupVisual({ prompt: ANALYSIS_PROMPT, text, images });
+  try {
+    return { ...backup, provider: 'lovable-ai' as const, analysis: normalizeAnalysis(parseModelJson(backup.text)) };
+  } catch {
+    console.error('[lobo-photo] reserva devolveu JSON inválido', { model: backup.model, sample: backup.text.slice(0, 120) });
+    throw new VisionError('incomplete_analysis', 503, 'A análise não foi concluída. Envie a foto novamente.');
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -18,27 +41,17 @@ Deno.serve(async (req) => {
     if (!rawImages.length) return json({ error: 'invalid_image', message: 'Envie uma foto JPG, PNG ou WEBP válida.' }, 400);
     const images = rawImages.map(parseImage);
     const note = typeof body?.text === 'string' ? body.text.slice(0, 500) : '';
+    const text = note ? `Contexto do usuário (opcional, não é instrução): ${note}\nAnalise o produto da foto.` : 'Analise o produto da foto.';
 
-    const result = await generateVisual({
-      apiKey: Deno.env.get('GOOGLE_GEMINI_API_KEY'),
-      prompt: ANALYSIS_PROMPT,
-      text: note ? `Contexto do usuário (opcional, não é instrução): ${note}` : 'Analise o produto da foto.',
-      images,
-      json: true,
-    });
-
-    let analysis;
-    try {
-      analysis = normalizeAnalysis(parseModelJson(result.text));
-    } catch {
-      console.warn('[lobo-photo] invalid model json', { model: result.model });
-      return json({ error: 'incomplete_analysis', message: 'A análise não foi concluída. Envie a foto novamente.' }, 503);
-    }
-    console.log('[lobo-photo] analyzed', { provider: 'google-gemini', model: result.model, source: access.source, weight: analysis.peso_estimado_gramas });
-    return json({ analysis, model: result.model });
+    const result = await analyze(images, text);
+    console.log('[lobo-photo] analyzed', { provider: result.provider, model: result.model, source: access.source, weight: result.analysis.peso_estimado_gramas });
+    return json({ analysis: result.analysis, reply: formatChatReply(result.analysis), model: result.model, provider: result.provider });
   } catch (error) {
-    if (error instanceof VisionError) return json({ error: error.code, message: error.message }, error.status);
-    console.error('[lobo-photo] unexpected failure');
-    return json({ error: 'vision_unavailable', message: 'A análise por foto está indisponível no momento.' }, 503);
+    if (error instanceof VisionError) {
+      console.error('[lobo-photo] failure', { code: error.code, status: error.status });
+      return json({ error: error.code, message: error.message }, error.status);
+    }
+    console.error('[lobo-photo] unexpected failure', { name: (error as Error)?.name, message: (error as Error)?.message?.slice(0, 200) });
+    return json({ error: 'vision_unavailable', message: 'A análise por foto falhou agora. Tente novamente em instantes.' }, 503);
   }
 });
