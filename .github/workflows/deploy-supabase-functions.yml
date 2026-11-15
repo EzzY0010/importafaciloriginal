@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'supabase/functions/lobo-vision/**'
+      - 'supabase/functions/wolf-chat/**'
       - 'supabase/functions/product-description/**'
       - 'supabase/functions/_shared/**'
       - 'supabase/config.toml'
@@ -17,7 +18,7 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy Lobo and calculator vision functions
+    name: Deploy AI vision Edge Functions
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -40,6 +41,9 @@ jobs:
 
       - name: Deploy lobo-vision
         run: supabase functions deploy lobo-vision --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
+
+      - name: Deploy wolf-chat
+        run: supabase functions deploy wolf-chat --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
 
       - name: Deploy product-description
         run: supabase functions deploy product-description --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
