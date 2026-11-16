@@ -1,10 +1,144 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
-const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
-const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
-const PROMPT = 'Analise visualmente a peça. Responda em português, com: Produto identificado; Categoria; Material aparente; Cor; Peso estimado em gramas; Observação. O peso é uma estimativa visual. Não estime nem mencione preço de mercado, venda ou revenda no Brasil para nenhuma peça. Não mencione logo, marca, autenticidade ou nomes comerciais. Não peça o nome do produto.';
-const valid = (v: unknown) => typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(v);
-async function auth(req: Request) { const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim(); const url = Deno.env.get('SUPABASE_URL'); const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'); if (!jwt || !url || !key) return false; const { data } = await createClient(url, key, { auth: { persistSession: false } }).auth.getUser(jwt); return Boolean(data.user); }
-async function request(url: string, init: RequestInit, ms: number) { const c = new AbortController(); const t = setTimeout(() => c.abort(), ms); try { return await fetch(url, { ...init, signal: c.signal }); } finally { clearTimeout(t); } }
-async function analyze(image: string, note: string) { const key = Deno.env.get('GOOGLE_GEMINI_API_KEY'); if (!key) throw new Error('missing_key'); const m = image.match(/^data:(image\/(?:jpeg|png|webp));(.*)$/)!; const headers = { 'x-goog-api-key': key, 'Content-Type': 'application/json' }; const list = await request('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', { headers }, 6000); const lp = await list.json().catch(() => ({})); if (!list.ok) throw new Error(`model_list_${list.status}`); const models = [...new Set((lp.models ?? []).filter((x: any) => x?.supportedGenerationMethods?.includes('generateContent') && /gemini/i.test(x.name) && /flash|pro/i.test(x.name) && !/tts|live|audio|image|robotics|computer/i.test(x.name)).map((x: any) => String(x.name).replace(/^models\//, '')))].slice(0, 5); if (!models.length) throw new Error('no_visual_model'); const attempts = models.map(async (model) => { const r = await request(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: `${PROMPT}\nContexto opcional: ${note || 'nenhum'}` }, { inline_data: { mime_type: m[1], data: m[2] } }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 500 } }) }, 12000); const p = await r.json().catch(() => ({})); const text = (p.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? '').join('').trim(); if (!r.ok || !text) throw new Error(`${model}:${r.status}:${p?.error?.status ?? 'empty'}`); return text; }); try { return await Promise.any(attempts); } catch (error) { console.error('[lobo-vision] all listed Gemini models failed', error instanceof Error ? error.message : 'unknown'); throw new Error('gemini_unavailable'); } }
-function sse(text: string) { return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\ndata: [DONE]\n\n`, { headers: { ...CORS, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' } }); }
-Deno.serve(async (req) => { if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS }); if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405); try { if (!await auth(req)) return json({ error: 'unauthorized', message: 'Sua sessão expirou. Entre novamente.' }, 401); const body = await req.json().catch(() => ({})); const parts = Array.isArray(body?.messages?.at(-1)?.content) ? body.messages.at(-1).content : []; const image = parts.find((p: any) => p?.type === 'image_url')?.image_url?.url; const note = parts.filter((p: any) => p?.type === 'text').map((p: any) => String(p.text ?? '')).join(' ').slice(0, 500); if (!valid(image)) return json({ error: 'invalid_image', message: 'Envie uma foto JPG, PNG ou WEBP válida.' }, 400); const text = await analyze(image, note); return sse(text); } catch (error) { console.error('[lobo-vision] analysis failed', error instanceof Error ? error.message : 'unknown'); return json({ error: 'vision_unavailable', message: 'O Gemini não conseguiu ler a peça agora. Tente novamente em instantes.' }, 503); } });
+import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  generateVisual,
+  parseImage,
+  VisionError,
+} from "../_shared/gemini-vision.ts";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+const AUTH_TIMEOUT_MS = 10_000;
+const PROMPT =
+  "Analise visualmente a peça. Responda em português, com: Produto identificado; Categoria; Material aparente; Cor; Peso estimado em gramas; Observação. O peso é uma estimativa visual. Não estime nem mencione preço de mercado, venda ou revenda no Brasil para nenhuma peça. Não mencione logo, marca, autenticidade ou nomes comerciais. Não peça o nome do produto.";
+
+type AuthResult = "authorized" | "unauthorized" | "unavailable";
+type ImagePart = { type?: string; image_url?: { url?: unknown } };
+type TextPart = { type?: string; text?: unknown };
+type IncomingMessage = { content?: unknown };
+
+const json = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...CORS, "Content-Type": "application/json" },
+  });
+
+async function authorize(req: Request): Promise<AuthResult> {
+  const jwt = (req.headers.get("Authorization") ?? "").replace(
+    /^Bearer\s+/i,
+    "",
+  ).trim();
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!jwt || !url || !key) return "unauthorized";
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AUTH_TIMEOUT_MS);
+  try {
+    const client = createClient(url, key, {
+      global: {
+        fetch: (input, init) =>
+          fetch(input, { ...init, signal: controller.signal }),
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
+    const { data, error } = await client.auth.getUser(jwt);
+    if (error) return error.status === 401 ? "unauthorized" : "unavailable";
+    return data.user ? "authorized" : "unauthorized";
+  } catch {
+    return "unavailable";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function sse(text: string) {
+  return new Response(
+    `data: ${
+      JSON.stringify({ choices: [{ delta: { content: text } }] })
+    }\n\ndata: [DONE]\n\n`,
+    {
+      headers: {
+        ...CORS,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+      },
+    },
+  );
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS });
+  }
+  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+
+  const auth = await authorize(req);
+  if (auth === "unauthorized") {
+    return json({
+      error: "unauthorized",
+      message: "Sua sessão expirou. Entre novamente.",
+    }, 401);
+  }
+  if (auth === "unavailable") {
+    return json({
+      error: "auth_unavailable",
+      message:
+        "Não foi possível validar sua sessão agora. Tente novamente em instantes.",
+    }, 503);
+  }
+
+  try {
+    const body = await req.json().catch(() => null) as
+      | { messages?: unknown }
+      | null;
+    const messages = Array.isArray(body?.messages)
+      ? body.messages as IncomingMessage[]
+      : [];
+    const latest = messages.at(-1);
+    const parts = Array.isArray(latest?.content)
+      ? latest.content as Array<ImagePart | TextPart>
+      : [];
+    const imageUrl = parts.find((part): part is ImagePart =>
+      part.type === "image_url"
+    )?.image_url?.url;
+    const note = parts
+      .filter((part): part is TextPart => part.type === "text")
+      .map((part) => typeof part.text === "string" ? part.text : "")
+      .join(" ")
+      .slice(0, 500);
+
+    const image = parseImage(imageUrl);
+    const result = await generateVisual({
+      apiKey: Deno.env.get("GOOGLE_GEMINI_API_KEY"),
+      prompt: PROMPT,
+      text: note || "Analise esta peça.",
+      images: [image],
+      timeoutMs: { modelList: 6_000, generation: 65_000 },
+    });
+    return sse(result.text);
+  } catch (error) {
+    if (error instanceof VisionError) {
+      console.warn("[lobo-vision] analysis failed", {
+        code: error.code,
+        status: error.status,
+      });
+      return json({ error: error.code, message: error.message }, error.status);
+    }
+    console.error(
+      "[lobo-vision] analysis failed",
+      error instanceof Error ? error.name : "unknown",
+    );
+    return json({
+      error: "vision_unavailable",
+      message:
+        "O Gemini não conseguiu ler a peça agora. Tente novamente em instantes.",
+    }, 503);
+  }
+});
