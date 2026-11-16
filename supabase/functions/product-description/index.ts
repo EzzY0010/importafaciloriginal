@@ -1,10 +1,124 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
-import { generateChatCompletion } from 'npm:@lovable.dev/ai-gateway';
-const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
-const reply = (data: Record<string, unknown>, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
-const validImage = (v: unknown) => typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(v);
-async function authorized(req: Request) { const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim(); const url = Deno.env.get('SUPABASE_URL'); const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'); if (!jwt || !url || !key) return false; const { data } = await createClient(url, key, { auth: { persistSession: false } }).auth.getUser(jwt); return Boolean(data.user); }
-const prompt = 'Identifique a peça da foto. Responda SOMENTE com 3 ou 4 palavras em português, por exemplo: boné de tecido leve. Não mencione logo, marca, autenticidade ou nomes comerciais.';
-async function analyze(image: string, name: string) { const m = image.match(/^data:(image\/(?:jpeg|png|webp));base64,(.*)$/)!; const key = Deno.env.get('GOOGLE_GEMINI_API_KEY'); if (!key) throw new Error('missing_key'); for (const model of ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']) { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: `${prompt}\nNome informado: ${name || 'nenhum'}` }, { inline_data: { mime_type: m[1], data: m[2] } }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 40 } }) }); const p = await r.json().catch(() => ({})); const text = (p.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? '').join('').replace(/\s+/g, ' ').trim(); if (r.ok && text) return text.split(' ').slice(0, 4).join(' '); } throw new Error('gemini_unavailable'); }
-async function backup(image: string, name: string) { const result = await generateChatCompletion({ model: 'google/gemini-2.5-flash', messages: [{ role: 'system', content: prompt }, { role: 'user', content: [{ type: 'text', text: name || 'Identifique a peça.' }, { type: 'image_url', image_url: { url: image } }] }], temperature: 0.1 } as never) as any; return String(result?.choices?.[0]?.message?.content ?? '').replace(/\s+/g, ' ').trim().split(' ').slice(0, 4).join(' '); }
-Deno.serve(async (req) => { if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS }); if (req.method !== 'POST') return reply({ error: 'method_not_allowed' }, 405); try { if (!await authorized(req)) return reply({ error: 'unauthorized', message: 'Sua sessão expirou. Entre novamente.' }, 401); const body = await req.json().catch(() => ({})); const image = body?.imageData; const name = String(body?.productName ?? '').slice(0, 160); if (!validImage(image)) return reply({ error: 'invalid_image', message: 'Envie uma foto JPG, PNG ou WEBP válida.' }, 400); let suggestion = ''; try { suggestion = await analyze(image, name); } catch { try { suggestion = await backup(image, name); } catch { return reply({ error: 'vision_unavailable', message: 'Não foi possível ler a foto agora. Tente novamente em instantes.' }, 503); } } return suggestion ? reply({ suggestion, declaration: null, reviewRequired: true }) : reply({ error: 'incomplete_analysis', message: 'A análise não retornou uma descrição.' }, 503); } catch { return reply({ error: 'vision_unavailable', message: 'Não foi possível responder à foto.' }, 503); } });
+import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  generateVisual,
+  parseImage,
+  VisionError,
+} from "../_shared/gemini-vision.ts";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+const AUTH_TIMEOUT_MS = 10_000;
+const PROMPT =
+  "Identifique a peça da foto. Responda SOMENTE com 3 ou 4 palavras em português, por exemplo: boné de tecido leve. Não mencione logo, marca, autenticidade ou nomes comerciais.";
+
+type AuthResult = "authorized" | "unauthorized" | "unavailable";
+
+const reply = (data: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { ...CORS, "Content-Type": "application/json" },
+  });
+
+async function authenticate(req: Request): Promise<AuthResult> {
+  const jwt = (req.headers.get("Authorization") ?? "").replace(
+    /^Bearer\s+/i,
+    "",
+  ).trim();
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!jwt) return "unauthorized";
+  if (!url || !key) return "unavailable";
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AUTH_TIMEOUT_MS);
+  try {
+    const client = createClient(url, key, {
+      global: {
+        fetch: (input, init) =>
+          fetch(input, { ...init, signal: controller.signal }),
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
+    const { data, error } = await client.auth.getUser(jwt);
+    if (error) return error.status === 401 ? "unauthorized" : "unavailable";
+    return data.user ? "authorized" : "unauthorized";
+  } catch {
+    return "unavailable";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS });
+  }
+  if (req.method !== "POST") return reply({ error: "method_not_allowed" }, 405);
+
+  const auth = await authenticate(req);
+  if (auth === "unauthorized") {
+    return reply({
+      error: "unauthorized",
+      message: "Sua sessão expirou. Entre novamente.",
+    }, 401);
+  }
+  if (auth === "unavailable") {
+    return reply({
+      error: "auth_unavailable",
+      message:
+        "Não foi possível validar sua sessão agora. Tente novamente em instantes.",
+    }, 503);
+  }
+
+  try {
+    const body = await req.json().catch(() => null) as
+      | Record<string, unknown>
+      | null;
+    const image = parseImage(body?.imageData);
+    const name = typeof body?.productName === "string"
+      ? body.productName.trim().slice(0, 160)
+      : "";
+    const result = await generateVisual({
+      apiKey: Deno.env.get("GOOGLE_GEMINI_API_KEY"),
+      prompt: PROMPT,
+      text: `Nome informado: ${name || "nenhum"}`,
+      images: [image],
+      timeoutMs: { modelList: 6_000, generation: 65_000 },
+    });
+    const suggestion = result.text.replace(/\s+/g, " ").trim().split(" ").slice(
+      0,
+      4,
+    ).join(" ");
+    if (!suggestion) {
+      return reply({
+        error: "incomplete_analysis",
+        message: "A análise não retornou uma descrição.",
+      }, 503);
+    }
+    return reply({ suggestion, declaration: null, reviewRequired: true });
+  } catch (error) {
+    if (error instanceof VisionError) {
+      console.warn("[product-description] analysis failed", {
+        code: error.code,
+        status: error.status,
+      });
+      return reply({ error: error.code, message: error.message }, error.status);
+    }
+    console.error(
+      "[product-description] analysis failed",
+      error instanceof Error ? error.name : "unknown",
+    );
+    return reply({
+      error: "vision_unavailable",
+      message:
+        "Não foi possível ler a foto agora. Tente novamente em instantes.",
+    }, 503);
+  }
+});
