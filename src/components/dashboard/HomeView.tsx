@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Camera, Package, Calculator, Globe, Truck, ChevronRight, ShieldCheck } from "lucide-react";
+import { MessageSquare, Package, Calculator, Globe, Truck, ChevronRight, ShieldCheck } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo-clean.png";
 
 export interface CalcSnapshot {
@@ -64,14 +64,14 @@ const HomeView = ({ onAnalyze, onSources, onCalculator }: HomeViewProps) => {
           className="text-left rounded-2xl p-4 bg-primary text-primary-foreground shadow-medium hover:opacity-95 transition-opacity"
         >
           <div className="w-11 h-11 rounded-full bg-primary-foreground/15 flex items-center justify-center mb-3">
-            <Camera className="w-5 h-5" />
+            <MessageSquare className="w-5 h-5" />
           </div>
-          <h3 className="font-bold">Analisar produto</h3>
+          <h3 className="font-bold">Perguntar ao Lobo</h3>
           <p className="text-xs opacity-80 mt-1">
-            Envie uma foto e descubra marca, peso e margem estimada.
+            Tire dúvidas por texto sobre produtos, importação e revenda.
           </p>
           <span className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-background text-foreground px-4 py-2.5 text-sm font-bold">
-            Enviar foto <ChevronRight className="w-4 h-4" />
+            Fazer pergunta <ChevronRight className="w-4 h-4" />
           </span>
         </button>
 
