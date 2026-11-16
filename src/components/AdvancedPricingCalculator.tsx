@@ -166,13 +166,11 @@ const isValidDeclaredValue = (value: string): boolean => {
 const declarationFromTitle = (title: string, weightCategory: WeightCategory = 'medium'): { value: number; min: number; max: number; category: string } | null => {
   const name = title.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (!name.trim()) return null;
-  if (/corta[- ]?vento|windbreaker/.test(name)) return { value: 4, min: 4, max: 4, category: 'Corta-vento' };
-  if (/blusa de frio|moletom|hoodie|anorak|jaqueta|casaco|parka|velejad|puffer/.test(name)) {
-    const heavy = weightCategory === 'heavy' || /velejad|puffer|casaco|parka|jaqueta pesada/.test(name);
-    return heavy ? { value: 7, min: 6, max: 8, category: 'Blusa de frio pesada' } : { value: 5, min: 4, max: 6, category: 'Blusa de frio leve' };
-  }
-  if (/camiseta|t-shirt|tee\b|regata/.test(name)) return { value: 3.5, min: 3, max: 4, category: 'Camiseta' };
   if (/bone|chapeu|cap\b|bucket/.test(name)) return { value: 2.5, min: 2, max: 3, category: 'Boné ou chapéu' };
+  if (/camiseta|t-shirt|tee\b|regata/.test(name)) return { value: 2.5, min: 2, max: 3, category: 'Camiseta' };
+  if (/bermuda|shorts/.test(name)) return { value: 3, min: 3, max: 3, category: 'Bermuda' };
+  if (/jaqueta|corta[- ]?vento|windbreaker|puffer|parka/.test(name)) return { value: 7, min: 6, max: 8, category: 'Jaqueta' };
+  if (/blusa de frio|blusa|moletom|hoodie|anorak|casaco|velejad/.test(name)) return { value: 4, min: 3, max: 5, category: 'Blusa' };
   return null;
 };
 

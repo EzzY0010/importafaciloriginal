@@ -1,12 +1,9 @@
-import React, { useId, useRef, useState } from 'react';
-import { Camera, ClipboardCopy, Loader2, Sparkles, X } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { ClipboardCopy, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { backendKey, backendUrl, getSupabaseClient, isBackendConfigured } from '@/lib/backend';
-import { visionErrorMessage } from '@/lib/visionErrors';
 
 interface ProductDescriptionAssistantProps {
   productName: string;
@@ -15,249 +12,50 @@ interface ProductDescriptionAssistantProps {
   onDeclarationSuggestion?: (suggestion: { value: number; currency: 'EUR' | 'USD'; range: { min: number; max: number }; category: string }) => void;
 }
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const MAX_DESCRIPTION_LENGTH = 1200;
-const compactProductSummary = (text: string) => {
-  const firstLine = text.split(/[\r\n]/)[0]
-    .replace(/^[^:]{0,40}:\s*/i, '')
-    .replace(/[📦🧩🧵🔍⚖️💰📈]/gu, '')
-    .trim();
-  return firstLine.split(/\s+/).filter(Boolean).slice(0, 4).join(' ');
-};
-const declarationFromSummary = (summary: string) => {
-  const name = summary.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  if (/corta[- ]?vento|windbreaker/.test(name)) return { value: 4, min: 4, max: 4, category: 'Corta-vento' as const };
-  if (/bone|chapeu|cap\b|bucket/.test(name)) return { value: 2.5, min: 2, max: 3, category: 'Boné ou chapéu' as const };
-  if (/camiseta|t-shirt|tee\b|regata/.test(name)) return { value: 3.5, min: 3, max: 4, category: 'Camiseta' as const };
-  if (/blusa|moletom|hoodie|anorak|jaqueta|casaco|parka|puffer/.test(name)) return { value: 5, min: 4, max: 8, category: 'Blusa de frio' as const };
-  return null;
+const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const descriptionFromTitle = (title: string) => {
+  const name = normalize(title);
+  if (!name) return '';
+  if (/\b(bone|chapeu|cap|bucket)\b/.test(name)) return 'Boné de tecido leve';
+  if (/velejad/.test(name)) return 'Blusa tipo velejador';
+  if (/\b(jaqueta|corta[- ]?vento|windbreaker|puffer|parka)\b/.test(name)) return /corta[- ]?vento|windbreaker/.test(name) ? 'Jaqueta corta-vento' : 'Jaqueta esportiva para o dia a dia';
+  if (/\b(blusa|moletom|hoodie|casaco|anorak)\b/.test(name)) return 'Blusa de frio';
+  if (/\b(camiseta|t-shirt|tee|regata)\b/.test(name)) return 'Camiseta de tecido leve';
+  if (/\b(bermuda|shorts)\b/.test(name)) return 'Bermuda de tecido leve';
+  if (/\b(calca|jeans)\b/.test(name)) return 'Calça de tecido';
+  if (/\b(tenis|sapato|calcado|sandalia)\b/.test(name)) return 'Calçado de uso pessoal';
+  if (/\b(bolsa|mochila)\b/.test(name)) return 'Bolsa de uso pessoal';
+  return 'Produto de uso pessoal';
 };
 
-const compressImage = (file: File): Promise<string> => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onerror = () => reject(new Error('Não foi possível ler essa imagem.'));
-  reader.onload = () => {
-    const image = new Image();
-    image.onerror = () => reject(new Error('Não foi possível abrir essa imagem.'));
-    image.onload = () => {
-      const maxSide = 1200;
-      const scale = Math.min(maxSide / image.width, maxSide / image.height, 1);
-      const width = Math.max(1, Math.round(image.width * scale));
-      const height = Math.max(1, Math.round(image.height * scale));
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext('2d');
-      if (!context) {
-        reject(new Error('Não foi possível preparar a imagem neste navegador.'));
-        return;
-      }
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, width, height);
-      context.drawImage(image, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.78));
-    };
-    image.src = String(reader.result ?? '');
-  };
-  reader.readAsDataURL(file);
-});
-
-const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = ({
-  productName,
-  value,
-  onChange,
-  onDeclarationSuggestion,
-}) => {
-  const { user } = useAuth();
+const ProductDescriptionAssistant: React.FC<ProductDescriptionAssistantProps> = ({ productName, value, onChange }) => {
   const { toast } = useToast();
-  const inputId = useId();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [imageData, setImageData] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Arquivo inválido', description: 'Selecione uma foto em formato de imagem.', variant: 'destructive' });
-      return;
+  const lastAutomatic = useRef('');
+  useEffect(() => {
+    const generated = descriptionFromTitle(productName);
+    if (generated && (!value.trim() || value === lastAutomatic.current)) {
+      lastAutomatic.current = generated;
+      onChange(generated);
     }
-    if (file.size > MAX_IMAGE_BYTES) {
-      toast({ title: 'Foto muito grande', description: 'Selecione uma imagem de até 10 MB.', variant: 'destructive' });
-      return;
-    }
-
-    try {
-      const compressed = await compressImage(file);
-      setImageData(compressed);
-      onChange('');
-    } catch (error) {
-      toast({
-        title: 'Não foi possível preparar a foto',
-        description: error instanceof Error ? error.message : 'Tente outra imagem.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const analyzeImage = async () => {
-    if (!imageData || isAnalyzing) return;
-    if (!user) {
-      toast({ title: 'Faça login', description: 'Entre na sua conta para usar a análise por foto.', variant: 'destructive' });
-      return;
-    }
-    if (!isBackendConfigured) {
-      toast({ title: 'IA indisponível', description: 'A conexão com o serviço de IA não está configurada.', variant: 'destructive' });
-      return;
-    }
-
-    setIsAnalyzing(true);
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 90000);
-
-    try {
-      const client = await getSupabaseClient();
-      const { data: sessionData, error: sessionError } = await client?.auth.getSession() ?? { data: { session: null }, error: null };
-      const accessToken = sessionData?.session?.access_token;
-      if (sessionError || !accessToken) {
-        throw new Error('Sua sessão expirou. Entre novamente e tente outra vez.');
-      }
-
-      const response = await fetch(`${backendUrl}/functions/v1/product-description`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-          apikey: backendKey,
-        },
-        body: JSON.stringify({ productName: productName.trim().slice(0, 160), imageData }),
-        signal: controller.signal,
-      }).finally(() => window.clearTimeout(timeoutId));
-
-      const payload = await response.text();
-      if (!response.ok) {
-        let errorPayload: { error?: string; message?: string } = {};
-        try { errorPayload = JSON.parse(payload); } catch { /* usa mensagem padrão */ }
-        throw new Error(visionErrorMessage(errorPayload.error, response.status, errorPayload.message));
-      }
-
-      let responseData: { suggestion?: string } = {};
-      try { responseData = JSON.parse(payload); } catch { responseData = {}; }
-      const rawSuggestion = String(responseData.suggestion ?? '').trim().slice(0, MAX_DESCRIPTION_LENGTH);
-      const suggestion = compactProductSummary(rawSuggestion);
-      if (!suggestion) throw new Error('A IA não retornou uma sugestão. Tente uma foto mais nítida.');
-      onChange(suggestion);
-      const declaration = declarationFromSummary(suggestion);
-      if (declaration) onDeclarationSuggestion?.({ value: declaration.value, currency: 'EUR', range: { min: declaration.min, max: declaration.max }, category: declaration.category });
-      toast({ title: 'Sugestão pronta', description: 'Revise a descrição antes de copiar.' });
-    } catch (error) {
-      // Nunca preencher com uma descrição genérica: o campo deve refletir a foto.
-      // Se a visão falhar, deixe o valor anterior intacto e informe o usuário para tentar novamente.
-      toast({
-        title: 'Não foi possível identificar a foto',
-        description: error instanceof Error && error.name === 'AbortError'
-          ? 'A foto demorou para ser analisada. Envie uma imagem menor e mais focada no produto.'
-          : error instanceof Error ? error.message : 'Envie uma foto mais nítida e focada no produto.',
-        variant: 'destructive',
-      });
-    } finally {
-      window.clearTimeout(timeoutId);
-      setIsAnalyzing(false);
-    }
-  };
-
+  }, [productName]);
   const copyDescription = async () => {
     if (!value.trim()) return;
-    try {
-      await navigator.clipboard.writeText(value.trim());
-      toast({ title: 'Descrição copiada' });
-    } catch {
-      const helper = document.createElement('textarea');
-      helper.value = value.trim();
-      helper.style.position = 'fixed';
-      helper.style.opacity = '0';
-      document.body.appendChild(helper);
-      helper.select();
-      const copied = document.execCommand('copy');
-      document.body.removeChild(helper);
-      if (copied) toast({ title: 'Descrição copiada' });
-      else toast({ title: 'Não foi possível copiar', description: 'Selecione o texto e copie manualmente.', variant: 'destructive' });
-    }
+    try { await navigator.clipboard.writeText(value.trim()); toast({ title: 'Descrição copiada' }); }
+    catch { toast({ title: 'Não foi possível copiar', description: 'Selecione a descrição e copie manualmente.', variant: 'destructive' }); }
   };
-
   return (
-    <section className="space-y-2 rounded-xl border border-border bg-muted/20 p-3" aria-label="Assistente de descrição do produto">
+    <section className="space-y-2 rounded-xl border border-border bg-muted/20 p-3" aria-label="Descrição automática do produto">
       <div className="space-y-1">
-        <Label htmlFor={`${inputId}-description`} className="flex items-center gap-2 text-xs font-medium text-foreground">
+        <Label htmlFor="product-description" className="flex items-center gap-2 text-xs font-medium text-foreground">
           Descrição do produto
-          <span className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
-            <Sparkles className="h-3 w-3" /> IA por foto
-          </span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent"><Sparkles className="h-3 w-3" /> Automática pelo título</span>
         </Label>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Envie uma foto nítida do produto. A IA gera uma descrição curta baseada somente no que aparece na imagem.
-        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground">A descrição é criada pela categoria do título, sem marcas ou logotipos. Você pode editar.</p>
       </div>
-
-      <input
-        ref={fileInputRef}
-        id={`${inputId}-photo`}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="sr-only"
-        onChange={(event) => void handleImageChange(event)}
-      />
-
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isAnalyzing}>
-          <Camera className="mr-2 h-4 w-4" />
-          {imageData ? 'Trocar foto' : 'Escolher foto'}
-        </Button>
-        {imageData && (
-          <>
-            <Button type="button" size="sm" onClick={() => void analyzeImage()} disabled={isAnalyzing}>
-              {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              {isAnalyzing ? 'Analisando…' : 'Gerar sugestão'}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => { setImageData(null); onChange(''); }}
-              disabled={isAnalyzing}
-              aria-label="Remover foto"
-            >
-              <X className="mr-1 h-4 w-4" /> Remover
-            </Button>
-          </>
-        )}
-      </div>
-
-      {imageData && (
-        <img
-          src={imageData}
-          alt="Prévia da foto selecionada para análise"
-          className="max-h-48 max-w-full rounded-lg border border-border object-contain"
-        />
-      )}
-
-      <Textarea
-        id={`${inputId}-description`}
-        value={value}
-        onChange={(event) => onChange(event.target.value.slice(0, MAX_DESCRIPTION_LENGTH))}
-        maxLength={MAX_DESCRIPTION_LENGTH}
-        placeholder="A sugestão factual aparecerá aqui. Revise antes de usar."
-        className="min-h-24 resize-y bg-background text-sm"
-      />
-      <Button type="button" variant="outline" size="sm" onClick={() => void copyDescription()} disabled={!value.trim()}>
-        <ClipboardCopy className="mr-2 h-4 w-4" /> Copiar descrição
-      </Button>
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
-        Confirme a descrição e os requisitos da alfândega antes de declarar. A foto não determina o valor de declaração.
-      </p>
+      <Textarea id="product-description" value={value} onChange={(event) => onChange(event.target.value.slice(0, 1200))} maxLength={1200} placeholder="Digite o título do produto para gerar a descrição." className="min-h-20 resize-y bg-background text-sm" />
+      <Button type="button" variant="outline" size="sm" onClick={() => void copyDescription()} disabled={!value.trim()}><ClipboardCopy className="mr-2 h-4 w-4" /> Copiar descrição</Button>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">O valor de declaração é preenchido automaticamente pela categoria e continua editável.</p>
     </section>
   );
 };
-
 export default ProductDescriptionAssistant;
