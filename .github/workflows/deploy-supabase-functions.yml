@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'supabase/functions/lobo-vision/**'
+      - 'supabase/functions/wolf-vision/**'
       - 'supabase/functions/wolf-chat/**'
       - 'supabase/functions/product-description/**'
       - 'supabase/functions/_shared/**'
@@ -41,6 +42,9 @@ jobs:
 
       - name: Deploy lobo-vision
         run: supabase functions deploy lobo-vision --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
+
+      - name: Deploy wolf-vision
+        run: supabase functions deploy wolf-vision --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
 
       - name: Deploy wolf-chat
         run: supabase functions deploy wolf-chat --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt

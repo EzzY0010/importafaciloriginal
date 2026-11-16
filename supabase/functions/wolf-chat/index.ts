@@ -13,12 +13,12 @@ const corsHeaders = {
 import { FULL_SYSTEM_PROMPT } from '../_shared/lobo-prompt.ts';
 
 const VISUAL_PRODUCT_PROMPT = `Analise somente a imagem do produto e retorne exclusivamente um JSON válido, sem markdown.
-Use exatamente estes campos, sempre preenchidos: productName, model, brand, material, weightEstimate, brazilValueEstimate, authenticity, importVerdict, marginEstimate.
+Use exatamente estes campos, sempre preenchidos: productName, model, brand, material, weightEstimate, authenticity, importVerdict, marginEstimate.
 productName: nome/categoria observável do produto. model: modelo ou variação somente se estiver visível; caso contrário "não identificável pela imagem".
 brand: marca aparente somente se o nome estiver legível; caso contrário "não identificável pela imagem".
 material: material somente se houver etiqueta ou evidência visual clara; caso contrário "não identificável pela imagem".
 weightEstimate: faixa plausível em gramas para a categoria, sempre com a observação "estimativa"; não trate como pesagem.
-brazilValueEstimate: faixa estimada de preço de venda no Brasil em reais, baseada somente na categoria, aparência e condição visível; use "não estimável pela imagem" se não houver base suficiente. Nunca invente um preço exato.
+Não estime nem mencione preço de mercado, venda ou revenda no Brasil para nenhuma peça. Não inclua qualquer campo de preço brasileiro no JSON.
 authenticity: use somente "não é possível confirmar pela imagem", "provavelmente original" ou "provavelmente réplica", sempre com baixa confiança quando houver poucos detalhes.
 importVerdict: "depende" quando não houver preço de compra, frete e impostos.
 marginEstimate: "não calculável sem preço de compra, frete e impostos" quando esses dados não forem fornecidos.
@@ -42,7 +42,6 @@ const formatVisualProduct = (raw: string): string => {
       `🏷️ Marca aparente: ${visualValue(parsed.brand, 'não identificável pela imagem')}`,
       `🧵 Material/composição: ${visualValue(parsed.material, 'não identificável pela imagem')}`,
       `⚖️ Peso estimado: ${visualValue(parsed.weightEstimate, 'não estimável pela imagem')}`,
-      `💰 Valor estimado no Brasil: ${visualValue(parsed.brazilValueEstimate, 'não estimável pela imagem')}`,
       `🔍 Autenticidade: ${visualValue(parsed.authenticity, 'não é possível confirmar pela imagem')}`,
       `📈 Importação/margem: ${visualValue(parsed.importVerdict, 'depende')} — ${visualValue(parsed.marginEstimate, 'não calculável sem os custos')}`,
     ].join('\n');
