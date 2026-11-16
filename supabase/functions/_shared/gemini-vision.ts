@@ -1,6 +1,6 @@
 const BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL_LIST_TIMEOUT_MS = 10_000;
-const MODEL_GENERATION_TIMEOUT_MS = 15_000;
+const MODEL_GENERATION_TIMEOUT_MS = 65_000;
 const MAX_MODEL_ATTEMPTS = 5;
 const TIMEOUT_MESSAGE = 'A análise da foto demorou mais que o esperado. Tente uma imagem menor ou envie novamente.';
 export class VisionError extends Error {
@@ -62,6 +62,7 @@ export async function generateVisual(options: { apiKey?: string; prompt: string;
   if (!options.apiKey) throw new VisionError('ai_key_missing', 503, 'A análise por foto ainda não está configurada. O responsável deve cadastrar GOOGLE_GEMINI_API_KEY no campo seguro.');
   const fetcher = options.fetcher ?? fetch;
   const headers = { 'x-goog-api-key': options.apiKey, 'Content-Type': 'application/json' };
+  const startedAt = Date.now();
   let listed: Model[] = [];
   try {
     const url = new URL(`${BASE}/models`);
@@ -75,12 +76,19 @@ export async function generateVisual(options: { apiKey?: string; prompt: string;
     if (!models.length) throw new VisionError('model_unavailable', 503, 'Nenhum modelo Gemini multimodal está disponível para esta conta.');
     let lastError = new VisionError('model_unavailable', 503, 'Os modelos visuais disponíveis não conseguiram analisar a foto.');
     for (const model of models.slice(0, MAX_MODEL_ATTEMPTS)) {
+      const generationConfig: Record<string, unknown> = { maxOutputTokens: 4096 };
+      if (/^gemini-(?:3|4)(?:[.-])/.test(model)) {
+        generationConfig.thinkingConfig = { thinkingLevel: 'low' };
+      } else {
+        generationConfig.temperature = 0.2;
+      }
+      if (options.json) generationConfig.responseMimeType = 'application/json';
       const { response, payload } = await fetchJson(fetcher, `${BASE}/models/${model}:generateContent`, {
         method: 'POST', headers,
         body: JSON.stringify({
           system_instruction: { parts: [{ text: options.prompt }] },
           contents: [{ role: 'user', parts: [{ text: options.text }, ...options.images.map(image => ({ inline_data: image }))] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 4096, ...(options.json ? { responseMimeType: 'application/json' } : {}) },
+          generationConfig,
         }),
       }, options.timeoutMs?.generation ?? MODEL_GENERATION_TIMEOUT_MS);
       if (!response.ok) {
@@ -94,7 +102,7 @@ export async function generateVisual(options: { apiKey?: string; prompt: string;
       if (candidate?.finishReason === 'MAX_TOKENS') throw new VisionError('incomplete_analysis', 503, 'A análise não foi concluída. Tente uma foto focada no produto.');
       const text = (candidate?.content?.parts ?? []).filter((p: { thought?: boolean }) => !p.thought).map((p: { text?: string }) => p.text ?? '').join('').trim();
       if (!text) continue;
-      console.log('[gemini-vision] image analyzed', { provider: 'google-gemini', model, imageCount: options.images.length });
+      console.log('[gemini-vision] image analyzed', { provider: 'google-gemini', model, imageCount: options.images.length, elapsedMs: Date.now() - startedAt });
       return { text, model };
     }
     throw lastError;
