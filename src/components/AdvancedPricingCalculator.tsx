@@ -1016,13 +1016,13 @@ const AdvancedPricingCalculator: React.FC = () => {
                         type="number"
                         step="0.01"
                         min="0.01"
-                        placeholder="Sugestão da IA"
+                        placeholder="Automático pelo título"
                         value={item.declaredValue}
                         onChange={(e) => updateItem(item.id, 'declaredValue', e.target.value)}
                         className="h-8 min-w-0 text-sm"
                       />
                     </div>
-                    <p className="text-[10px] leading-tight text-muted-foreground">Editável após a análise da foto.</p>
+                    <p className="text-[10px] leading-tight text-muted-foreground">Preenchido automaticamente pela categoria do título. Você pode editar.</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Margem (%)</Label>
@@ -1041,15 +1041,6 @@ const AdvancedPricingCalculator: React.FC = () => {
                   productName={item.name}
                   value={item.declarationDescription ?? ''}
                   onChange={(description) => updateItem(item.id, 'declarationDescription', description)}
-                  onDeclarationSuggestion={({ value, currency, range, category }) => {
-                    const converted = item.declaredCurrency === currency
-                      ? value
-                      : value / rates.EUR;
-                    updateItem(item.id, 'declaredValue', converted.toFixed(2));
-                    toast.success('Valor de declaração sugerido pela IA', {
-                      description: `${category} · faixa ${range.min.toFixed(2)}–${range.max.toFixed(2)} EUR. Você pode editar o valor e a moeda.`,
-                    });
-                  }}
                 />
 
                 {hasData && (
