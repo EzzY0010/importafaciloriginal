@@ -23,7 +23,6 @@ const OnboardingTutorial: React.FC = () => {
         '[data-tour="calculator"]',
         '[data-tour="topbar"]',
         '[data-tour="chat-area"]',
-        '[data-tour="chat-image"]',
         '[data-tour="chat-input"]',
         '[data-tour="chat-send"]',
       ];
@@ -64,7 +63,7 @@ const OnboardingTutorial: React.FC = () => {
             popover: {
               title: 'Lobo das Importações 🤖',
               description:
-                'Este é o Lobo das Importações, sua IA especializada para análise completa de produtos e conversão de moedas.',
+                'Este é o Lobo das Importações, sua IA para dúvidas sobre produtos, importação e conversão de moedas.',
               side: 'left',
               align: 'center',
             },
@@ -78,17 +77,6 @@ const OnboardingTutorial: React.FC = () => {
                 "Você pode dar comandos diretos para a IA! Experimente perguntar coisas como: 'Qual é o peso médio desse produto?', 'Como eu acho fornecedores para estas peças no exterior?', 'Qual a melhor estratégia de revenda para esse item?' ou pedir dicas de precificação.",
               side: 'left',
               align: 'center',
-            },
-            onHighlightStarted: () => setTab('chat'),
-          },
-          {
-            element: '[data-tour="chat-image"]',
-            popover: {
-              title: 'Envie uma foto 📸',
-              description:
-                'Clique aqui para enviar a foto de um produto. A IA lerá a imagem e trará na hora a Ficha Técnica com marca, peso estimado, composição e insights de mercado.',
-              side: 'top',
-              align: 'start',
             },
             onHighlightStarted: () => setTab('chat'),
           },
@@ -108,7 +96,7 @@ const OnboardingTutorial: React.FC = () => {
             popover: {
               title: 'Botão Enviar 🚀',
               description:
-                'Clique aqui para enviar sua mensagem ou imagem e receber a resposta do Lobo.',
+                'Clique aqui para enviar sua mensagem e receber a resposta do Lobo.',
               side: 'top',
               align: 'end',
             },

@@ -39,13 +39,6 @@ const STEPS: Step[] = [
     success: 'Boa! Você já sabe conversar com o Lobo. 🐺',
   },
   {
-    id: 'chat-image',
-    tab: 'chat',
-    selector: '[data-tour="chat-image"]',
-    title: 'Enviar foto do produto',
-    text: 'Esta câmera serve para mandar a foto de um produto e receber a análise dele — é diferente de perguntar por texto.',
-  },
-  {
     id: 'calc-inputs',
     tab: 'calculator',
     selector: '[data-tour="calc-inputs"]',

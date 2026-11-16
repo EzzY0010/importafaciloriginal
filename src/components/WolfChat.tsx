@@ -6,11 +6,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Send, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag, Camera, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { Send, Loader2, MessageSquare, Plus, Menu, X, ExternalLink, ShoppingBag, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import wolfLogo from '@/assets/wolf-logo-clean.png';
 import StrategyButtons from './StrategyButtons';
 import { backendKey, backendUrl, getSupabaseClient, isBackendConfigured } from '@/lib/backend';
-import { visionErrorMessage } from '@/lib/visionErrors';
 
 interface Message {
   id?: string;
@@ -218,26 +217,16 @@ const WolfChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
-  const [loadingMode, setLoadingMode] = useState<'text' | 'image'>('text');
-  const MAX_IMAGES = 5;
-  const LOADING_PHRASES_TEXT = [
+  const LOADING_PHRASES = [
     'Buscando informações... 🐺',
     'O Lobo está digitando...',
     'Consultando o mercado... 📈',
   ];
-  const LOADING_PHRASES_IMAGE = [
-    'Analisando a imagem... 📸',
-    'Descobrindo o peso médio de fábrica... 📦',
-    'Identificando o tipo de produto... 🔍',
-  ];
-  const LOADING_PHRASES = loadingMode === 'image' ? LOADING_PHRASES_IMAGE : LOADING_PHRASES_TEXT;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showStrategies, setShowStrategies] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
@@ -441,74 +430,7 @@ const WolfChat: React.FC = () => {
       setMessages([]);
     }
   };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const compressImage = (file: File, maxWidth = 900, quality = 0.68): Promise<string> =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const img = new Image();
-          img.onload = () => {
-            const scale = Math.min(maxWidth / img.width, 1);
-            const width = Math.max(1, Math.round(img.width * scale));
-            const height = Math.max(1, Math.round(img.height * scale));
-            const canvas = document.createElement('canvas');
-            canvas.width = width; canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return reject(new Error('Canvas indisponível'));
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, width, height);
-            ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', quality));
-          };
-          img.onerror = reject;
-          img.src = ev.target?.result as string;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    if (files.some(file => file.size > 10 * 1024 * 1024)) {
-      toast({ title: 'Foto muito grande', description: 'Selecione uma imagem de até 10 MB.', variant: 'destructive' });
-      e.target.value = '';
-      return;
-    }
-    const invalid = files.find((file) => !file.type.startsWith('image/'));
-    if (invalid) {
-      toast({ title: 'Imagem inválida', description: 'Escolha uma foto JPG, PNG ou WEBP.', variant: 'destructive' });
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-    const remaining = MAX_IMAGES - imagePreviews.length;
-    if (remaining <= 0) {
-      toast({ title: 'Limite atingido', description: `Máximo de ${MAX_IMAGES} fotos por envio.`, variant: 'destructive' });
-      return;
-    }
-    const selected = files.slice(0, remaining);
-    if (files.length > remaining) {
-      toast({ title: 'Limite de fotos', description: `Apenas ${remaining} foto(s) adicionada(s). Máximo ${MAX_IMAGES}.` });
-    }
-    selected.forEach(async (file) => {
-      try {
-        const compressed = await compressImage(file, 900, 0.68);
-        if (!compressed.startsWith('data:image/jpeg;base64,')) throw new Error('Formato de imagem não suportado');
-        setImagePreviews((prev) => (prev.length >= MAX_IMAGES ? prev : [...prev, compressed]));
-      } catch (err) {
-        console.error('Erro ao comprimir imagem:', err);
-        toast({ title: 'Erro na imagem', description: 'Não foi possível processar essa foto.', variant: 'destructive' });
-      }
-    });
-    // Reset input so selecting the same file again still fires onChange
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const removeImagePreview = (index: number) => {
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string, _imageUrl?: string) => {
+  const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string) => {
     const client = await getSupabase();
     if (!client) return;
 
@@ -533,7 +455,7 @@ const WolfChat: React.FC = () => {
 
   const sendMessage = async (overrideText?: string) => {
     const messageText = (typeof overrideText === 'string' ? overrideText : input);
-    if (!messageText.trim() && imagePreviews.length === 0) return;
+    if (!messageText.trim()) return;
     if (!user) {
       toast({ title: 'Erro', description: 'Você precisa estar logado', variant: 'destructive' });
       return;
@@ -545,22 +467,17 @@ const WolfChat: React.FC = () => {
       if (!convId) return;
     }
 
-    const currentImages = [...imagePreviews];
     const userMessage: Message = {
       role: 'user',
       content: messageText,
-      image_url: currentImages[0],
-      image_urls: currentImages.length > 0 ? currentImages : undefined,
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setImagePreviews([]);
-    setLoadingMode(currentImages.length > 0 ? 'image' : 'text');
     setIsLoading(true);
     setShowStrategies(false);
 
-    await saveMessage(convId, 'user', messageText, currentImages[0]);
+    await saveMessage(convId, 'user', messageText);
 
     if (messages.length === 0 && messageText.trim()) {
       const title = messageText.substring(0, 50) + (messageText.length > 50 ? '...' : '');
@@ -578,19 +495,10 @@ const WolfChat: React.FC = () => {
     const assistantId = `a-${reqId}`;
 
     try {
-      const finalContent = currentImages.length > 0
-        ? [
-            { type: 'text', text: messageText || 'Analise esta(s) imagem(ns) de produto para importação - MODO PERÍCIA' },
-            ...currentImages.map((url) => ({ type: 'image_url', image_url: { url } })),
-          ]
-        : messageText;
-
-      // Vision is bounded on the server; this client timeout leaves room for one
-      // auth refresh/retry without telling the user that their session expired.
       const controller = new AbortController();
       activeControllerRef.current = controller;
       const authClient = await getSupabase();
-      if (!authClient) throw new Error(visionErrorMessage('unauthorized', 401));
+      if (!authClient) throw new Error('Sua sessão expirou. Entre novamente para continuar usando o chat.');
 
       let session = (await authClient.auth.getSession()).data.session;
       const tokenExpiresSoon = session?.expires_at != null
@@ -599,15 +507,15 @@ const WolfChat: React.FC = () => {
         const refreshed = await authClient.auth.refreshSession();
         if (refreshed.data.session) session = refreshed.data.session;
       }
-      if (!session?.access_token) throw new Error(visionErrorMessage('unauthorized', 401));
+      if (!session?.access_token) throw new Error('Sua sessão expirou. Entre novamente para continuar usando o chat.');
 
       const timeoutId = setTimeout(() => controller.abort(), 90000);
       const requestBody = JSON.stringify({
-        messages: [{ role: 'user', content: finalContent }],
+        messages: [{ role: 'user', content: messageText }],
         conversationId: convId,
         userId: user.id,
       });
-      const functionName = currentImages.length > 0 ? 'wolf-vision' : 'wolf-chat';
+      const functionName = 'wolf-chat';
       const sendRequest = (token: string) => fetch(`${backendUrl}/functions/v1/${functionName}`, {
         method: 'POST',
         headers: {
@@ -654,17 +562,7 @@ const WolfChat: React.FC = () => {
           window.dispatchEvent(new CustomEvent('wolf-chat-answered'));
           return;
         }
-        // Não transformar falha visual em promessa de resultado futuro. Mostrar
-        // o motivo real para o usuário poder corrigir a foto ou tentar novamente.
-        if (errPayload?.error === 'vision_unavailable' && errPayload?.message) {
-          const friendly = `Não consegui concluir a leitura da imagem: ${errPayload.message}`;
-          setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: friendly }]);
-          await saveMessage(convId, 'assistant', friendly);
-          window.dispatchEvent(new CustomEvent('wolf-chat-answered'));
-          return;
-        }
-
-        const err = new Error(visionErrorMessage(errPayload?.error, response.status, errPayload?.message));
+        const err = new Error(errPayload?.message || 'Não consegui responder agora. Tente novamente.');
         (err as any).status = response.status;
         (err as any).code = errPayload?.error;
         throw err;
@@ -758,18 +656,18 @@ const WolfChat: React.FC = () => {
       const status = error?.status;
       const code = error?.code;
       let title = 'Não consegui responder agora';
-      let description = visionErrorMessage(code, status, error?.message);
+      let description = error?.message || 'Não consegui responder agora. Tente novamente.';
       if (error?.name === 'AbortError') {
-        title = 'A análise demorou demais';
-        description = 'A imagem levou mais de 90 segundos. Tente reenviar uma foto mais leve ou mais nítida.';
+        title = 'A resposta demorou demais';
+        description = 'Não consegui gerar a resposta em até 90 segundos. Tente novamente.';
       } else if (status === 413 || code === 'payload_too_large') {
-        description = 'A imagem ainda ficou pesada demais. Tente enviar um print recortado ou uma foto mais próxima do produto.';
+        description = 'Sua mensagem ficou grande demais. Tente enviar uma pergunta mais curta.';
       } else if (status === 429 || code === 'rate_limit') {
-        description = visionErrorMessage(code, status);
+        description = 'Muitas solicitações em sequência. Aguarde alguns instantes e tente novamente.';
       } else if (status === 402 || code === 'quota_exhausted') {
         description = 'Cota de IA esgotada. Contate o suporte.';
       } else if (status === 400) {
-        description = error?.message || 'A IA recusou esta imagem. Tente reenviar em menor tamanho.';
+        description = error?.message || 'Sua pergunta não pôde ser processada. Tente reformulá-la.';
       }
 
       toast({ title, description, variant: 'destructive' });
@@ -878,7 +776,7 @@ const WolfChat: React.FC = () => {
                       Identificar Produto e Se Dá Lucro <span className="text-xl">🔍</span>
                     </h3>
                     <p className="text-sm text-[hsl(0,0%,30%)] leading-relaxed">
-                      Envie fotos de qualquer item para que eu analise a marca, descubra o peso médio de fábrica, traga os componentes essenciais e te diga se realmente vale a pena importar para revender com boa margem.
+                      Descreva o produto e pergunte sobre peso médio, características e viabilidade de importação. As respostas são estimativas.
                     </p>
                   </div>
                   <div className="bg-white dark:bg-white/95 rounded-2xl p-4 shadow-sm border border-border/40">
@@ -944,28 +842,6 @@ const WolfChat: React.FC = () => {
           </div>
         </div>
 
-        {/* Image Previews */}
-        {imagePreviews.length > 0 && (
-          <div className="px-4 pb-2 flex flex-wrap gap-2">
-            {imagePreviews.map((src, idx) => (
-              <div key={idx} className="relative inline-block">
-                <img src={src} alt={`Preview ${idx + 1}`} className="h-20 w-20 object-cover rounded-xl border border-border" />
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                  onClick={() => removeImagePreview(idx)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-            <div className="self-center text-xs text-muted-foreground ml-1">
-              {imagePreviews.length}/{MAX_IMAGES}
-            </div>
-          </div>
-        )}
-
         {/* Input Area */}
         <div className="p-4 border-t border-border bg-card relative z-[1000]">
           {/* Quick Reply Pills */}
@@ -988,23 +864,6 @@ const WolfChat: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-3">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              ref={fileInputRef}
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-            <Button 
-              data-tour="chat-image"
-              variant="outline" 
-              size="icon" 
-              onClick={() => fileInputRef.current?.click()}
-              className="rounded-xl border-border hover:bg-muted"
-            >
-              <Camera className="h-5 w-5" />
-            </Button>
             <Button
               type="button"
               variant={isListening ? 'destructive' : 'outline'}
@@ -1021,7 +880,7 @@ const WolfChat: React.FC = () => {
               data-tour="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Envie uma foto para análise ou pergunte algo..."
+              placeholder="Escreva sua pergunta para o Lobo..."
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
               disabled={isLoading}
               className="flex-1 rounded-xl border-border focus-visible:ring-primary"
