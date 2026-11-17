@@ -29,6 +29,7 @@ export type SiteSettings = {
   elite_included_benefit: string;
   usa_title: string;
   usa_description: string;
+  usa_features: string;
   usa_price: string;
   usa_period: string;
   whatsapp_number: string;
@@ -64,9 +65,10 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   elite_previous_price: "497,00",
   elite_badge: "Melhor custo-benefício",
   elite_included_benefit: "1 ano de Spotify Premium",
-  usa_title: "Conexão USA",
-  usa_description: "Grupo exclusivo no WhatsApp para lojistas, com promoções, peças a preço exclusivo e as fontes que os lojistas usam.",
-  usa_price: "67,00",
+  usa_title: "ImportaFácil Direct",
+  usa_description: "Grupo exclusivo e atendimento personalizado para quem não quer ter o trabalho de importar. Você escolhe a peça ou boné de luxo na gringa, nós cuidamos de toda a importação e cobramos uma taxa fixa de 30% sobre o pedido.",
+  usa_features: "Acesso a produtos e oportunidades exclusivas\nCompra intermediada com segurança total\nSem burocracia com alfândega e taxas surpresa\nIdeal para peças exclusivas e bonés de luxo\nSuporte e acompanhamento direto pelo WhatsApp",
+  usa_price: "37,90",
   usa_period: "/mês · cobrança recorrente",
   whatsapp_number: "",
   whatsapp_label: "Fale conosco no WhatsApp",

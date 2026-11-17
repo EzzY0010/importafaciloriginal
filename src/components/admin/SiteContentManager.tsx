@@ -236,12 +236,13 @@ const SiteContentManager = () => {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Plano Conexão USA</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Plano ImportaFácil Direct</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {field("usa_title", "Nome do plano")}
             {field("usa_description", "Descrição", true)}
+            {field("usa_features", "Benefícios (um por linha)", true)}
             <div className="grid gap-4 sm:grid-cols-2">
-              {field("usa_price", "Preço exibido (ex.: 120,00)")}
+              {field("usa_price", "Preço exibido (ex.: 37,90)")}
               {field("usa_period", "Período (ex.: /mês)")}
             </div>
           </CardContent>
