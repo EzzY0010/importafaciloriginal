@@ -111,6 +111,7 @@ const landingPlans: LandingPlan[] = [
     features: [
       "Acesso a produtos e oportunidades exclusivas",
       "Compra intermediada com segurança total",
+      "As peças podem chegar em até 7 dias",
       "Sem burocracia com alfândega e taxas surpresa",
       "Ideal para peças exclusivas e bonés de luxo",
       "Suporte e acompanhamento direto pelo WhatsApp",
